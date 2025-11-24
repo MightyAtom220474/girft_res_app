@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import os
 from datetime import datetime, timedelta
-import matplotlib
+import matplotlib.pyplot as plt
 
 FILE = "weekly_leave_multi.csv"
 NUM_WEEKS = 52
@@ -136,8 +136,19 @@ def cell_color(val):
     b = 0
     return f"background-color: rgb({r}, {g}, {b})"
 
+# Manual gradient colouring without matplotlib
+def cell_color(val):
+    # Scale 0–5 days (feel free to adjust)
+    max_days = 5
+    intensity = min(val / max_days, 1)
+    r = int(255 * intensity)
+    g = int(200 * (1 - intensity))
+    b = 0
+    return f"background-color: rgb({r}, {g}, {b})"
+
 styled = pivot.style.applymap(cell_color)
 st.dataframe(styled, use_container_width=True)
+
 
 
 # ------------------------------------------------
