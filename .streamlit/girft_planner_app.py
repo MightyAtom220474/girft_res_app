@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import os
 from datetime import datetime, timedelta
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 FILE = "weekly_leave_multi.csv"
 NUM_WEEKS = 52
