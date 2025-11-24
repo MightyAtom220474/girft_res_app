@@ -77,7 +77,7 @@ tab1, tab2 = st.tabs(["Annual Leave","Programme of Work"])
 
 with tab1:
 
-    st.title("📅 Multi-Staff Weekly Leave Planner")
+    st.title("📅 Weekly Leave Planner")
     # ------------------------------------------------
     # Select staff to edit
     # ------------------------------------------------
@@ -86,7 +86,6 @@ with tab1:
     selected_staff = st.selectbox("Select staff member", staff_list)
 
     staff_df = df[df["staff"] == selected_staff].copy().reset_index(drop=True)
-
 
     # ------------------------------------------------
     # Editable table for selected staff
