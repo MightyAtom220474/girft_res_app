@@ -4,9 +4,9 @@ import os
 from datetime import datetime, timedelta
 #import matplotlib.pyplot as plt
 
-FILE = "weekly_leave_multi.csv"
-NUM_WEEKS = 52
-YEAR = 2025   # you can make this a user input if you want
+leave_planner_data = "weekly_leave_multi.csv"
+num_weeks = 52
+year = 2025   # you can make this a user input if you want
 
 
 st.set_page_config(page_title="Weekly Leave Planner", layout="wide")
@@ -26,7 +26,7 @@ def week_commencing(year, week):
 def create_empty(year, staff_list):
     rows = []
     for staff in staff_list:
-        for week in range(1, NUM_WEEKS + 1):
+        for week in range(1, num_weeks + 1):
             rows.append({
                 "staff": staff,
                 "week": week,
@@ -41,18 +41,18 @@ def create_empty(year, staff_list):
 # Load or create CSV
 # ------------------------------------------------
 def load_data(staff_list):
-    if os.path.exists(FILE):
-        df = pd.read_csv(FILE)
+    if os.path.exists(leave_planner_data):
+        df = pd.read_csv(leave_planner_data)
         df["week_commencing"] = pd.to_datetime(df["week_commencing"]).dt.date
         return df
     else:
-        df = create_empty(YEAR, staff_list)
-        df.to_csv(FILE, index=False)
+        df = create_empty(year, staff_list)
+        df.to_csv(leave_planner_data, index=False)
         return df
 
 
 def save_data(df):
-    df.to_csv(FILE, index=False)
+    df.to_csv(leave_planner_data, index=False)
 
 
 # ------------------------------------------------
@@ -71,93 +71,100 @@ st.write(", ".join(staff_list))
 df = load_data(staff_list)
 
 
-# ------------------------------------------------
-# Select staff to edit
-# ------------------------------------------------
-st.subheader("✏️ Edit Leave for a Specific Team Member")
-
-selected_staff = st.selectbox("Select staff member", staff_list)
-
-staff_df = df[df["staff"] == selected_staff].copy().reset_index(drop=True)
+# set up separate tabs for leave and programme
+tab1, tab2 = st.tabs(["Annual Leave","Programme of Work"])
 
 
-# ------------------------------------------------
-# Editable table for selected staff
-# ------------------------------------------------
-st.write(f"### Editing: {selected_staff}")
+with tab1:
 
-edited_df = st.data_editor(
-    staff_df,
-    hide_index=True,
-    num_rows="fixed",
-    column_config={
-        "week": st.column_config.NumberColumn("Week", disabled=True),
-        "week_commencing": st.column_config.DateColumn(
-            "Week Commencing (Mon)", disabled=True
-        ),
-        "leave_days": st.column_config.NumberColumn(
-            "Days of Leave",
-            help="Enter days or fractions (e.g. 0.5)",
-            step=0.5
-        ),
-        "staff": st.column_config.TextColumn("Staff", disabled=True)
-    }
-)
+    # ------------------------------------------------
+    # Select staff to edit
+    # ------------------------------------------------
+    st.subheader("✏️ Edit Leave for a Specific Team Member")
+
+    selected_staff = st.selectbox("Select staff member", staff_list)
+
+    staff_df = df[df["staff"] == selected_staff].copy().reset_index(drop=True)
 
 
-# ------------------------------------------------
-# Save updated data
-# ------------------------------------------------
-if st.button("💾 Save Changes"):
-    df.loc[df["staff"] == selected_staff, "leave_days"] = edited_df["leave_days"]
-    save_data(df)
-    st.success("Saved!")
+    # ------------------------------------------------
+    # Editable table for selected staff
+    # ------------------------------------------------
+    st.write(f"### Editing: {selected_staff}")
+
+    edited_df = st.data_editor(
+        staff_df,
+        hide_index=True,
+        num_rows="fixed",
+        column_config={
+            "week": st.column_config.NumberColumn("Week", disabled=True),
+            "week_commencing": st.column_config.DateColumn(
+                "Week Commencing (Mon)", disabled=True
+            ),
+            "leave_days": st.column_config.NumberColumn(
+                "Days of Leave",
+                help="Enter days or fractions (e.g. 0.5)",
+                step=0.5
+            ),
+            "staff": st.column_config.TextColumn("Staff", disabled=True)
+        }
+    )
 
 
-# ------------------------------------------------
-# Weekly heatmap-style calendar
-# ------------------------------------------------
-st.subheader("📊 Team Calendar View (Weekly Heatmap)")
-
-pivot = df.pivot_table(
-    index="staff",
-    columns="week",
-    values="leave_days",
-    fill_value=0
-)
-
-# Manual gradient colouring without matplotlib
-def cell_color(val):
-    # Scale 0–5 days (feel free to adjust)
-    max_days = 5
-    intensity = min(val / max_days, 1)
-    r = int(255 * intensity)
-    g = int(200 * (1 - intensity))
-    b = 0
-    return f"background-color: rgb({r}, {g}, {b})"
-
-# Manual gradient colouring without matplotlib
-def cell_color(val):
-    # Scale 0–5 days (feel free to adjust)
-    max_days = 5
-    intensity = min(val / max_days, 1)
-    r = int(255 * intensity)
-    g = int(200 * (1 - intensity))
-    b = 0
-    return f"background-color: rgb({r}, {g}, {b})"
-
-styled = pivot.style.applymap(cell_color)
-st.dataframe(styled, use_container_width=True)
+    # ------------------------------------------------
+    # Save updated data
+    # ------------------------------------------------
+    if st.button("💾 Save Changes"):
+        df.loc[df["staff"] == selected_staff, "leave_days"] = edited_df["leave_days"]
+        save_data(df)
+        st.success("All Changes Saved")
 
 
+    # ------------------------------------------------
+    # Weekly calendar
+    # ------------------------------------------------
+    st.subheader("📊 Team Calendar View (Weekly Heatmap)")
 
-# ------------------------------------------------
-# Summary
-# ------------------------------------------------
-st.subheader("Summary Stats")
+    pivot = df.pivot_table(
+        index="staff",
+        columns="week",
+        values="leave_days",
+        fill_value=0
+    )
 
-summary = df.groupby("staff")["leave_days"].sum().reset_index()
-summary.columns = ["Staff", "Total Leave (days)"]
+    # Manual gradient colouring without matplotlib
+    def cell_color(val):
+        # Scale 0–5 days (feel free to adjust)
+        max_days = 5
+        intensity = min(val / max_days, 1)
+        r = int(255 * intensity)
+        g = int(200 * (1 - intensity))
+        b = 0
+        return f"background-color: rgb({r}, {g}, {b})"
 
-st.dataframe(summary, hide_index=True)
+    # Manual gradient colouring without matplotlib
+    def cell_color(val):
+        # Scale 0–5 days (feel free to adjust)
+        max_days = 5
+        intensity = min(val / max_days, 1)
+        r = int(255 * intensity)
+        g = int(200 * (1 - intensity))
+        b = 0
+        return f"background-color: rgb({r}, {g}, {b})"
+
+    styled = pivot.style.applymap(cell_color)
+    st.dataframe(styled, use_container_width=True)
+
+    # ------------------------------------------------
+    # Summary
+    # ------------------------------------------------
+    st.subheader("Summary Stats")
+
+    summary = df.groupby("staff")["leave_days"].sum().reset_index()
+    summary.columns = ["Staff", "Total Leave (days)"]
+
+    st.dataframe(summary, hide_index=True)
+
+with tab2:
+    st.subheader("✏️ Enter Progamme of Work")
 
