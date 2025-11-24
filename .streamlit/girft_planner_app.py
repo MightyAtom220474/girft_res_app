@@ -10,7 +10,7 @@ year = 2025   # you can make this a user input if you want
 
 
 st.set_page_config(page_title="Weekly Leave Planner", layout="wide")
-st.title("📅 Multi-Staff Weekly Leave Planner")
+
 
 
 # ------------------------------------------------
@@ -77,6 +77,7 @@ tab1, tab2 = st.tabs(["Annual Leave","Programme of Work"])
 
 with tab1:
 
+    st.title("📅 Multi-Staff Weekly Leave Planner")
     # ------------------------------------------------
     # Select staff to edit
     # ------------------------------------------------
@@ -166,5 +167,7 @@ with tab1:
     st.dataframe(summary, hide_index=True)
 
 with tab2:
+    
+    st.title("📅 Programme of Work")
     st.subheader("✏️ Enter Progamme of Work")
 
