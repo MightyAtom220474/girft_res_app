@@ -26,7 +26,8 @@ def save_data(df,file_type):
         df.to_csv(leave_file_path, index=False)
     else:
         df.to_csv(onsite_file_path, index=False)
-# set up separate tabs for leave and programme
+
+# set up separate tabs for leave, on-site, and programme
 tab1, tab2, tab3 = st.tabs(["Annual Leave","On-Site","Programme of Work"])
 
 with tab1:
@@ -93,16 +94,6 @@ with tab1:
         g = int(200 * (1 - intensity))
         b = 0
         return f"background-color: rgb({r}, {g}, {b})"
-
-    # # Manual gradient colouring without matplotlib
-    # def cell_color(val):
-    #     # Scale 0–5 days (feel free to adjust)
-    #     max_days = 5
-    #     intensity = min(val / max_days, 1)
-    #     r = int(255 * intensity)
-    #     g = int(200 * (1 - intensity))
-    #     b = 0
-    #     return f"background-color: rgb({r}, {g}, {b})"
 
     styled = pivot.style.applymap(cell_color)
     st.dataframe(styled, use_container_width=True)
@@ -181,16 +172,6 @@ with tab2:
         g = int(200 * (1 - intensity))
         b = int(255 * intensity)
         return f"background-color: rgb({r}, {g}, {b})"
-
-    # # Manual gradient colouring without matplotlib
-    # def cell_color(val):
-    #     # Scale 0–5 days (feel free to adjust)
-    #     max_days = 5
-    #     intensity = min(val / max_days, 1)
-    #     r = int(255 * intensity)
-    #     g = int(200 * (1 - intensity))
-    #     b = 0
-    #     return f"background-color: rgb({r}, {g}, {b})"
 
     styled = pivot.style.applymap(cell_color)
     st.dataframe(styled, use_container_width=True)
