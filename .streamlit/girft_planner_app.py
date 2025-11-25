@@ -40,15 +40,72 @@ def create_empty(year, staff_list):
 # ------------------------------------------------
 # Load or create CSV
 # ------------------------------------------------
-def load_data(staff_list):
+def load_staff_data(leave_planner_data):
     if os.path.exists(leave_planner_data):
         df = pd.read_csv(leave_planner_data)
-        df["week_commencing"] = pd.to_datetime(df["week_commencing"]).dt.date
+        #df["week_commencing"] = pd.to_datetime(df["week_commencing"]).dt.date
         return df
     else:
         df = create_empty(year, staff_list)
         df.to_csv(leave_planner_data, index=False)
         return df
+
+staff_list = load_staff_data('staff_list.csv')
+
+print(staff_list)
+
+staff_names = staff_list['staff_member'].to_list()
+
+def load_or_update_leave_file(filepath, staff_list):
+    """
+    Loads leave CSV if it exists.
+    If not, creates a new one.
+    If there are new staff in the provided staff_list,
+    automatically adds empty rows for them so leave can be recorded.
+    """
+
+    # Columns used in the leave file
+    cols = ["staff_name", "week_commencing", "week_number", "days_leave"]
+
+    # ---------------------------------------------------------
+    # CASE 1: Load existing leave file
+    # ---------------------------------------------------------
+    if os.path.exists(filepath):
+        df = pd.read_csv(filepath, parse_dates=["week_commencing"])
+
+        # Extract current staff in the existing file
+        existing_staff = set(df["staff_name"].unique())
+        new_staff = set(staff_list) - existing_staff
+
+        # -----------------------------------------------------
+        # Add blank rows for any new staff detected
+        # -----------------------------------------------------
+        if new_staff:
+            additional_rows = pd.DataFrame({
+                "staff_name": list(new_staff),
+                "week_commencing": pd.NaT,
+                "week_number": None,
+                "days_leave": None
+            })
+            df = pd.concat([df, additional_rows], ignore_index=True)
+
+            # Save updated file with new staff added
+            df.to_csv(filepath, index=False)
+
+        return df
+
+    # ---------------------------------------------------------
+    # CASE 2: File does not exist → create a new empty template
+    # ---------------------------------------------------------
+    df = pd.DataFrame({
+        "staff_name": staff_list,
+        "week_commencing": [pd.NaT] * len(staff_list),
+        "week_number": [None] * len(staff_list),
+        "days_leave": [None] * len(staff_list)
+    })
+
+    df.to_csv(filepath, index=False)
+    return df
 
 
 def save_data(df):
@@ -58,7 +115,7 @@ def save_data(df):
 # ------------------------------------------------
 # Staff list (editable if you want)
 # ------------------------------------------------
-staff_list = ["Alice", "Bob", "Charlie"]   # <- replace with your team
+# staff_list = ["Alice", "Bob", "Charlie"]   # <- replace with your team
 staff_list.sort()
 
 st.subheader("Team Members")
