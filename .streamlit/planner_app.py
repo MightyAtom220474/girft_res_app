@@ -3,7 +3,7 @@ import pandas as pd
 import os
 import girft_planner_app as app
 
-staff_list = app.load_staff_data('data/staff_list.csv')
+staff_list = app.load_staff_data('staff_list.csv')
 
 #st.write(staff_list)
 
