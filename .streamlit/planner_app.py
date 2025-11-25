@@ -17,9 +17,9 @@ onsite_calendar_df = app.load_or_update_leave_file('on_site_calendar.csv'
                                                   ,staff_names,'on_site_days')
 #print(leave_calendar_df)
 
-leave_file_path = "data/annual_leave_calendar.csv"
+leave_file_path = "annual_leave_calendar.csv"
 
-onsite_file_path = "data/on_site_calendar.csv"
+onsite_file_path = "on_site_calendar.csv"
 
 def save_data(df,file_type):
     if file_type == "leave":

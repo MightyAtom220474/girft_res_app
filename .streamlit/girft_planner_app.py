@@ -21,7 +21,7 @@ def load_staff_data(staff_base_data):
     #     df.to_csv(leave_planner_data, index=False)
     #     return df
 
-staff_list = load_staff_data('data/staff_list.csv')
+staff_list = load_staff_data('staff_list.csv')
 
 #print(staff_list)
 
