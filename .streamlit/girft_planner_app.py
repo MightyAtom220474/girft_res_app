@@ -4,7 +4,6 @@ import os
 from datetime import date, timedelta
 #import matplotlib.pyplot as plt
 
-leave_planner_data = "weekly_leave_multi.csv"
 num_weeks = 52
 year = 2025   # you can make this a user input if you want
 
@@ -22,13 +21,13 @@ def load_staff_data(staff_base_data):
     #     df.to_csv(leave_planner_data, index=False)
     #     return df
 
-staff_list = load_staff_data('staff_list.csv')
+staff_list = load_staff_data('data/staff_list.csv')
 
-print(staff_list)
+#print(staff_list)
 
 # get list of staff names
 staff_names = staff_list['staff_member'].to_list()
-print(staff_names)
+#print(staff_names)
 
 # function to load or create leave planner
 def load_or_update_leave_file(filepath, staff_list,leave_type):
@@ -94,8 +93,8 @@ def load_or_update_leave_file(filepath, staff_list,leave_type):
     return df
 
 
-def save_data(df):
-    df.to_csv(leave_planner_data, index=False)
+# def save_data(df):
+#     df.to_csv(leave_planner_data, index=False)
 
 
 # ------------------------------------------------
@@ -108,7 +107,7 @@ staff_names.sort()
 # st.write(", ".join(staff_list))
 
 
-leave_calendar_df = load_or_update_leave_file('annual_leave_calendar.csv',staff_names)
+#leave_calendar_df = load_or_update_leave_file('annual_leave_calendar.csv',staff_names)
 #print(leave_calendar_df)
 
 

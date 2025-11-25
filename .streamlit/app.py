@@ -21,7 +21,7 @@ import streamlit as st
 
 pg = st.navigation(
     [st.Page("homepage.py", title="Homepage", icon=":material/add_circle:"),
-     st.Page("girft_planner_app.py", title="Capacity Planner", icon=":material/public:"),
+     st.Page("planner_app.py", title="Capacity Planner", icon=":material/public:"),
      st.Page("dashboard.py", title="Capacity Dashboard", icon=":material/public:"),
      st.Page("maintenance.py", title="System Maintenance", icon=":material/public:")
      ,]
