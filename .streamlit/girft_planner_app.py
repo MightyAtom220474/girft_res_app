@@ -6,6 +6,7 @@ from datetime import date, timedelta
 
 num_weeks = 52
 year = 2025   # you can make this a user input if you want
+decimals = 1 # number of decimal places
 
 st.set_page_config(page_title="Weekly Leave Planner", layout="wide")
 
@@ -76,5 +77,7 @@ def load_or_update_leave_file(filepath, staff_list,leave_type):
     # CASE 2: File does not exist → create new file
     # -----------------------------------------
     df = create_full_structure(staff_list)
+    df[leave_type] = df[leave_type].round(decimals)
     df.to_csv(filepath, index=False)
+    
     return df

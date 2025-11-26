@@ -95,7 +95,11 @@ with tab1:
         b = 0
         return f"background-color: rgb({r}, {g}, {b})"
 
-    styled = pivot.style.applymap(cell_color)
+    styled = (
+        pivot.style
+        .applymap(cell_color)
+        .format("{:.1f}")   #1 decimal places
+        )
     st.dataframe(styled, use_container_width=True)
 
     # ------------------------------------------------
@@ -173,7 +177,11 @@ with tab2:
         b = int(255 * intensity)
         return f"background-color: rgb({r}, {g}, {b})"
 
-    styled = pivot.style.applymap(cell_color)
+    styled = (
+        pivot.style
+        .applymap(cell_color)
+        .format("{:.1f}")   # 1 decimal place
+        )
     st.dataframe(styled, use_container_width=True)
 
     # ------------------------------------------------
