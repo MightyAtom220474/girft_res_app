@@ -27,6 +27,8 @@ def save_data(df,file_type):
     else:
         df.to_csv(onsite_file_path, index=False)
 
+
+
 # set up separate tabs for leave, on-site, and programme
 tab1, tab2, tab3 = st.tabs(["Annual Leave","On-Site","Programme of Work"])
 
@@ -72,7 +74,8 @@ with tab1:
         leave_calendar_df.loc[leave_calendar_df["staff_member"] == selected_staff, "days_leave"] = edited_df["days_leave"]
         save_data(leave_calendar_df,"leave")
         st.success("All Changes Saved")
-
+    
+    st.set_page_config(layout="wide")
     # ------------------------------------------------
     # Weekly calendar
     # ------------------------------------------------
@@ -95,22 +98,59 @@ with tab1:
         b = 0
         return f"background-color: rgb({r}, {g}, {b})"
 
+    staff_col_px = 140
+    week_col_px = 22   # works for 52 weeks
+
     styled = (
         pivot.style
         .applymap(cell_color)
-        .format("{:.1f}")   #1 decimal places
-        )
-    st.dataframe(styled, use_container_width=True)
+        .format("{:.2f}")
+    )
+
+    styles = [
+        # Staff row header column
+        {
+            "selector": "th.row_heading",
+            "props": [
+                ("min-width", f"{staff_col_px}px"),
+                ("max-width", f"{staff_col_px}px"),
+                ("white-space", "nowrap")
+                ]
+            },
+            # Week header columns
+            {
+                "selector": "th.col_heading",
+                "props": [
+                    ("min-width", f"{week_col_px}px"),
+                    ("max-width", f"{week_col_px}px"),
+                    ("padding", "2px 4px")
+                ]
+            },
+            # Week value cells
+            {
+                "selector": "td",
+                "props": [
+                    ("min-width", f"{week_col_px}px"),
+                    ("max-width", f"{week_col_px}px"),
+                    ("padding", "2px 4px")
+                ]
+            }
+        ]
+
+    styled = styled.set_table_styles(styles)
+
+    with st.container():
+        st.dataframe(styled, use_container_width=True, height=len(staff_names)*39)
 
     # ------------------------------------------------
     # Summary
     # ------------------------------------------------
-    st.subheader("Summary Stats")
+    # st.subheader("Summary Stats")
 
-    summary = leave_calendar_df.groupby("staff_member")["days_leave"].sum().reset_index()
-    summary.columns = ["Staff", "Total Leave (days)"]
+    # summary = leave_calendar_df.groupby("staff_member")["days_leave"].sum().reset_index()
+    # summary.columns = ["Staff", "Total Leave (days)"]
 
-    st.dataframe(summary, hide_index=True)
+    # st.dataframe(summary, hide_index=True)
 
 with tab2:
 
@@ -155,6 +195,7 @@ with tab2:
         save_data(onsite_calendar_df,"on-site")
         st.success("All Changes Saved")
 
+    st.set_page_config(layout="wide")
     # ------------------------------------------------
     # Weekly calendar
     # ------------------------------------------------
@@ -177,22 +218,59 @@ with tab2:
         b = int(255 * intensity)
         return f"background-color: rgb({r}, {g}, {b})"
 
+    staff_col_px = 140
+    week_col_px = 22   # works for 52 weeks
+
     styled = (
         pivot.style
         .applymap(cell_color)
-        .format("{:.1f}")   # 1 decimal place
-        )
-    st.dataframe(styled, use_container_width=True)
+        .format("{:.2f}")
+    )
+
+    styles = [
+        # Staff row header column
+        {
+            "selector": "th.row_heading",
+            "props": [
+                ("min-width", f"{staff_col_px}px"),
+                ("max-width", f"{staff_col_px}px"),
+                ("white-space", "nowrap")
+                ]
+            },
+            # Week header columns
+            {
+                "selector": "th.col_heading",
+                "props": [
+                    ("min-width", f"{week_col_px}px"),
+                    ("max-width", f"{week_col_px}px"),
+                    ("padding", "2px 4px")
+                ]
+            },
+            # Week value cells
+            {
+                "selector": "td",
+                "props": [
+                    ("min-width", f"{week_col_px}px"),
+                    ("max-width", f"{week_col_px}px"),
+                    ("padding", "2px 4px")
+                ]
+            }
+        ]
+
+    styled = styled.set_table_styles(styles)
+
+    with st.container():
+        st.dataframe(styled, use_container_width=True, height=len(staff_names)*39)
 
     # ------------------------------------------------
     # Summary
     # ------------------------------------------------
-    st.subheader("On-Site Summary Stats")
+    # st.subheader("On-Site Summary Stats")
 
-    summary = onsite_calendar_df.groupby("staff_member")["on_site_days"].sum().reset_index()
-    summary.columns = ["Staff", "Total On-Site (days)"]
+    # summary = onsite_calendar_df.groupby("staff_member")["on_site_days"].sum().reset_index()
+    # summary.columns = ["Staff", "Total On-Site (days)"]
 
-    st.dataframe(summary, hide_index=True)
+    # st.dataframe(summary, hide_index=True)
 
 with tab3:
     
