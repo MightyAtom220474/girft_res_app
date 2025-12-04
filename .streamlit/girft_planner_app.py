@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import os
 from datetime import date, timedelta
+import altair as alt
 #import matplotlib.pyplot as plt
 
 num_weeks = 52
@@ -153,3 +154,35 @@ def load_or_update_planner_file(filepath, staff_list,activity_list):
     df.to_csv(filepath, index=False)
     
     return df
+
+# function to build chart showing activities by week
+def make_activity_chart(df):
+    # Identify activity columns automatically: everything except the first few
+    activity_cols = [c for c in df.columns if c not in ["staff_member", "week_commencing", "week_number"]]
+
+    # Melt to long format
+    df_long = df.melt(
+        id_vars=["week_commencing", "staff_member"],
+        value_vars=activity_cols,
+        var_name="activity_type",
+        value_name="value"
+    )
+
+    # Create stacked bar chart
+    chart = (
+        alt.Chart(df_long)
+        .mark_bar()
+        .encode(
+            x=alt.X("week_commencing:T", title="Week Commencing"),
+            y=alt.Y("sum(value):Q", title="Activity Total"),
+            color=alt.Color("activity_type:N", title="Activity Type"),
+            tooltip=[
+                "week_commencing:T",
+                "activity_type:N",
+                "value:Q"
+            ]
+        )
+        .properties(height=400)
+    )
+
+    return chart
