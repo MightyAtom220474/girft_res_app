@@ -11,9 +11,9 @@ decimals = 1 # number of decimal places
 st.set_page_config(page_title="Weekly Leave Planner", layout="wide")
 
 # load up staff data file
-def load_staff_data(staff_base_data):
+def load_data(file_name):
     # if os.path.exists(staff_base_data):
-    df = pd.read_csv(staff_base_data)
+    df = pd.read_csv(file_name)
     
     return df
     
@@ -83,7 +83,7 @@ def load_or_update_leave_file(filepath, staff_list,leave_type):
     return df
 
 # function to load or create leave planner
-def load_or_update_planner_file(filepath, staff_list):
+def load_or_update_planner_file(filepath, staff_list,activity_list):
     """
     Loads an existing weekly leave CSV OR creates/updates one
     with all weeks of the current year for all staff.
@@ -106,14 +106,14 @@ def load_or_update_planner_file(filepath, staff_list):
     last_monday = last_day - timedelta(days=last_day.weekday())
 
     # Weekly list of Mondays
-    weeks = pd.date_range(start=first_monday, end=last_monday, freq="W-MON")
+    planner_weeks = pd.date_range(start=first_monday, end=last_monday, freq="W-MON")
 
     # Create full weekly structure
-    def create_planner_structure(staff, weeks, activity_types):
+    def create_planner_structure(staff, activity_types):
         rows = []
 
         for s in staff:
-            for w in weeks:
+            for w in planner_weeks:
                 row = {
                     "staff_member": s,
                     "week_commencing": w,
@@ -121,7 +121,7 @@ def load_or_update_planner_file(filepath, staff_list):
                 }
 
                 # Add one column per activity type
-                for act in activity_types:
+                for act in activity_list:
                     row[act] = 0
 
                 rows.append(row)
