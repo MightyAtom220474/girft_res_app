@@ -345,5 +345,11 @@ with tab4:
 
     st.subheader("📊 Weekly Programme Activity Breakdown")
     fig = app.make_activity_chart(activity_calendar_df, activity_names)
+    
+    fig.update_layout(
+                    width=1200,
+                    height=1200
+                    )
+    
     st.plotly_chart(fig, use_container_width=True)
 
