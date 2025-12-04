@@ -342,3 +342,8 @@ with tab4:
 
     with st.container():
         st.dataframe(styled, use_container_width=True, height=len(staff_names)*39)
+
+    st.subheader("📊 Weekly Programme Activity Breakdown")
+    fig = app.make_activity_chart(activity_calendar_df, activity_names)
+    st.plotly_chart(fig, use_container_width=True)
+
