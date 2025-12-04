@@ -2,8 +2,9 @@ import streamlit as st
 import pandas as pd
 import os
 from datetime import date, timedelta
-import altair as alt
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
+import plotly.graph_objects as go
+import numpy as np
 
 num_weeks = 52
 year = 2025   # you can make this a user input if you want
@@ -155,34 +156,24 @@ def load_or_update_planner_file(filepath, staff_list,activity_list):
     
     return df
 
-# function to build chart showing activities by week
-def make_activity_chart(df):
-    # Identify activity columns automatically: everything except the first few
-    activity_cols = [c for c in df.columns if c not in ["staff_member", "week_commencing", "week_number"]]
+def make_activity_chart(activity_calendar_df, activity_types):
+    fig = go.Figure()
 
-    # Melt to long format
-    df_long = df.melt(
-        id_vars=["week_commencing", "staff_member"],
-        value_vars=activity_cols,
-        var_name="activity_type",
-        value_name="value"
+    # Add each activity type as its own stacked trace
+    for act in activity_types:
+        fig.add_trace(go.Bar(
+            x=activity_calendar_df["week_commencing"],
+            y=activity_calendar_df[act],
+            name=act
+        ))
+
+    fig.update_layout(
+        barmode="stack",
+        title="Weekly Activity Breakdown",
+        xaxis_title="Week Commencing",
+        yaxis_title="Activity Amount",
+        legend_title="Activity Type",
+        hovermode="x unified"
     )
 
-    # Create stacked bar chart
-    chart = (
-        alt.Chart(df_long)
-        .mark_bar()
-        .encode(
-            x=alt.X("week_commencing:T", title="Week Commencing"),
-            y=alt.Y("sum(value):Q", title="Activity Total"),
-            color=alt.Color("activity_type:N", title="Activity Type"),
-            tooltip=[
-                "week_commencing:T",
-                "activity_type:N",
-                "value:Q"
-            ]
-        )
-        .properties(height=400)
-    )
-
-    return chart
+    return fig
