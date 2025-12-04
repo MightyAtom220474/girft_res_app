@@ -81,3 +81,75 @@ def load_or_update_leave_file(filepath, staff_list,leave_type):
     df.to_csv(filepath, index=False)
     
     return df
+
+# function to load or create leave planner
+def load_or_update_planner_file(filepath, staff_list):
+    """
+    Loads an existing weekly leave CSV OR creates/updates one
+    with all weeks of the current year for all staff.
+
+    Weeks are auto-generated based on today's date.
+    """
+
+    # -----------------------------------------
+    # Auto-generate weekly start/end dates
+    # -----------------------------------------
+    today = date.today()
+    year = today.year
+
+    # First Monday of the year
+    first_day = date(year, 1, 1)
+    first_monday = first_day + timedelta(days=(7 - first_day.weekday()) % 7)
+
+    # Last Monday of the year
+    last_day = date(year, 12, 31)
+    last_monday = last_day - timedelta(days=last_day.weekday())
+
+    # Weekly list of Mondays
+    weeks = pd.date_range(start=first_monday, end=last_monday, freq="W-MON")
+
+    # Create full weekly structure
+    def create_planner_structure(staff, weeks, activity_types):
+        rows = []
+
+        for s in staff:
+            for w in weeks:
+                row = {
+                    "staff_member": s,
+                    "week_commencing": w,
+                    "week_number": w.isocalendar().week
+                }
+
+                # Add one column per activity type
+                for act in activity_types:
+                    row[act] = 0
+
+                rows.append(row)
+
+        return pd.DataFrame(rows)
+
+    # -----------------------------------------
+    # CASE 1: File exists → load + update
+    # -----------------------------------------
+    if os.path.exists(filepath):
+        existing = pd.read_csv(filepath, parse_dates=["week_commencing"])
+
+        existing_staff = set(existing["staff_member"].unique())
+        new_staff = set(staff_list) - existing_staff
+
+        if new_staff:
+            add_df = create_planner_structure(new_staff)
+            updated = pd.concat([existing, add_df], ignore_index=True)
+            updated.to_csv(filepath, index=False)
+            return updated
+
+        return existing
+
+    # -----------------------------------------
+    # CASE 2: File does not exist → create new file
+    # -----------------------------------------
+    df = create_planner_structure(staff_list)
+    df = df.round(decimals)
+    df.to_csv(filepath, index=False)
+    
+    return df
