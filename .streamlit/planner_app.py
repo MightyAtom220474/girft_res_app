@@ -211,7 +211,7 @@ with tab4:
 
     st.set_page_config(layout="wide")
     # ------------------------------------------------
-    # Weekly calendar
+    # Weekly Leave Calendar
     # ------------------------------------------------
     st.subheader("📊 Team Leave Calendar View (Weekly Heatmap)")
 
@@ -278,7 +278,7 @@ with tab4:
 
     st.set_page_config(layout="wide")
     # ------------------------------------------------
-    # Weekly calendar
+    # Weekly On-Site Calendar
     # ------------------------------------------------
     st.subheader("📊 Team On-Site View (Weekly Heatmap)")
 
@@ -343,6 +343,7 @@ with tab4:
     with st.container():
         st.dataframe(styled, use_container_width=True, height=len(staff_names)*39)
 
+    # summary of weekly programme activity
     st.subheader("📊 Weekly Programme Activity Breakdown")
     fig = app.make_activity_chart(activity_calendar_df, activity_names)
     
@@ -352,4 +353,18 @@ with tab4:
                     )
     
     st.plotly_chart(fig, use_container_width=True)
+
+# convert leave days to hours ready to compare with contracted hours
+leave_calendar_df['leave_hours'] = leave_calendar_df['days_leave']*7.5
+
+# merge leave calendar with staff list
+staff_leave_merged_df = leave_calendar_df.merge(
+    staff_list,
+    on="staff_member",
+    how="left"     # or "inner" if you only want matching rows
+)
+
+# calculate amount of available staff
+staff_leave_merged_df['avail_hours'] = staff_leave_merged_df['hours_pw']-staff_leave_merged_df['leave_hours']
+
 
