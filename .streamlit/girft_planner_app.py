@@ -109,7 +109,7 @@ def load_or_update_planner_file(filepath, staff_list,activity_list):
     planner_weeks = pd.date_range(start=first_monday, end=last_monday, freq="W-MON")
 
     # Create full weekly structure
-    def create_planner_structure(staff, activity_types):
+    def create_planner_structure(staff, activity_list):
         rows = []
 
         for s in staff:
@@ -138,7 +138,7 @@ def load_or_update_planner_file(filepath, staff_list,activity_list):
         new_staff = set(staff_list) - existing_staff
 
         if new_staff:
-            add_df = create_planner_structure(new_staff)
+            add_df = create_planner_structure(new_staff,activity_list)
             updated = pd.concat([existing, add_df], ignore_index=True)
             updated.to_csv(filepath, index=False)
             return updated
@@ -148,7 +148,7 @@ def load_or_update_planner_file(filepath, staff_list,activity_list):
     # -----------------------------------------
     # CASE 2: File does not exist → create new file
     # -----------------------------------------
-    df = create_planner_structure(staff_list)
+    df = create_planner_structure(staff_list,activity_list)
     df = df.round(decimals)
     df.to_csv(filepath, index=False)
     

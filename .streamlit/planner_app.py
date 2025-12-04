@@ -8,9 +8,9 @@ staff_list = app.load_data('staff_list.csv')
 staff_names = staff_list['staff_member'].to_list()
 staff_names.sort()
 
-activity_list = app.load_data('programme_categories')
+activity_list = app.load_data('programme_categories.csv')
 
-activity_names = activity_list['programme_category'].to_list()
+activity_names = activity_list['programme_categories'].to_list()
 activity_names.sort()
 
 leave_calendar_df = app.load_or_update_leave_file('annual_leave_calendar.csv'
@@ -20,7 +20,7 @@ onsite_calendar_df = app.load_or_update_leave_file('on_site_calendar.csv'
                                                   ,staff_names,'on_site_days')
 
 activity_calendar_df = app.load_or_update_planner_file('activity_calendar.csv'
-                                                  ,staff_names,activity_list)
+                                                  ,staff_names,activity_names)
 #print(leave_calendar_df)
 
 leave_file_path = "annual_leave_calendar.csv"
@@ -156,7 +156,7 @@ with tab3:
 
     st.subheader("✏️ Edit Programme Activity for a Specific Team Member")
 
-    selected_staff_act = st.selectbox("Select On-site staff member", staff_list)
+    selected_staff_act = st.selectbox("Select Programme staff member", staff_list)
 
     # Filter correctly
     staff_act_df = (
