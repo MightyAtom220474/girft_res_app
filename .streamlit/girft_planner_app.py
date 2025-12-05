@@ -203,6 +203,27 @@ def update_staff_list(staff_list_df, csv_path, new_staff=None, archive_staff=Non
 
     return staff_list_df
 
+def update_programme_list(programme_list_df, csv_path, new_programme=None, archive_programme=None):
+    
+    # --- Add new staff ---
+    if new_programme:
+        if new_programme not in programme_list_df["programme_member"].values:
+            programme_list_df.loc[len(programme_list_df)] = {
+                "programme_member": new_programme,
+                "archive_flag": 0
+            }
+
+    # --- Archive programme ---
+    if archive_programme:
+        programme_list_df.loc[
+            programme_list_df["programme_member"] == archive_programme, "archive_flag"
+        ] = 1
+
+    # --- Save back to CSV ---
+    programme_list_df.to_csv(csv_path, index=False)
+
+    return programme_list_df
+
 # def update_staff_list(staff_list_df, staff_name, action):
 #     staff_name = staff_name.strip()
 
