@@ -177,3 +177,40 @@ def make_activity_chart(activity_calendar_df, activity_types):
     )
 
     return fig
+
+def update_staff_list(staff_list_df, staff_name, action):
+    staff_name = staff_name.strip()
+
+    # If adding a new member
+    if action == "Add":
+        if staff_name in staff_list_df["staff_member"].values:
+            return False, "Staff member already exists."
+        
+        new_row = {
+            "staff_member": staff_name,
+            "archive_flag": "N"
+        }
+        staff_list_df = pd.concat([staff_list_df, pd.DataFrame([new_row])], ignore_index=True)
+        return staff_list_df, f"Added new staff member: {staff_name}"
+
+    # If archiving a member
+    if action == "Archive":
+        if staff_name not in staff_list_df["staff_member"].values:
+            return False, "Staff member does not exist."
+
+        staff_list_df.loc[
+            staff_list_df["staff_member"] == staff_name, "archive_flag"
+        ] = "Y"
+        return staff_list_df, f"Archived staff member: {staff_name}"
+
+    # If unarchiving
+    if action == "Unarchive":
+        if staff_name not in staff_list_df["staff_member"].values:
+            return False, "Staff member does not exist."
+
+        staff_list_df.loc[
+            staff_list_df["staff_member"] == staff_name, "archive_flag"
+        ] = "N"
+        return staff_list_df, f"Unarchived staff member: {staff_name}"
+
+    return False, "Unknown action."
