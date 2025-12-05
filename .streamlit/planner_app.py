@@ -3,7 +3,10 @@ import pandas as pd
 import os
 import girft_planner_app as app
 
+# initial load of staff_list in order to build calendars if they don't exist
 staff_list = app.load_data('staff_list.csv')
+
+# print(staff_list)
 
 staff_names = staff_list['staff_member'].to_list()
 staff_names.sort()
@@ -49,7 +52,11 @@ with tab1:
     # ------------------------------------------------
     st.subheader("✏️ Edit Leave for a Specific Team Member")
 
-    selected_staff = st.selectbox("Select staff member", staff_list)
+    # update staff names in case any have been changed in maintenance page
+    staff_names  = staff_list.loc[staff_list["archive_flag"] == 0, "staff_member"].tolist()
+    staff_names.sort()
+
+    selected_staff = st.selectbox("Select staff member", staff_names)
 
     staff_df = leave_calendar_df[leave_calendar_df["staff_member"] == selected_staff].copy().reset_index(drop=True)
 
@@ -97,6 +104,10 @@ with tab1:
 with tab2:
 
     st.title("📅 Weekly On-Site Planner")
+
+    # update staff names in case any have been changed in maintenance page
+    staff_names  = staff_list.loc[staff_list["archive_flag"] == 0, "staff_member"].tolist()
+    staff_names.sort()
     # ------------------------------------------------
     # Select staff to edit
     # ------------------------------------------------
@@ -155,6 +166,10 @@ with tab3:
     st.subheader("✏️ Enter Programme of Work")
 
     st.subheader("✏️ Edit Programme Activity for a Specific Team Member")
+
+    # update staff names in case any have been changed in maintenance page
+    staff_names  = staff_list.loc[staff_list["archive_flag"] == 0, "staff_member"].tolist()
+    staff_names.sort()
 
     selected_staff_act = st.selectbox("Select Programme staff member", staff_list)
 

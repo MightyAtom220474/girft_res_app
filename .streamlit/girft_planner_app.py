@@ -178,39 +178,64 @@ def make_activity_chart(activity_calendar_df, activity_types):
 
     return fig
 
-def update_staff_list(staff_list_df, staff_name, action):
-    staff_name = staff_name.strip()
+def update_staff_list(staff_list_df, csv_path, new_staff=None, archive_staff=None):
+    """
+    new_staff: string of staff name to add
+    archive_staff: string of staff name to set archive_flag = 1
+    """
+    
+    # --- Add new staff ---
+    if new_staff:
+        if new_staff not in staff_list_df["staff_member"].values:
+            staff_list_df.loc[len(staff_list_df)] = {
+                "staff_member": new_staff,
+                "archive_flag": 0
+            }
 
-    # If adding a new member
-    if action == "Add":
-        if staff_name in staff_list_df["staff_member"].values:
-            return False, "Staff member already exists."
+    # --- Archive staff ---
+    if archive_staff:
+        staff_list_df.loc[
+            staff_list_df["staff_member"] == archive_staff, "archive_flag"
+        ] = 1
+
+    # --- Save back to CSV ---
+    staff_list_df.to_csv(csv_path, index=False)
+
+    return staff_list_df
+
+# def update_staff_list(staff_list_df, staff_name, action):
+#     staff_name = staff_name.strip()
+
+#     # If adding a new member
+#     if action == "Add":
+#         if staff_name in staff_list_df["staff_member"].values:
+#             return False, "Staff member already exists."
         
-        new_row = {
-            "staff_member": staff_name,
-            "archive_flag": "N"
-        }
-        staff_list_df = pd.concat([staff_list_df, pd.DataFrame([new_row])], ignore_index=True)
-        return staff_list_df, f"Added new staff member: {staff_name}"
+#         new_row = {
+#             "staff_member": staff_name,
+#             "archive_flag": "N"
+#         }
+#         staff_list_df = pd.concat([staff_list_df, pd.DataFrame([new_row])], ignore_index=True)
+#         return staff_list_df, f"Added new staff member: {staff_name}"
 
-    # If archiving a member
-    if action == "Archive":
-        if staff_name not in staff_list_df["staff_member"].values:
-            return False, "Staff member does not exist."
+#     # If archiving a member
+#     if action == "Archive":
+#         if staff_name not in staff_list_df["staff_member"].values:
+#             return False, "Staff member does not exist."
 
-        staff_list_df.loc[
-            staff_list_df["staff_member"] == staff_name, "archive_flag"
-        ] = "Y"
-        return staff_list_df, f"Archived staff member: {staff_name}"
+#         staff_list_df.loc[
+#             staff_list_df["staff_member"] == staff_name, "archive_flag"
+#         ] = "Y"
+#         return staff_list_df, f"Archived staff member: {staff_name}"
 
-    # If unarchiving
-    if action == "Unarchive":
-        if staff_name not in staff_list_df["staff_member"].values:
-            return False, "Staff member does not exist."
+#     # If unarchiving
+#     if action == "Unarchive":
+#         if staff_name not in staff_list_df["staff_member"].values:
+#             return False, "Staff member does not exist."
 
-        staff_list_df.loc[
-            staff_list_df["staff_member"] == staff_name, "archive_flag"
-        ] = "N"
-        return staff_list_df, f"Unarchived staff member: {staff_name}"
+#         staff_list_df.loc[
+#             staff_list_df["staff_member"] == staff_name, "archive_flag"
+#         ] = "N"
+#         return staff_list_df, f"Unarchived staff member: {staff_name}"
 
-    return False, "Unknown action."
+#     return False, "Unknown action."
