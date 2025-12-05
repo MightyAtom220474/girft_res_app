@@ -1,0 +1,18 @@
+programme_type,programme_group,programme_categories,archive_flag
+deployable,CYP,Community CAMHS,0
+deployable,CYP,Neurodivergent Services,0
+deployable,General,Mental Health Rehabilitation,0
+deployable,Intensive Support,NHFT,0
+deployable,Intensive Support,St. Andrews,0
+deployable,"Crisis, Urgent and Emergency Care",UEC Men-SAT,0
+deployable,"Crisis, Urgent and Emergency Care",Core Fidelity and CRHT work,0
+deployable,"Crisis, Urgent and Emergency Care",MHED Policy and Clinical Collaboration,0
+deployable,"Crisis, Urgent and Emergency Care",Further Faster,0
+deployable,"Crisis, Urgent and Emergency Care",UEC MH Priority Sites,0
+deployable,"Crisis, Urgent and Emergency Care",Action Cards and other resource development,0
+deployable,General,Inpatient Men-SAT,0
+deployable,General,Foundations For Better MH Services,0
+deployable,General,NHS Confed,0
+deployable,General,Coaching (not linked to Intensive Support),0
+deployable,General,"Miscellaneous Consultation, Adv & Support",0
+non-deployable,General,General Admin Tasks,0
