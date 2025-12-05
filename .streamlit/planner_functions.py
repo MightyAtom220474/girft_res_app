@@ -2,9 +2,9 @@ import streamlit as st
 import pandas as pd
 import os
 from datetime import date, timedelta
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import plotly.graph_objects as go
-import numpy as np
+#import numpy as np
 
 num_weeks = 52
 year = 2025   # you can make this a user input if you want
@@ -178,85 +178,102 @@ def make_activity_chart(activity_calendar_df, activity_types):
 
     return fig
 
-def update_staff_list(staff_list_df, csv_path, new_staff=None, archive_staff=None):
+def update_staff_list(
+    staff_list_df,
+    csv_path,
+    new_staff=None,
+    job_role=None,
+    hours_pw=None,
+    leave_allowance_days=None,
+    is_deployable=None,
+    deploy_ratio=None,
+    archive_staff=None
+):
     """
-    new_staff: string of staff name to add
-    archive_staff: string of staff name to set archive_flag = 1
+    Update the staff list with new staff or archive existing staff.
+
+    Parameters:
+    - new_staff: name of new staff member to add
+    - job_role: text input
+    - hours_pw: float (0–37.5 step 0.5)
+    - leave_allowance_days: integer (0–35)
+    - is_deployable: bool or "Yes"/"No"
+    - deploy_ratio: float (0–1 step 0.1)
+    - archive_staff: name of staff member to archive
     """
-    
-    # --- Add new staff ---
+
+    # --- Ensure required columns exist ---
+    required_cols = [
+        "staff_member", "job_role", "hours_pw", "leave_allowance_days",
+        "is_deployable", "deploy_ratio", "archive_flag"
+    ]
+    for col in required_cols:
+        if col not in staff_list_df.columns:
+            staff_list_df[col] = None
+
+    # --- ADD NEW STAFF MEMBER ---
     if new_staff:
         if new_staff not in staff_list_df["staff_member"].values:
-            staff_list_df.loc[len(staff_list_df)] = {
+            new_row = {
                 "staff_member": new_staff,
+                "job_role": job_role,
+                "hours_pw": hours_pw,
+                "leave_allowance_days": leave_allowance_days,
+                "is_deployable": is_deployable,
+                "deploy_ratio": deploy_ratio,
                 "archive_flag": 0
             }
+            staff_list_df.loc[len(staff_list_df)] = new_row
 
-    # --- Archive staff ---
+    # --- ARCHIVE STAFF MEMBER ---
     if archive_staff:
         staff_list_df.loc[
-            staff_list_df["staff_member"] == archive_staff, "archive_flag"
+            staff_list_df["staff_member"] == archive_staff,
+            "archive_flag"
         ] = 1
 
-    # --- Save back to CSV ---
+    # --- SAVE CSV ---
     staff_list_df.to_csv(csv_path, index=False)
 
     return staff_list_df
 
-def update_programme_list(programme_list_df, csv_path, new_programme=None, archive_programme=None):
-    
-    # --- Add new staff ---
+def update_programme_list(
+    programme_list_df,
+    csv_path,
+    new_programme=None,
+    programme_type=None,
+    programme_group=None,
+    archive_programme=None
+):
+    """
+    Add or archive programme entries.
+
+    new_programme: str - programme category
+    programme_type: str - 'Deployable' or 'Non-Deployable'
+    programme_group: str - programme group category
+    archive_programme: str - programme description to archive
+    """
+
+    # --- Add new programme ---
     if new_programme:
-        if new_programme not in programme_list_df["programme_member"].values:
+        if new_programme not in programme_list_df["programme_categories"].values:
+
+            # Append new row
             programme_list_df.loc[len(programme_list_df)] = {
-                "programme_member": new_programme,
+                "programme_categories": new_programme,
+                "programme_type": programme_type,
+                "programme_group": programme_group,
                 "archive_flag": 0
             }
 
     # --- Archive programme ---
     if archive_programme:
         programme_list_df.loc[
-            programme_list_df["programme_member"] == archive_programme, "archive_flag"
+            programme_list_df["programme_categories"] == archive_programme,
+            "archive_flag"
         ] = 1
 
     # --- Save back to CSV ---
     programme_list_df.to_csv(csv_path, index=False)
 
     return programme_list_df
-
-# def update_staff_list(staff_list_df, staff_name, action):
-#     staff_name = staff_name.strip()
-
-#     # If adding a new member
-#     if action == "Add":
-#         if staff_name in staff_list_df["staff_member"].values:
-#             return False, "Staff member already exists."
-        
-#         new_row = {
-#             "staff_member": staff_name,
-#             "archive_flag": "N"
-#         }
-#         staff_list_df = pd.concat([staff_list_df, pd.DataFrame([new_row])], ignore_index=True)
-#         return staff_list_df, f"Added new staff member: {staff_name}"
-
-#     # If archiving a member
-#     if action == "Archive":
-#         if staff_name not in staff_list_df["staff_member"].values:
-#             return False, "Staff member does not exist."
-
-#         staff_list_df.loc[
-#             staff_list_df["staff_member"] == staff_name, "archive_flag"
-#         ] = "Y"
-#         return staff_list_df, f"Archived staff member: {staff_name}"
-
-#     # If unarchiving
-#     if action == "Unarchive":
-#         if staff_name not in staff_list_df["staff_member"].values:
-#             return False, "Staff member does not exist."
-
-#         staff_list_df.loc[
-#             staff_list_df["staff_member"] == staff_name, "archive_flag"
-#         ] = "N"
-#         return staff_list_df, f"Unarchived staff member: {staff_name}"
-
-#     return False, "Unknown action."

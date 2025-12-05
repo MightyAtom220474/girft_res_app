@@ -1,385 +1,382 @@
 import streamlit as st
 import pandas as pd
 import os
-import girft_planner_app as app
-
-# initial load of staff_list in order to build calendars if they don't exist
-staff_list = app.load_data('staff_list.csv')
-
-# print(staff_list)
-
-staff_names = staff_list['staff_member'].to_list()
-staff_names.sort()
-
-activity_list = app.load_data('programme_categories.csv')
-
-activity_names = activity_list['programme_categories'].to_list()
-activity_names.sort()
-
-leave_calendar_df = app.load_or_update_leave_file('annual_leave_calendar.csv'
-                                                  ,staff_names,'days_leave')
-
-onsite_calendar_df = app.load_or_update_leave_file('on_site_calendar.csv'
-                                                  ,staff_names,'on_site_days')
-
-activity_calendar_df = app.load_or_update_planner_file('activity_calendar.csv'
-                                                  ,staff_names,activity_names)
-#print(leave_calendar_df)
-
-leave_file_path = "annual_leave_calendar.csv"
-
-onsite_file_path = "on_site_calendar.csv"
-
-activity_file_path = "activity_calendar.csv"
-
-def save_data(df,file_type):
-    if file_type == "leave":
-        df.to_csv(leave_file_path, index=False)
-    elif file_type == "activity":
-        df.to_csv(activity_file_path, index=False)
-    else:
-        df.to_csv(onsite_file_path, index=False)
+from planner_functions import load_data, load_or_update_leave_file\
+    ,load_or_update_planner_file,make_activity_chart
+import data_store as ds
 
 
-# set up separate tabs for leave, on-site, and programme
-tab1, tab2, tab3, tab4 = st.tabs(["Annual Leave","On-Site","Programme of Work","All Activity"])
+def app():
+    # initial load of staff_list in order to build calendars if they don't exist
+    if ds.staff_list is None:
+        ds.staff_list = load_data("staff_list.csv")
 
-with tab1:
+    # print(staff_list)
 
-    st.title("📅 Weekly Leave Planner")
-    # ------------------------------------------------
-    # Select staff to edit
-    # ------------------------------------------------
-    st.subheader("✏️ Edit Leave for a Specific Team Member")
-
-    # update staff names in case any have been changed in maintenance page
-    staff_names  = staff_list.loc[staff_list["archive_flag"] == 0, "staff_member"].tolist()
+    staff_names = ds.staff_list['staff_member'].to_list()
     staff_names.sort()
-
-    selected_staff = st.selectbox("Select staff member", staff_names)
-
-    staff_df = leave_calendar_df[leave_calendar_df["staff_member"] == selected_staff].copy().reset_index(drop=True)
-
-    # ------------------------------------------------
-    # Editable table for selected staff
-    # ------------------------------------------------
-    st.write(f"### Editing: {selected_staff}")
-
-    edited_df = st.data_editor(
-        staff_df,
-        hide_index=True,
-        num_rows="fixed",
-        column_config={
-            "week_number": st.column_config.NumberColumn("Week", disabled=True),
-            "week_commencing": st.column_config.DateColumn(
-                "Week Commencing (Mon)", disabled=True
-            ),
-            "days_leave": st.column_config.NumberColumn(
-                "Days of Leave",
-                help="Enter days or fractions (e.g. 0.5)",
-                step=0.5
-            ),
-            "staff": st.column_config.TextColumn("Staff", disabled=True)
-        }
-    )
-
-    # ------------------------------------------------
-    # Save updated data
-    # ------------------------------------------------
-    if st.button("💾 Save Changes"):
-        leave_calendar_df.loc[leave_calendar_df["staff_member"] == selected_staff, "days_leave"] = edited_df["days_leave"]
-        save_data(leave_calendar_df,"leave")
-        st.success("All Changes Saved")
-
-    # ------------------------------------------------
-    # Summary
-    # ------------------------------------------------
-    # st.subheader("Summary Stats")
-
-    # summary = leave_calendar_df.groupby("staff_member")["days_leave"].sum().reset_index()
-    # summary.columns = ["Staff", "Total Leave (days)"]
-
-    # st.dataframe(summary, hide_index=True)
-
-with tab2:
-
-    st.title("📅 Weekly On-Site Planner")
-
-    # update staff names in case any have been changed in maintenance page
-    staff_names  = staff_list.loc[staff_list["archive_flag"] == 0, "staff_member"].tolist()
-    staff_names.sort()
-    # ------------------------------------------------
-    # Select staff to edit
-    # ------------------------------------------------
-    st.subheader("✏️ Edit On-Site Days for a Specific Team Member")
-
-    selected_staff_os = st.selectbox("Select On-site staff member", staff_list)
-
-    staff_os_df = onsite_calendar_df[onsite_calendar_df["staff_member"] == selected_staff].copy().reset_index(drop=True)
-
-    # ------------------------------------------------
-    # Editable table for selected staff
-    # ------------------------------------------------
-    st.write(f"### Editing: {selected_staff_os}")
-
-    edited_os_df = st.data_editor(
-        staff_os_df,
-        hide_index=True,
-        num_rows="fixed",
-        column_config={
-            "week_number": st.column_config.NumberColumn("Week", disabled=True),
-            "week_commencing": st.column_config.DateColumn(
-                "Week Commencing (Mon)", disabled=True
-            ),
-            "on_site_days": st.column_config.NumberColumn(
-                "Days on Site",
-                help="Enter days or fractions (e.g. 0.5)",
-                step=0.5
-            ),
-            "staff": st.column_config.TextColumn("Staff", disabled=True)
-        }
-    )
-
-    # ------------------------------------------------
-    # Save updated data
-    # ------------------------------------------------
-    if st.button("💾 Save On-Site Changes"):
-        onsite_calendar_df.loc[onsite_calendar_df["staff_member"] == selected_staff, "on_site_days"] = edited_os_df["on_site_days"]
-        save_data(onsite_calendar_df,"on-site")
-        st.success("All Changes Saved")
-
     
+    if ds.activity_list is None:
+        ds.activity_list = load_data('programme_categories.csv')
 
-    # ------------------------------------------------
-    # Summary
-    # ------------------------------------------------
-    # st.subheader("On-Site Summary Stats")
+    activity_names = ds.activity_namesactivity_list['programme_categories'].to_list()
+    activity_names.sort()
 
-    # summary = onsite_calendar_df.groupby("staff_member")["on_site_days"].sum().reset_index()
-    # summary.columns = ["Staff", "Total On-Site (days)"]
+    if ds.leave_calendar_df is None:
+        ds.leave_calendar_df = load_or_update_leave_file('annual_leave_calendar.csv'
+                                                    ,staff_names,'days_leave')
+    if ds.onsite_calendar_df_calendar_df is None:
+        ds.onsite_calendar_df = load_or_update_leave_file('on_site_calendar.csv'
+                                                    ,staff_names,'on_site_days')
+    if ds.programme_calendar_df is None:
+        ds.programme_calendar_df = load_or_update_planner_file('programme_calendar.csv'
+                                                    ,staff_names,activity_names)
+    #print(leave_calendar_df)
 
-    # st.dataframe(summary, hide_index=True)
+    leave_file_path = "annual_leave_calendar.csv"
 
-with tab3:
-    
-    st.title("📅 Programme of Work")
-    st.subheader("✏️ Enter Programme of Work")
+    onsite_file_path = "on_site_calendar.csv"
 
-    st.subheader("✏️ Edit Programme Activity for a Specific Team Member")
+    activity_file_path = "programme_calendar.csv"
 
-    # update staff names in case any have been changed in maintenance page
-    staff_names  = staff_list.loc[staff_list["archive_flag"] == 0, "staff_member"].tolist()
-    staff_names.sort()
+    def save_data(df,file_type):
+        if file_type == "leave":
+            df.to_csv(leave_file_path, index=False)
+        elif file_type == "activity":
+            df.to_csv(activity_file_path, index=False)
+        else:
+            df.to_csv(onsite_file_path, index=False)
 
-    selected_staff_act = st.selectbox("Select Programme staff member", staff_list)
+    # set up separate tabs for leave, on-site, and programme
+    tab1, tab2, tab3, tab4 = st.tabs(["Annual Leave","On-Site","Programme of Work","All Activity"])
 
-    # Filter correctly
-    staff_act_df = (
-        activity_calendar_df[activity_calendar_df["staff_member"] == selected_staff_act]
-        .copy()
-        .reset_index(drop=True)
-    )
+    with tab1:
 
-    # Identify activity columns
-    protected_cols = ["staff_member", "week_number", "week_commencing"]
-    activity_cols = [c for c in staff_act_df.columns if c not in protected_cols]
+        st.title("📅 Weekly Leave Planner")
+        # ------------------------------------------------
+        # Select staff to edit
+        # ------------------------------------------------
+        st.subheader("✏️ Edit Leave for a Specific Team Member")
 
-    # Build dynamic column config
-    col_config = {
-        "staff_member": st.column_config.TextColumn("Staff", disabled=True),
-        "week_number": st.column_config.NumberColumn("Week", disabled=True),
-        "week_commencing": st.column_config.DateColumn("Week Commencing (Mon)", disabled=True),
-    }
+        # update staff names in case any have been changed in maintenance page
+        staff_names  = ds.staff_list.loc[ds.staff_list["archive_flag"] == 0, "staff_member"].tolist()
+        staff_names.sort()
 
-    # Add editable configs for each activity column
-    for col in activity_cols:
-        col_config[col] = st.column_config.NumberColumn(
-            col.replace("_", " ").title(),
-            step=0.5
+        selected_staff = st.selectbox("Select staff member", staff_names)
+
+        staff_df = ds.leave_calendar_df[ds.leave_calendar_df["staff_member"] == selected_staff].copy().reset_index(drop=True)
+
+        # ------------------------------------------------
+        # Editable table for selected staff
+        # ------------------------------------------------
+        st.write(f"### Editing: {selected_staff}")
+
+        edited_df = st.data_editor(
+            staff_df,
+            hide_index=True,
+            num_rows="fixed",
+            column_config={
+                "week_number": st.column_config.NumberColumn("Week", disabled=True),
+                "week_commencing": st.column_config.DateColumn(
+                    "Week Commencing (Mon)", disabled=True
+                ),
+                "days_leave": st.column_config.NumberColumn(
+                    "Days of Leave",
+                    help="Enter days or fractions (e.g. 0.5)",
+                    step=0.5
+                ),
+                "staff": st.column_config.TextColumn("Staff", disabled=True)
+            }
         )
 
-    st.write(f"### Editing: {selected_staff_act}")
+        # ------------------------------------------------
+        # Save updated data
+        # ------------------------------------------------
+        if st.button("💾 Save Changes"):
+            ds.leave_calendar_df.loc[ds.leave_calendar_df["staff_member"] == selected_staff, "days_leave"] = edited_df["days_leave"]
+            save_data(ds.leave_calendar_df,"leave")
+            st.success("All Changes Saved")
 
-    edited_act_df = st.data_editor(
-        staff_act_df,
-        hide_index=True,
-        num_rows="fixed",
-        column_config=col_config
-    )
+    with tab2:
 
-    # --------------------------
-    # Save data back to the main DF
-    # --------------------------
-    if st.button("💾 Save Programme Activity Changes"):
-        activity_calendar_df.loc[
-            activity_calendar_df["staff_member"] == selected_staff_act,
-            activity_cols
-        ] = edited_act_df[activity_cols].values
+        st.title("📅 Weekly On-Site Planner")
 
-        save_data(activity_calendar_df, "programme-activity")
+        # update staff names in case any have been changed in maintenance page
+        staff_names  = ds.staff_list.loc[ds.staff_list["archive_flag"] == 0, "staff_member"].tolist()
+        staff_names.sort()
+        # ------------------------------------------------
+        # Select staff to edit
+        # ------------------------------------------------
+        st.subheader("✏️ Edit On-Site Days for a Specific Team Member")
 
-        st.success("All Programme Activity Changes Saved")
+        selected_staff_os = st.selectbox("Select On-site staff member", ds.staff_list)
 
-with tab4:
+        staff_os_df = ds.onsite_calendar_df[ds.onsite_calendar_df["staff_member"] == selected_staff].copy().reset_index(drop=True)
 
-    st.title("📅 Activity Overview")
+        # ------------------------------------------------
+        # Editable table for selected staff
+        # ------------------------------------------------
+        st.write(f"### Editing: {selected_staff_os}")
 
-    st.set_page_config(layout="wide")
-    # ------------------------------------------------
-    # Weekly Leave Calendar
-    # ------------------------------------------------
-    st.subheader("📊 Team Leave Calendar View (Weekly Heatmap)")
-
-    pivot = leave_calendar_df.pivot_table(
-        index="staff_member",
-        columns="week_number",
-        values="days_leave",
-        fill_value=0
-    )
-
-    # Manual gradient colouring without matplotlib
-    def cell_color(val):
-        # Scale 0–5 days (feel free to adjust)
-        max_days = 5
-        intensity = min(val / max_days, 1)
-        r = int(255 * intensity)
-        g = int(200 * (1 - intensity))
-        b = 0
-        return f"background-color: rgb({r}, {g}, {b})"
-
-    staff_col_px = 140
-    week_col_px = 22   # works for 52 weeks
-
-    styled = (
-        pivot.style
-        .applymap(cell_color)
-        .format("{:.2f}")
-    )
-
-    styles = [
-        # Staff row header column
-        {
-            "selector": "th.row_heading",
-            "props": [
-                ("min-width", f"{staff_col_px}px"),
-                ("max-width", f"{staff_col_px}px"),
-                ("white-space", "nowrap")
-                ]
-            },
-            # Week header columns
-            {
-                "selector": "th.col_heading",
-                "props": [
-                    ("min-width", f"{week_col_px}px"),
-                    ("max-width", f"{week_col_px}px"),
-                    ("padding", "2px 4px")
-                ]
-            },
-            # Week value cells
-            {
-                "selector": "td",
-                "props": [
-                    ("min-width", f"{week_col_px}px"),
-                    ("max-width", f"{week_col_px}px"),
-                    ("padding", "2px 4px")
-                ]
+        edited_os_df = st.data_editor(
+            staff_os_df,
+            hide_index=True,
+            num_rows="fixed",
+            column_config={
+                "week_number": st.column_config.NumberColumn("Week", disabled=True),
+                "week_commencing": st.column_config.DateColumn(
+                    "Week Commencing (Mon)", disabled=True
+                ),
+                "on_site_days": st.column_config.NumberColumn(
+                    "Days on Site",
+                    help="Enter days or fractions (e.g. 0.5)",
+                    step=0.5
+                ),
+                "staff": st.column_config.TextColumn("Staff", disabled=True)
             }
-        ]
+        )
 
-    styled = styled.set_table_styles(styles)
+        # ------------------------------------------------
+        # Save updated data
+        # ------------------------------------------------
+        if st.button("💾 Save On-Site Changes"):
+            ds.onsite_calendar_df.loc[ds.onsite_calendar_df["staff_member"] == selected_staff, "on_site_days"] = edited_os_df["on_site_days"]
+            save_data(ds.onsite_calendar_df,"on-site")
+            st.success("All Changes Saved")
 
-    with st.container():
-        st.dataframe(styled, use_container_width=True, height=len(staff_names)*39)
+    with tab3:
+        
+        st.title("📅 Programme of Work")
+        st.subheader("✏️ Enter Programme of Work")
 
-    st.set_page_config(layout="wide")
-    # ------------------------------------------------
-    # Weekly On-Site Calendar
-    # ------------------------------------------------
-    st.subheader("📊 Team On-Site View (Weekly Heatmap)")
+        st.subheader("✏️ Edit Programme Activity for a Specific Team Member")
 
-    pivot = onsite_calendar_df.pivot_table(
-        index="staff_member",
-        columns="week_number",
-        values="on_site_days",
-        fill_value=0
+        # update staff names in case any have been changed in maintenance page
+        staff_names  = ds.staff_list.loc[ds.staff_list["archive_flag"] == 0, "staff_member"].tolist()
+        staff_names.sort()
+
+        selected_staff_act = st.selectbox("Select Programme staff member", ds.staff_list)
+
+        # Filter correctly
+        staff_act_df = (
+            ds.programme_calendar_df[ds.programme_calendar_df["staff_member"] == selected_staff_act]
+            .copy()
+            .reset_index(drop=True)
+        )
+
+        # Identify activity columns
+        protected_cols = ["staff_member", "week_number", "week_commencing"]
+        activity_cols = [c for c in staff_act_df.columns if c not in protected_cols]
+
+        # Build dynamic column config
+        col_config = {
+            "staff_member": st.column_config.TextColumn("Staff", disabled=True),
+            "week_number": st.column_config.NumberColumn("Week", disabled=True),
+            "week_commencing": st.column_config.DateColumn("Week Commencing (Mon)", disabled=True),
+        }
+
+        # Add editable configs for each activity column
+        for col in activity_cols:
+            col_config[col] = st.column_config.NumberColumn(
+                col.replace("_", " ").title(),
+                step=0.5
+            )
+
+        st.write(f"### Editing: {selected_staff_act}")
+
+        edited_act_df = st.data_editor(
+            staff_act_df,
+            hide_index=True,
+            num_rows="fixed",
+            column_config=col_config
+        )
+
+        # --------------------------
+        # Save data back to the main DF
+        # --------------------------
+        if st.button("💾 Save Programme Activity Changes"):
+            ds.programme_calendar_df.loc[
+                ds.programme_calendar_df["staff_member"] == selected_staff_act,
+                activity_cols
+            ] = edited_act_df[activity_cols].values
+
+            save_data(ds.programme_calendar_df, "programme-activity")
+
+            st.success("All Programme Activity Changes Saved")
+
+    with tab4:
+
+        st.title("📅 Activity Overview")
+
+        st.set_page_config(layout="wide")
+        # ------------------------------------------------
+        # Weekly Leave Calendar
+        # ------------------------------------------------
+        st.subheader("📊 Team Leave Calendar View (Weekly Heatmap)")
+
+        pivot = ds.leave_calendar_df.pivot_table(
+            index="staff_member",
+            columns="week_number",
+            values="days_leave",
+            fill_value=0
+        )
+
+        # Manual gradient colouring without matplotlib
+        def cell_color(val):
+            # Scale 0–5 days (feel free to adjust)
+            max_days = 5
+            intensity = min(val / max_days, 1)
+            r = int(255 * intensity)
+            g = int(200 * (1 - intensity))
+            b = 0
+            return f"background-color: rgb({r}, {g}, {b})"
+
+        staff_col_px = 140
+        week_col_px = 22   # works for 52 weeks
+
+        styled = (
+            pivot.style
+            .applymap(cell_color)
+            .format("{:.2f}")
+        )
+
+        styles = [
+            # Staff row header column
+            {
+                "selector": "th.row_heading",
+                "props": [
+                    ("min-width", f"{staff_col_px}px"),
+                    ("max-width", f"{staff_col_px}px"),
+                    ("white-space", "nowrap")
+                    ]
+                },
+                # Week header columns
+                {
+                    "selector": "th.col_heading",
+                    "props": [
+                        ("min-width", f"{week_col_px}px"),
+                        ("max-width", f"{week_col_px}px"),
+                        ("padding", "2px 4px")
+                    ]
+                },
+                # Week value cells
+                {
+                    "selector": "td",
+                    "props": [
+                        ("min-width", f"{week_col_px}px"),
+                        ("max-width", f"{week_col_px}px"),
+                        ("padding", "2px 4px")
+                    ]
+                }
+            ]
+
+        styled = styled.set_table_styles(styles)
+
+        with st.container():
+            st.dataframe(styled, use_container_width=True, height=len(staff_names)*39)
+
+        st.set_page_config(layout="wide")
+        # ------------------------------------------------
+        # Weekly On-Site Calendar
+        # ------------------------------------------------
+        st.subheader("📊 Team On-Site View (Weekly Heatmap)")
+
+        pivot = ds.onsite_calendar_df.pivot_table(
+            index="staff_member",
+            columns="week_number",
+            values="on_site_days",
+            fill_value=0
+        )
+
+        # Manual gradient colouring without matplotlib
+        def cell_color(val):
+            # Scale 0–5 days (feel free to adjust)
+            max_days = 5
+            intensity = min(val / max_days, 1)
+            r = 0
+            g = int(200 * (1 - intensity))
+            b = int(255 * intensity)
+            return f"background-color: rgb({r}, {g}, {b})"
+
+        staff_col_px = 140
+        week_col_px = 22   # works for 52 weeks
+
+        styled = (
+            pivot.style
+            .applymap(cell_color)
+            .format("{:.2f}")
+        )
+
+        styles = [
+            # Staff row header column
+            {
+                "selector": "th.row_heading",
+                "props": [
+                    ("min-width", f"{staff_col_px}px"),
+                    ("max-width", f"{staff_col_px}px"),
+                    ("white-space", "nowrap")
+                    ]
+                },
+                # Week header columns
+                {
+                    "selector": "th.col_heading",
+                    "props": [
+                        ("min-width", f"{week_col_px}px"),
+                        ("max-width", f"{week_col_px}px"),
+                        ("padding", "2px 4px")
+                    ]
+                },
+                # Week value cells
+                {
+                    "selector": "td",
+                    "props": [
+                        ("min-width", f"{week_col_px}px"),
+                        ("max-width", f"{week_col_px}px"),
+                        ("padding", "2px 4px")
+                    ]
+                }
+            ]
+
+        styled = styled.set_table_styles(styles)
+
+        with st.container():
+            st.dataframe(styled, use_container_width=True, height=len(staff_names)*39)
+
+        # summary of weekly programme activity
+        st.subheader("📊 Weekly Programme Activity Breakdown")
+        fig = make_activity_chart(ds.programme_calendar_df, activity_names)
+        
+        fig.update_layout(
+                        width=1200,
+                        height=1200
+                        )
+        
+        st.plotly_chart(fig, use_container_width=True)
+
+    # convert leave days to hours ready to compare with contracted hours
+    ds.leave_calendar_df['leave_hours'] = ds.leave_calendar_df['days_leave']*7.5
+
+    # merge leave calendar with staff list
+    ds.staff_leave_merged_df = ds.leave_calendar_df.merge(
+        ds.staff_list,
+        on="staff_member",
+        how="left"     # or "inner" if you only want matching rows
     )
 
-    # Manual gradient colouring without matplotlib
-    def cell_color(val):
-        # Scale 0–5 days (feel free to adjust)
-        max_days = 5
-        intensity = min(val / max_days, 1)
-        r = 0
-        g = int(200 * (1 - intensity))
-        b = int(255 * intensity)
-        return f"background-color: rgb({r}, {g}, {b})"
+    # calculate amount of available staff
+    ds.staff_leave_merged_df['avail_hours'] = ds.staff_leave_merged_df['hours_pw']-ds.staff_leave_merged_df['leave_hours']
 
-    staff_col_px = 140
-    week_col_px = 22   # works for 52 weeks
-
-    styled = (
-        pivot.style
-        .applymap(cell_color)
-        .format("{:.2f}")
+    # merge programme calendar with staff list
+    ds.staff_prog_merged_df = ds.programme_calendar_df.merge(
+        ds.staff_list,
+        on="staff_member",
+        how="left"     # or "inner" if you only want matching rows
     )
 
-    styles = [
-        # Staff row header column
-        {
-            "selector": "th.row_heading",
-            "props": [
-                ("min-width", f"{staff_col_px}px"),
-                ("max-width", f"{staff_col_px}px"),
-                ("white-space", "nowrap")
-                ]
-            },
-            # Week header columns
-            {
-                "selector": "th.col_heading",
-                "props": [
-                    ("min-width", f"{week_col_px}px"),
-                    ("max-width", f"{week_col_px}px"),
-                    ("padding", "2px 4px")
-                ]
-            },
-            # Week value cells
-            {
-                "selector": "td",
-                "props": [
-                    ("min-width", f"{week_col_px}px"),
-                    ("max-width", f"{week_col_px}px"),
-                    ("padding", "2px 4px")
-                ]
-            }
-        ]
+    # calculate amount of available staff
+    ds.staff_prog_merged_df['avail_hours'] = ds.staff_prog_merged_df['hours_pw']-ds.staff_prog_merged_df['leave_hours']
 
-    styled = styled.set_table_styles(styles)
-
-    with st.container():
-        st.dataframe(styled, use_container_width=True, height=len(staff_names)*39)
-
-    # summary of weekly programme activity
-    st.subheader("📊 Weekly Programme Activity Breakdown")
-    fig = app.make_activity_chart(activity_calendar_df, activity_names)
-    
-    fig.update_layout(
-                    width=1200,
-                    height=1200
-                    )
-    
-    st.plotly_chart(fig, use_container_width=True)
-
-# convert leave days to hours ready to compare with contracted hours
-leave_calendar_df['leave_hours'] = leave_calendar_df['days_leave']*7.5
-
-# merge leave calendar with staff list
-staff_leave_merged_df = leave_calendar_df.merge(
-    staff_list,
-    on="staff_member",
-    how="left"     # or "inner" if you only want matching rows
-)
-
-# calculate amount of available staff
-staff_leave_merged_df['avail_hours'] = staff_leave_merged_df['hours_pw']-staff_leave_merged_df['leave_hours']
+    # calculate amount of available staff
+    ds.staff_prog_merged_df['non-deployable hours'] = ds.staff_prog_merged_df['avail_hours']*(1-ds.staff_prog_merged_df['deploy_ratio'])
 
 
