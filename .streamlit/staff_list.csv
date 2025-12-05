@@ -1,0 +1,25 @@
+staff_member,job_role,hours_pw,leave_allowance_days,is_deployable,deploy_ratio
+Simon Bristow,,37.5,30,1,1
+Sarah Brennan,,37.5,30,1,1
+Frances Igbonwoke,,37.5,30,1,1
+Maureen Banda,,37.5,30,1,1
+Nick Gitsham,,37.5,30,1,1
+Fortune Mhlanga,,37.5,30,1,1
+Vicki Baxendale,,37.5,30,1,1
+Louise Thomas,,37.5,30,1,1
+Caroline Attard,,37.5,30,1,1
+Shaun Griffiths,,37.5,30,1,1
+Michael Connell,,37.5,30,1,1
+Suzannah Davies,,37.5,30,1,1
+Stephen Duncan,,15,30,1,0.5
+Paul Hopley ,,37.5,30,1,0.6
+Lizell Smit ,PMO Support,37.5,30,1,0.5
+Andy Polychronakis ,PMO Support,37.5,30,1,0.5
+Heath McDonald,,7.5,33,1,0.7
+Gareth Price,,7.5,30,1,0.7
+Helen Embleton,,7.5,30,1,0.7
+Prof. Johnny Downs,Medic,7.5,30,1,0.9
+Dr Holan Liang,Medic,7.5,30,1,0.9
+Dr David Somerfield,Medic,7.5,30,1,0.9
+Dr Neeraj Berry,Medic,7.5,30,1,0.9
+Dr Sridevi Kalidindi,Medic,7.5,30,1,0.9
