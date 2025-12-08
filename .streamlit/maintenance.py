@@ -1,10 +1,10 @@
 import streamlit as st
 import pandas as pd
 from planner_functions import update_staff_list, update_programme_list
-from data_store import staff_list, activity_list, programme_list
+import data_store as ds
 
 
-def app():
+def maintenance():
 
     st.title("System Maintenance")
 
@@ -12,11 +12,11 @@ def app():
 
     #staff_list = staff_list
 
-    staff_list_sorted = staff_list.sort_values(by="staff_member")
+    staff_list_sorted = ds.staff_list.sort_values(by="staff_member")
 
-    #programme_list = activity_list
+    #programme_list = programme_list
 
-    programme_list_sorted = activity_list.sort_values(by="programme_categories")
+    programme_list_sorted = ds.programme_list.sort_values(by="programme_categories")
 
     with st.expander("🔧 Manage Staff List"):
         st.subheader("Add New Staff Member")
@@ -62,7 +62,7 @@ def app():
             )
 
             # Refresh list so new staff becomes immediately available to archive
-            staff_list = updated.sort_values(by="staff_member")
+            ds.staff_list = updated.sort_values(by="staff_member")
 
             st.success(f"{new_staff} added successfully.")
 
@@ -71,8 +71,8 @@ def app():
         # -----------------------------------------------------------------
         st.subheader("Archive Staff Member")
 
-        active_staff_sorted = staff_list.loc[
-            staff_list["archive_flag"] == 0
+        active_staff_sorted = ds.staff_list.loc[
+            ds.staff_list["archive_flag"] == 0
         ].sort_values(by="staff_member")["staff_member"]
 
         staff_to_archive = st.selectbox(
@@ -83,12 +83,12 @@ def app():
         # --- ARCHIVE STAFF MEMBER ---
         if st.button("📦 Archive Selected Staff"):
             updated = update_staff_list(
-                staff_list_df=staff_list,
+                staff_list_df=ds.staff_list,
                 csv_path="staff_list.csv",
                 archive_staff=staff_to_archive
             )
 
-            staff_list = updated.sort_values(by="staff_member")
+            ds.staff_list = updated.sort_values(by="staff_member")
             st.success(f"{staff_to_archive} archived successfully.")
 
     with st.expander("🔧 Manage Programme List"):
@@ -120,15 +120,15 @@ def app():
 
         # --- ADD PROGRAMME ---
         if st.button("➕ Add Programme"):
-            programme_list = update_programme_list(
-                programme_list_df=programme_list,          # <-- use live df, NOT sorted copy
+            ds.programme_list = update_programme_list(
+                programme_list_df=programme_list_sorted,          # <-- use live df, NOT sorted copy
                 csv_path="programme_categories.csv",
                 new_programme=new_programme,
                 programme_type=programme_type,
                 programme_group=programme_group
             )
 
-            programme_list = programme_list.sort_values(by="programme_categories")
+            ds.programme_list = ds.programme_list.sort_values(by="programme_categories")
 
             st.success(f"{new_programme} added successfully.")
 
@@ -138,7 +138,7 @@ def app():
         st.subheader("Archive Programme Category")
 
         active_programme_sorted = (
-            programme_list.loc[programme_list["archive_flag"] == 0]
+            ds.programme_list.loc[ds.programme_list["archive_flag"] == 0]
             .sort_values(by="programme_categories")["programme_categories"]
         )
 
@@ -148,13 +148,13 @@ def app():
         )
 
         if st.button("📦 Archive Selected Programme"):
-            programme_list = update_programme_list(
-                programme_list_df=programme_list,
+            ds.programme_list = update_programme_list(
+                programme_list_df=ds.programme_list,
                 csv_path="programme_categories.csv",
                 archive_programme=programme_to_archive
             )
 
-            programme_list = programme_list.sort_values(by="programme_categories")
+            ds.programme_list = ds.programme_list.sort_values(by="programme_categories")
 
             st.success(f"{programme_to_archive} archived successfully.")
 

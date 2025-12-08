@@ -2,32 +2,83 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 # bring in data from data store
-from data_store import staff_leave_merged_df, staff_prog_merged_df, programme_calendar_df, programme_names
+import data_store as ds
 
-def app():
+def dashboard():
 
     st.title("MHIST Capacity Dashboard")
 
-    st.write(staff_leave_merged_df)
-
-    st.write(staff_prog_merged_df)
-
     # df = pd.DataFrame(data)
 
-    staff_avail_grouped = staff_leave_merged_df.groupby("week_number").agg(
+    # # convert leave days to hours ready to compare with contracted hours
+    # ds.leave_calendar_df['leave_hours'] = ds.leave_calendar_df['days_leave']*7.5
+
+    # # merge leave calendar with staff list
+    # ds.staff_leave_merged_df = ds.leave_calendar_df.merge(
+    #     ds.staff_list,
+    #     on="staff_member",
+    #     how="left"     # or "inner" if you only want matching rows
+    # )
+
+    # # calculate amount of available staff
+    # ds.staff_leave_merged_df['avail_hours'] = ds.staff_leave_merged_df['hours_pw']-ds.staff_leave_merged_df['leave_hours']
+
+    # # merge programme calendar with staff list
+    # ds.staff_prog_merged_df = ds.programme_calendar_df.merge(
+    #     ds.staff_list,
+    #     on="staff_member",
+    #     how="left"     # or "inner" if you only want matching rows
+    # )
+
+    # ds.staff_leave_df = ds.leave_calendar_df[['staff_member','week_number','leave_hours']]
+
+    # # add in leave from leave calendar
+    # ds.staff_prog_combined_df = ds.staff_prog_merged_df.merge(
+    #     ds.staff_leave_df,
+    #     on=["staff_member","week_number"],
+    #     how="left"     # or "inner" if you only want matching rows
+    # )
+
+    # # calculate amount of available staff
+    # ds.staff_prog_combined_df['avail_hours'] = ds.staff_prog_combined_df['hours_pw']-ds.staff_prog_combined_df['leave_hours']
+
+    # # calculate amount of available staff
+    # ds.staff_prog_combined_df['non-deployable hours'] = ds.staff_prog_combined_df['avail_hours']*(1-ds.staff_prog_combined_df['deploy_ratio'])
+
+    programme_calendar_df = ds.programme_calendar_df
+
+    staff_prog_combined_df = ds.staff_prog_combined_df
+
+    # st.write(programme_calendar_df)
+
+    staff_avail_grouped = staff_prog_combined_df.groupby("week_number").agg(
         total_hours=("hours_pw", "sum"),
         available_hours=("avail_hours", "sum")  # or mean if it varies
     ).reset_index()
 
-    programme_calendar_df['total_act_hours'] = programme_calendar_df[programme_names].sum(axis=1)
+    #ds.programme_calendar_df['total_act_hours'] = ds.programme_calendar_df[ds.programme_names].sum(axis=1)
 
     staff_act_grouped = programme_calendar_df.groupby("week_number").agg(
-        total_hours=("total_act_hours", "sum")
+        total_act_hours=("total_act_hours", "sum")
         #available_hours=("avail_hours", "sum")  # or mean if it varies
-    ).reset_index()
+        ).reset_index()
+    
+    # st.write(staff_act_grouped)
 
     # Create figure
     fig = go.Figure()
+   
+    # Add line for available hours
+    fig.add_trace(
+        go.Scatter(
+            x=staff_avail_grouped["week_number"],
+            y=staff_avail_grouped["available_hours"],
+            name="Available Hours",
+            mode="lines+markers",
+            marker_color="red",
+            yaxis="y1"
+        )
+    )
 
     # Add histogram / bar for total hours
     fig.add_trace(
@@ -40,17 +91,17 @@ def app():
         )
     )
 
-    # Add line for available hours
-    fig.add_trace(
-        go.Scatter(
-            x=staff_avail_grouped["week"],
-            y=staff_avail_grouped["avail_hours"],
-            name="Available Hours",
-            mode="lines+markers",
-            marker_color="red",
-            yaxis="y1"
-        )
-    )
+    # # Add line for available hours
+    # fig.add_trace(
+    #     go.Scatter(
+    #         x=staff_avail_grouped["week"],
+    #         y=staff_avail_grouped["avail_hours"],
+    #         name="Available Hours",
+    #         mode="lines+markers",
+    #         marker_color="red",
+    #         yaxis="y1"
+    #     )
+    # )
 
     # Update layout
     fig.update_layout(
@@ -62,7 +113,7 @@ def app():
         height=500
     )
 
-    fig.show()
+    st.plotly_chart(fig, use_container_width=True)
 
 
 

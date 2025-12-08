@@ -1,51 +1,44 @@
 import streamlit as st
 import pandas as pd
 import os
-from planner_functions import load_data, load_or_update_leave_file\
+from planner_functions import load_data, save_data, load_or_update_leave_file\
     ,load_or_update_planner_file,make_activity_chart
 import data_store as ds
 
 
-def app():
-    # initial load of staff_list in order to build calendars if they don't exist
-    if ds.staff_list is None:
-        ds.staff_list = load_data("staff_list.csv")
-
-    # print(staff_list)
-
-    staff_names = ds.staff_list['staff_member'].to_list()
-    staff_names.sort()
+def planner():
     
-    if ds.activity_list is None:
-        ds.activity_list = load_data('programme_categories.csv')
+    # initial load of staff_list in order to build calendars if they don't exist
+    # if ds.staff_list is None:
+    #     ds.staff_list = load_data("staff_list.csv")
 
-    activity_names = ds.activity_namesactivity_list['programme_categories'].to_list()
-    activity_names.sort()
+    # # print(staff_list)
 
-    if ds.leave_calendar_df is None:
-        ds.leave_calendar_df = load_or_update_leave_file('annual_leave_calendar.csv'
-                                                    ,staff_names,'days_leave')
-    if ds.onsite_calendar_df_calendar_df is None:
-        ds.onsite_calendar_df = load_or_update_leave_file('on_site_calendar.csv'
-                                                    ,staff_names,'on_site_days')
-    if ds.programme_calendar_df is None:
-        ds.programme_calendar_df = load_or_update_planner_file('programme_calendar.csv'
-                                                    ,staff_names,activity_names)
-    #print(leave_calendar_df)
+    # staff_names = ds.staff_list['staff_member'].to_list()
+    # staff_names.sort()
+    
+    # if ds.programme_list is None:
+    #     ds.programme_list = load_data('programme_categories.csv')
+
+    # ds.programme_names = ds.programme_list['programme_categories'].to_list()
+    # ds.programme_names.sort()
+
+    # if ds.leave_calendar_df is None:
+    #     ds.leave_calendar_df = load_or_update_leave_file('annual_leave_calendar.csv'
+    #                                                 ,staff_names,'days_leave')
+    # if ds.onsite_calendar_df is None:
+    #     ds.onsite_calendar_df = load_or_update_leave_file('on_site_calendar.csv'
+    #                                                 ,staff_names,'on_site_days')
+    # if ds.programme_calendar_df is None:
+    #     ds.programme_calendar_df = load_or_update_planner_file('programme_calendar.csv'
+    #                                                 ,staff_names,ds.programme_names)
+    # #print(leave_calendar_df)
 
     leave_file_path = "annual_leave_calendar.csv"
 
     onsite_file_path = "on_site_calendar.csv"
 
-    activity_file_path = "programme_calendar.csv"
-
-    def save_data(df,file_type):
-        if file_type == "leave":
-            df.to_csv(leave_file_path, index=False)
-        elif file_type == "activity":
-            df.to_csv(activity_file_path, index=False)
-        else:
-            df.to_csv(onsite_file_path, index=False)
+    programme_file_path = "programme_calendar.csv"
 
     # set up separate tabs for leave, on-site, and programme
     tab1, tab2, tab3, tab4 = st.tabs(["Annual Leave","On-Site","Programme of Work","All Activity"])
@@ -94,7 +87,7 @@ def app():
         # ------------------------------------------------
         if st.button("💾 Save Changes"):
             ds.leave_calendar_df.loc[ds.leave_calendar_df["staff_member"] == selected_staff, "days_leave"] = edited_df["days_leave"]
-            save_data(ds.leave_calendar_df,"leave")
+            save_data(ds.leave_calendar_df,leave_file_path)
             st.success("All Changes Saved")
 
     with tab2:
@@ -141,7 +134,7 @@ def app():
         # ------------------------------------------------
         if st.button("💾 Save On-Site Changes"):
             ds.onsite_calendar_df.loc[ds.onsite_calendar_df["staff_member"] == selected_staff, "on_site_days"] = edited_os_df["on_site_days"]
-            save_data(ds.onsite_calendar_df,"on-site")
+            save_data(ds.onsite_calendar_df,onsite_file_path)
             st.success("All Changes Saved")
 
     with tab3:
@@ -200,13 +193,13 @@ def app():
                 activity_cols
             ] = edited_act_df[activity_cols].values
 
-            save_data(ds.programme_calendar_df, "programme-activity")
+            save_data(ds.programme_calendar_df,programme_file_path,)
 
             st.success("All Programme Activity Changes Saved")
 
     with tab4:
 
-        st.title("📅 Activity Overview")
+        st.title("📅 Programme Overview")
 
         st.set_page_config(layout="wide")
         # ------------------------------------------------
@@ -344,7 +337,7 @@ def app():
 
         # summary of weekly programme activity
         st.subheader("📊 Weekly Programme Activity Breakdown")
-        fig = make_activity_chart(ds.programme_calendar_df, activity_names)
+        fig = make_activity_chart(ds.programme_calendar_df, programme_names)
         
         fig.update_layout(
                         width=1200,
@@ -353,30 +346,6 @@ def app():
         
         st.plotly_chart(fig, use_container_width=True)
 
-    # convert leave days to hours ready to compare with contracted hours
-    ds.leave_calendar_df['leave_hours'] = ds.leave_calendar_df['days_leave']*7.5
-
-    # merge leave calendar with staff list
-    ds.staff_leave_merged_df = ds.leave_calendar_df.merge(
-        ds.staff_list,
-        on="staff_member",
-        how="left"     # or "inner" if you only want matching rows
-    )
-
-    # calculate amount of available staff
-    ds.staff_leave_merged_df['avail_hours'] = ds.staff_leave_merged_df['hours_pw']-ds.staff_leave_merged_df['leave_hours']
-
-    # merge programme calendar with staff list
-    ds.staff_prog_merged_df = ds.programme_calendar_df.merge(
-        ds.staff_list,
-        on="staff_member",
-        how="left"     # or "inner" if you only want matching rows
-    )
-
-    # calculate amount of available staff
-    ds.staff_prog_merged_df['avail_hours'] = ds.staff_prog_merged_df['hours_pw']-ds.staff_prog_merged_df['leave_hours']
-
-    # calculate amount of available staff
-    ds.staff_prog_merged_df['non-deployable hours'] = ds.staff_prog_merged_df['avail_hours']*(1-ds.staff_prog_merged_df['deploy_ratio'])
+        
 
 

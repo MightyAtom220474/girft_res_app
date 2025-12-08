@@ -18,7 +18,11 @@ def load_data(file_name):
     df = pd.read_csv(file_name)
     
     return df
-    
+
+def save_data(df,file_path):
+        
+    df.to_csv(file_path, index=False)
+        
 # function to load or create leave planner
 def load_or_update_leave_file(filepath, staff_list,leave_type):
     """
@@ -85,7 +89,7 @@ def load_or_update_leave_file(filepath, staff_list,leave_type):
     return df
 
 # function to load or create leave planner
-def load_or_update_planner_file(filepath, staff_list,activity_list):
+def load_or_update_planner_file(filepath, staff_list,programme_list):
     """
     Loads an existing weekly leave CSV OR creates/updates one
     with all weeks of the current year for all staff.
@@ -111,7 +115,7 @@ def load_or_update_planner_file(filepath, staff_list,activity_list):
     planner_weeks = pd.date_range(start=first_monday, end=last_monday, freq="W-MON")
 
     # Create full weekly structure
-    def create_planner_structure(staff, activity_list):
+    def create_planner_structure(staff, programme_list):
         rows = []
 
         for s in staff:
@@ -123,7 +127,7 @@ def load_or_update_planner_file(filepath, staff_list,activity_list):
                 }
 
                 # Add one column per activity type
-                for act in activity_list:
+                for act in programme_list:
                     row[act] = 0
 
                 rows.append(row)
@@ -140,7 +144,7 @@ def load_or_update_planner_file(filepath, staff_list,activity_list):
         new_staff = set(staff_list) - existing_staff
 
         if new_staff:
-            add_df = create_planner_structure(new_staff,activity_list)
+            add_df = create_planner_structure(new_staff,programme_list)
             updated = pd.concat([existing, add_df], ignore_index=True)
             updated.to_csv(filepath, index=False)
             return updated
@@ -150,7 +154,7 @@ def load_or_update_planner_file(filepath, staff_list,activity_list):
     # -----------------------------------------
     # CASE 2: File does not exist → create new file
     # -----------------------------------------
-    df = create_planner_structure(staff_list,activity_list)
+    df = create_planner_structure(staff_list,programme_list)
     df = df.round(decimals)
     df.to_csv(filepath, index=False)
     

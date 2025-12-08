@@ -1,8 +1,8 @@
 import streamlit as st
-from planner_app import app as planner_page
-from homepage import app as home_page
-from dashboard import app as dashboard_page
-from maintenance import app as maintenance_page
+from planner_app import planner as planner_page
+from homepage import homepage as home_page
+from dashboard import dashboard as dashboard_page
+from maintenance import maintenance as maintenance_page
 
 pg = st.navigation(
     [
