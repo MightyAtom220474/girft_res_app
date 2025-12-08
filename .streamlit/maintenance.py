@@ -6,6 +6,8 @@ import data_store as ds
 
 def maintenance():
 
+    ds.load_or_refresh_all()
+
     st.title("System Maintenance")
 
     st.subheader("Add or Remove Staff")

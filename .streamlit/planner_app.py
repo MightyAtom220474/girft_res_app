@@ -1,38 +1,13 @@
 import streamlit as st
 import pandas as pd
 import os
-from planner_functions import load_data, save_data, load_or_update_leave_file\
-    ,load_or_update_planner_file,make_activity_chart
+import planner_functions as pf
 import data_store as ds
 
 
 def planner():
     
-    # initial load of staff_list in order to build calendars if they don't exist
-    # if ds.staff_list is None:
-    #     ds.staff_list = load_data("staff_list.csv")
-
-    # # print(staff_list)
-
-    # staff_names = ds.staff_list['staff_member'].to_list()
-    # staff_names.sort()
-    
-    # if ds.programme_list is None:
-    #     ds.programme_list = load_data('programme_categories.csv')
-
-    # ds.programme_names = ds.programme_list['programme_categories'].to_list()
-    # ds.programme_names.sort()
-
-    # if ds.leave_calendar_df is None:
-    #     ds.leave_calendar_df = load_or_update_leave_file('annual_leave_calendar.csv'
-    #                                                 ,staff_names,'days_leave')
-    # if ds.onsite_calendar_df is None:
-    #     ds.onsite_calendar_df = load_or_update_leave_file('on_site_calendar.csv'
-    #                                                 ,staff_names,'on_site_days')
-    # if ds.programme_calendar_df is None:
-    #     ds.programme_calendar_df = load_or_update_planner_file('programme_calendar.csv'
-    #                                                 ,staff_names,ds.programme_names)
-    # #print(leave_calendar_df)
+    ds.load_or_refresh_all()
 
     leave_file_path = "annual_leave_calendar.csv"
 
@@ -49,153 +24,275 @@ def planner():
         # ------------------------------------------------
         # Select staff to edit
         # ------------------------------------------------
-        st.subheader("✏️ Edit Leave for a Specific Team Member")
-
-        # update staff names in case any have been changed in maintenance page
-        staff_names  = ds.staff_list.loc[ds.staff_list["archive_flag"] == 0, "staff_member"].tolist()
-        staff_names.sort()
-
-        selected_staff = st.selectbox("Select staff member", staff_names)
-
-        staff_df = ds.leave_calendar_df[ds.leave_calendar_df["staff_member"] == selected_staff].copy().reset_index(drop=True)
+        st.subheader("✏️ Add or Edit Leave for a Team Member")
 
         # ------------------------------------------------
-        # Editable table for selected staff
+        # Select Staff Member
         # ------------------------------------------------
-        st.write(f"### Editing: {selected_staff}")
+        staff_names = (
+            ds.staff_list.loc[ds.staff_list["archive_flag"] == 0, "staff_member"]
+            .sort_values()
+            .tolist()
+        )
 
-        edited_df = st.data_editor(
-            staff_df,
-            hide_index=True,
-            num_rows="fixed",
-            column_config={
-                "week_number": st.column_config.NumberColumn("Week", disabled=True),
-                "week_commencing": st.column_config.DateColumn(
-                    "Week Commencing (Mon)", disabled=True
-                ),
-                "days_leave": st.column_config.NumberColumn(
-                    "Days of Leave",
-                    help="Enter days or fractions (e.g. 0.5)",
-                    step=0.5
-                ),
-                "staff": st.column_config.TextColumn("Staff", disabled=True)
-            }
+        selected_staff = st.selectbox("Select Leave Team Member", staff_names)
+
+        # ------------------------------------------------
+        # Pick Week Commencing (Monday only)
+        # ------------------------------------------------
+        week_commencing = st.date_input(
+            "Select Week Commencing (Monday)",
+            help="Choose the Monday of the week the leave applies to"
+        )
+
+        # Optional validation (ensure it's a Monday)
+        if week_commencing.weekday() != 0:
+            st.warning("⚠️ The week commencing date must be a Monday.")
+
+        # ------------------------------------------------
+        # Leave Days Input (0.5 to 5 in 0.5 increments)
+        # ------------------------------------------------
+        days_leave = st.selectbox(
+            "Number of Leave Days",
+            [x * 0.5 for x in range(0, 11)],  # 0, 0.5, ..., 5
+            help="Select whole or half days (max 5)"
         )
 
         # ------------------------------------------------
-        # Save updated data
+        # Save Button
         # ------------------------------------------------
-        if st.button("💾 Save Changes"):
-            ds.leave_calendar_df.loc[ds.leave_calendar_df["staff_member"] == selected_staff, "days_leave"] = edited_df["days_leave"]
-            save_data(ds.leave_calendar_df,leave_file_path)
-            st.success("All Changes Saved")
+        if st.button("💾 Save"):
+            # Check if row already exists for staff + week
+            mask = (
+                (ds.leave_calendar_df["staff_member"] == selected_staff) &
+                (ds.leave_calendar_df["week_commencing"] == pd.to_datetime(week_commencing))
+            )
+
+            if mask.any():
+                # Update existing row
+                ds.leave_calendar_df.loc[mask, "days_leave"] = days_leave
+                action = "updated"
+            else:
+                # Add new row
+                new_row = {
+                    "staff_member": selected_staff,
+                    "week_commencing": pd.to_datetime(week_commencing),
+                    "week_number": pd.to_datetime(week_commencing).isocalendar().week,
+                    "days_leave": days_leave
+                }
+                ds.leave_calendar_df = pd.concat(
+                    [ds.leave_calendar_df, pd.DataFrame([new_row])],
+                    ignore_index=True
+                )
+                action = "added"
+
+            # Save file
+            pf.save_data(ds.leave_calendar_df, leave_file_path)
+
+            st.success(f"Leave successfully {action} for {selected_staff} on week {week_commencing}")
 
     with tab2:
 
         st.title("📅 Weekly On-Site Planner")
 
-        # update staff names in case any have been changed in maintenance page
-        staff_names  = ds.staff_list.loc[ds.staff_list["archive_flag"] == 0, "staff_member"].tolist()
-        staff_names.sort()
         # ------------------------------------------------
-        # Select staff to edit
+        # Load staff names (active only)
         # ------------------------------------------------
-        st.subheader("✏️ Edit On-Site Days for a Specific Team Member")
-
-        selected_staff_os = st.selectbox("Select On-site staff member", ds.staff_list)
-
-        staff_os_df = ds.onsite_calendar_df[ds.onsite_calendar_df["staff_member"] == selected_staff].copy().reset_index(drop=True)
-
-        # ------------------------------------------------
-        # Editable table for selected staff
-        # ------------------------------------------------
-        st.write(f"### Editing: {selected_staff_os}")
-
-        edited_os_df = st.data_editor(
-            staff_os_df,
-            hide_index=True,
-            num_rows="fixed",
-            column_config={
-                "week_number": st.column_config.NumberColumn("Week", disabled=True),
-                "week_commencing": st.column_config.DateColumn(
-                    "Week Commencing (Mon)", disabled=True
-                ),
-                "on_site_days": st.column_config.NumberColumn(
-                    "Days on Site",
-                    help="Enter days or fractions (e.g. 0.5)",
-                    step=0.5
-                ),
-                "staff": st.column_config.TextColumn("Staff", disabled=True)
-            }
+        staff_names = (
+            ds.staff_list.loc[ds.staff_list["archive_flag"] == 0, "staff_member"]
+            .sort_values()
+            .tolist()
         )
 
         # ------------------------------------------------
-        # Save updated data
+        # Select Staff Member to Edit
+        # ------------------------------------------------
+        st.subheader("✏️ Add or Edit On-Site Days for a Specific Team Member")
+
+        selected_staff_os = st.selectbox("Select On-site Team Member", staff_names)
+
+        # ------------------------------------------------
+        # Select Week Commencing (Monday)
+        # ------------------------------------------------
+        week_commencing_os = st.date_input(
+            "Select Week Commencing (Monday)",
+            help="Choose the Monday of the week the on-site days apply to"
+        )
+
+        # Make sure the date is a Monday
+        if week_commencing_os.weekday() != 0:
+            st.warning("⚠️ The week commencing date must be a Monday.")
+
+        # ------------------------------------------------
+        # Days On Site Input (0 - 5 in 0.5 increments)
+        # ------------------------------------------------
+        on_site_days = st.selectbox(
+            "Number of On-Site Days",
+            [x * 0.5 for x in range(0, 11)],    # 0 → 5 in half-day steps
+            help="Select whole or half days (max 5)"
+        )
+
+        # ------------------------------------------------
+        # Save Button
         # ------------------------------------------------
         if st.button("💾 Save On-Site Changes"):
-            ds.onsite_calendar_df.loc[ds.onsite_calendar_df["staff_member"] == selected_staff, "on_site_days"] = edited_os_df["on_site_days"]
-            save_data(ds.onsite_calendar_df,onsite_file_path)
-            st.success("All Changes Saved")
+            # Identify whether row already exists
+            mask = (
+                (ds.onsite_calendar_df["staff_member"] == selected_staff_os) &
+                (ds.onsite_calendar_df["week_commencing"] == pd.to_datetime(week_commencing_os))
+            )
+
+            if mask.any():
+                # Update existing row
+                ds.onsite_calendar_df.loc[mask, "on_site_days"] = on_site_days
+                action = "updated"
+            else:
+                # Insert new record
+                new_row = {
+                    "staff_member": selected_staff_os,
+                    "week_commencing": pd.to_datetime(week_commencing_os),
+                    "week_number": pd.to_datetime(week_commencing_os).isocalendar().week,
+                    "on_site_days": on_site_days
+                }
+                ds.onsite_calendar_df = pd.concat(
+                    [ds.onsite_calendar_df, pd.DataFrame([new_row])],
+                    ignore_index=True
+                )
+                action = "added"
+
+            # Save the file
+            pf.save_data(ds.onsite_calendar_df, onsite_file_path)
+
+            st.success(f"On-site days {action} for {selected_staff_os} on week {week_commencing_os}")
 
     with tab3:
         
         st.title("📅 Programme of Work")
-        st.subheader("✏️ Enter Programme of Work")
+        st.subheader("✏️ Add or Edit Programme Activity for a Specific Team Member")
 
-        st.subheader("✏️ Edit Programme Activity for a Specific Team Member")
-
-        # update staff names in case any have been changed in maintenance page
-        staff_names  = ds.staff_list.loc[ds.staff_list["archive_flag"] == 0, "staff_member"].tolist()
-        staff_names.sort()
-
-        selected_staff_act = st.selectbox("Select Programme staff member", ds.staff_list)
-
-        # Filter correctly
-        staff_act_df = (
-            ds.programme_calendar_df[ds.programme_calendar_df["staff_member"] == selected_staff_act]
-            .copy()
-            .reset_index(drop=True)
+        # ------------------------------------------------
+        # Load active staff names
+        # ------------------------------------------------
+        staff_names = (
+            ds.staff_list.loc[ds.staff_list["archive_flag"] == 0, "staff_member"]
+            .sort_values()
+            .tolist()
         )
 
-        # Identify activity columns
-        protected_cols = ["staff_member", "week_number", "week_commencing"]
-        activity_cols = [c for c in staff_act_df.columns if c not in protected_cols]
+        # ------------------------------------------------
+        # Select Staff Member
+        # ------------------------------------------------
+        selected_staff_act = st.selectbox("Select Programme Team Member", staff_names)
 
-        # Build dynamic column config
-        col_config = {
-            "staff_member": st.column_config.TextColumn("Staff", disabled=True),
-            "week_number": st.column_config.NumberColumn("Week", disabled=True),
-            "week_commencing": st.column_config.DateColumn("Week Commencing (Mon)", disabled=True),
-        }
+        # ------------------------------------------------
+        # Select Week Commencing (Must be Monday)
+        # ------------------------------------------------
+        week_commencing_act = st.date_input(
+            "Select Week Commencing (Monday)",
+            help="Choose the Monday of the week you want to enter activity for",
+        )
 
-        # Add editable configs for each activity column
+        if week_commencing_act.weekday() != 0:
+            st.warning("⚠️ The week commencing date must be a Monday.")
+
+        # ------------------------------------------------
+        # If a record exists for this staff + week, load it
+        # ------------------------------------------------
+        mask = (
+            (ds.programme_calendar_df["staff_member"] == selected_staff_act) &
+            (ds.programme_calendar_df["week_commencing"] == pd.to_datetime(week_commencing_act))
+        )
+
+        if mask.any():
+            staff_row = ds.programme_calendar_df.loc[mask].iloc[0]
+        else:
+            staff_row = pd.Series({col: 0.0 for col in activity_cols})
+
+        # ------------------------------------------------
+        # Build selectboxes for each activity
+        # ------------------------------------------------
+        st.write(f"### Editing Programme Activity for: **{selected_staff_act}**")
+        st.write(f"#### Week Commencing: **{week_commencing_act}**")
+
+        # ------------------------------------------------
+        # Programme Group Selector (default to "All")
+        # ------------------------------------------------
+        # Only non-archived programmes
+        programmes_available = ds.programme_list.loc[ds.programme_list["archive_flag"] == 0]
+
+        # Programme groups from non-archived programmes
+        programme_groups = programmes_available["programme_group"].dropna().unique().tolist()
+        programme_groups = ["All"] + sorted(programme_groups)
+        selected_group = st.selectbox("Select Programme Group", programme_groups, index=0)
+
+        # Filter programme categories belonging to this group
+        if selected_group == "All":
+            filtered_programmes = programmes_available["programme_categories"].sort_values().tolist()
+        else:
+            filtered_programmes = programmes_available.loc[
+                programmes_available["programme_group"] == selected_group,
+                "programme_categories"
+            ].sort_values().tolist()
+
+        
+        # ------------------------------------------------
+        # Identify activity columns dynamically (exclude protected)
+        # ------------------------------------------------
+        protected_cols = [
+            "staff_member",
+            "week_number",
+            "week_commencing",
+            "Total Act Hours"
+        ]
+
+        # Only use activities from selected programme group
+        activity_cols = [
+            c for c in filtered_programmes if c not in protected_cols
+        ]
+
+
+        hour_values = [x * 0.5 for x in range(0, 76)]  # 0 to 37.5 inclusive
+
+        activity_inputs = {}
+
         for col in activity_cols:
-            col_config[col] = st.column_config.NumberColumn(
-                col.replace("_", " ").title(),
-                step=0.5
+            pretty_name = col.replace("_", " ").title()
+            default_value = float(staff_row.get(col, 0.0))
+
+            activity_inputs[col] = st.selectbox(
+                pretty_name,
+                hour_values,
+                index=hour_values.index(default_value) if default_value in hour_values else 0
             )
 
-        st.write(f"### Editing: {selected_staff_act}")
-
-        edited_act_df = st.data_editor(
-            staff_act_df,
-            hide_index=True,
-            num_rows="fixed",
-            column_config=col_config
-        )
-
-        # --------------------------
-        # Save data back to the main DF
-        # --------------------------
+        # ------------------------------------------------
+        # Save Button
+        # ------------------------------------------------
         if st.button("💾 Save Programme Activity Changes"):
-            ds.programme_calendar_df.loc[
-                ds.programme_calendar_df["staff_member"] == selected_staff_act,
-                activity_cols
-            ] = edited_act_df[activity_cols].values
 
-            save_data(ds.programme_calendar_df,programme_file_path,)
+            updated_row = {
+                "staff_member": selected_staff_act,
+                "week_commencing": pd.to_datetime(week_commencing_act),
+                "week_number": pd.to_datetime(week_commencing_act).isocalendar().week,
+                **activity_inputs
+            }
 
-            st.success("All Programme Activity Changes Saved")
+            if mask.any():
+                ds.programme_calendar_df.loc[mask, activity_cols] = pd.DataFrame([updated_row])[activity_cols].values
+                action = "updated"
+            else:
+                ds.programme_calendar_df = pd.concat(
+                    [ds.programme_calendar_df, pd.DataFrame([updated_row])],
+                    ignore_index=True
+                )
+                action = "added"
+
+            pf.save_data(ds.programme_calendar_df, ds.programme_file_path)
+
+            st.success(
+                f"Programme activity successfully {action} for {selected_staff_act} "
+                f"on week {week_commencing_act}"
+            )
 
     with tab4:
 
@@ -337,7 +434,7 @@ def planner():
 
         # summary of weekly programme activity
         st.subheader("📊 Weekly Programme Activity Breakdown")
-        fig = make_activity_chart(ds.programme_calendar_df, programme_names)
+        fig = pf.make_activity_chart(ds.programme_calendar_df, ds.programme_names)
         
         fig.update_layout(
                         width=1200,
