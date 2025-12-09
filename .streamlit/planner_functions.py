@@ -90,12 +90,7 @@ def load_or_update_leave_file(filepath, staff_list,leave_type):
     return df
 
 def load_or_update_planner_file(filepath, staff_list, programme_categories):
-    """
-    programme_categories may be:
-      - a list of strings (["CBT", "Assessment"])
-      - OR a list of dicts ({"programme": "...", "archived_flag": ...})
-    """
-
+    
     # ---------------------------------------------------------
     # NORMALISE PROGRAMME DATA
     # Convert to a simple list of active programme names

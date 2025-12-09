@@ -19,153 +19,6 @@ def planner():
     tab1, tab2, tab3, tab4 = st.tabs(["Annual Leave","On-Site","Programme of Work","All Activity"])
 
     with tab1:
-
-        st.title("📅 Weekly Leave Planner")
-        # ------------------------------------------------
-        # Select staff to edit
-        # ------------------------------------------------
-        st.subheader("✏️ Add or Edit Leave for a Team Member")
-
-        # ------------------------------------------------
-        # Select Staff Member
-        # ------------------------------------------------
-        staff_names = (
-            ds.staff_list.loc[ds.staff_list["archive_flag"] == 0, "staff_member"]
-            .sort_values()
-            .tolist()
-        )
-
-        selected_staff = st.selectbox("Select Leave Team Member", staff_names)
-
-        # ------------------------------------------------
-        # Pick Week Commencing (Monday only)
-        # ------------------------------------------------
-        week_commencing = st.date_input(
-            "Select Week Commencing (Monday)",
-            help="Choose the Monday of the week the leave applies to"
-        )
-
-        # Optional validation (ensure it's a Monday)
-        if week_commencing.weekday() != 0:
-            st.warning("⚠️ The week commencing date must be a Monday.")
-
-        # ------------------------------------------------
-        # Leave Days Input (0.5 to 5 in 0.5 increments)
-        # ------------------------------------------------
-        days_leave = st.selectbox(
-            "Number of Leave Days",
-            [x * 0.5 for x in range(0, 11)],  # 0, 0.5, ..., 5
-            help="Select whole or half days (max 5)"
-        )
-
-        # ------------------------------------------------
-        # Save Button
-        # ------------------------------------------------
-        if st.button("💾 Save"):
-            # Check if row already exists for staff + week
-            mask = (
-                (ds.leave_calendar_df["staff_member"] == selected_staff) &
-                (ds.leave_calendar_df["week_commencing"] == pd.to_datetime(week_commencing))
-            )
-
-            if mask.any():
-                # Update existing row
-                ds.leave_calendar_df.loc[mask, "days_leave"] = days_leave
-                action = "updated"
-            else:
-                # Add new row
-                new_row = {
-                    "staff_member": selected_staff,
-                    "week_commencing": pd.to_datetime(week_commencing),
-                    "week_number": pd.to_datetime(week_commencing).isocalendar().week,
-                    "days_leave": days_leave
-                }
-                ds.leave_calendar_df = pd.concat(
-                    [ds.leave_calendar_df, pd.DataFrame([new_row])],
-                    ignore_index=True
-                )
-                action = "added"
-
-            # Save file
-            pf.save_data(ds.leave_calendar_df, leave_file_path)
-
-            st.success(f"Leave successfully {action} for {selected_staff} on week {week_commencing}")
-
-    with tab2:
-
-        st.title("📅 Weekly On-Site Planner")
-
-        # ------------------------------------------------
-        # Load staff names (active only)
-        # ------------------------------------------------
-        staff_names = (
-            ds.staff_list.loc[ds.staff_list["archive_flag"] == 0, "staff_member"]
-            .sort_values()
-            .tolist()
-        )
-
-        # ------------------------------------------------
-        # Select Staff Member to Edit
-        # ------------------------------------------------
-        st.subheader("✏️ Add or Edit On-Site Days for a Specific Team Member")
-
-        selected_staff_os = st.selectbox("Select On-site Team Member", staff_names)
-
-        # ------------------------------------------------
-        # Select Week Commencing (Monday)
-        # ------------------------------------------------
-        week_commencing_os = st.date_input(
-            "Select Week Commencing (Monday)",
-            help="Choose the Monday of the week the on-site days apply to"
-        )
-
-        # Make sure the date is a Monday
-        if week_commencing_os.weekday() != 0:
-            st.warning("⚠️ The week commencing date must be a Monday.")
-
-        # ------------------------------------------------
-        # Days On Site Input (0 - 5 in 0.5 increments)
-        # ------------------------------------------------
-        on_site_days = st.selectbox(
-            "Number of On-Site Days",
-            [x * 0.5 for x in range(0, 11)],    # 0 → 5 in half-day steps
-            help="Select whole or half days (max 5)"
-        )
-
-        # ------------------------------------------------
-        # Save Button
-        # ------------------------------------------------
-        if st.button("💾 Save On-Site Changes"):
-            # Identify whether row already exists
-            mask = (
-                (ds.onsite_calendar_df["staff_member"] == selected_staff_os) &
-                (ds.onsite_calendar_df["week_commencing"] == pd.to_datetime(week_commencing_os))
-            )
-
-            if mask.any():
-                # Update existing row
-                ds.onsite_calendar_df.loc[mask, "on_site_days"] = on_site_days
-                action = "updated"
-            else:
-                # Insert new record
-                new_row = {
-                    "staff_member": selected_staff_os,
-                    "week_commencing": pd.to_datetime(week_commencing_os),
-                    "week_number": pd.to_datetime(week_commencing_os).isocalendar().week,
-                    "on_site_days": on_site_days
-                }
-                ds.onsite_calendar_df = pd.concat(
-                    [ds.onsite_calendar_df, pd.DataFrame([new_row])],
-                    ignore_index=True
-                )
-                action = "added"
-
-            # Save the file
-            pf.save_data(ds.onsite_calendar_df, onsite_file_path)
-
-            st.success(f"On-site days {action} for {selected_staff_os} on week {week_commencing_os}")
-
-    with tab3:
         
         st.title("📅 Programme of Work")
         st.subheader("✏️ Add or Edit Programme Activity for a Specific Team Member")
@@ -275,6 +128,153 @@ def planner():
             pf.save_data(ds.programme_calendar_df, "programme_calendar.csv")
 
             st.success(f"Programme activity successfully {action} for {selected_staff} on week {week_commencing}")
+    
+    with tab2:
+
+        st.title("📅 Weekly Leave Planner")
+        # ------------------------------------------------
+        # Select staff to edit
+        # ------------------------------------------------
+        st.subheader("✏️ Add or Edit Leave for a Team Member")
+
+        # ------------------------------------------------
+        # Select Staff Member
+        # ------------------------------------------------
+        staff_names = (
+            ds.staff_list.loc[ds.staff_list["archive_flag"] == 0, "staff_member"]
+            .sort_values()
+            .tolist()
+        )
+
+        selected_staff = st.selectbox("Select Leave Team Member", staff_names)
+
+        # ------------------------------------------------
+        # Pick Week Commencing (Monday only)
+        # ------------------------------------------------
+        week_commencing = st.date_input(
+            "Select Week Commencing (Monday)",
+            help="Choose the Monday of the week the leave applies to"
+        )
+
+        # Optional validation (ensure it's a Monday)
+        if week_commencing.weekday() != 0:
+            st.warning("⚠️ The week commencing date must be a Monday.")
+
+        # ------------------------------------------------
+        # Leave Days Input (0.5 to 5 in 0.5 increments)
+        # ------------------------------------------------
+        days_leave = st.selectbox(
+            "Number of Leave Days",
+            [x * 0.5 for x in range(0, 11)],  # 0, 0.5, ..., 5
+            help="Select whole or half days (max 5)"
+        )
+
+        # ------------------------------------------------
+        # Save Button
+        # ------------------------------------------------
+        if st.button("💾 Save"):
+            # Check if row already exists for staff + week
+            mask = (
+                (ds.leave_calendar_df["staff_member"] == selected_staff) &
+                (ds.leave_calendar_df["week_commencing"] == pd.to_datetime(week_commencing))
+            )
+
+            if mask.any():
+                # Update existing row
+                ds.leave_calendar_df.loc[mask, "days_leave"] = days_leave
+                action = "updated"
+            else:
+                # Add new row
+                new_row = {
+                    "staff_member": selected_staff,
+                    "week_commencing": pd.to_datetime(week_commencing),
+                    "week_number": pd.to_datetime(week_commencing).isocalendar().week,
+                    "days_leave": days_leave
+                }
+                ds.leave_calendar_df = pd.concat(
+                    [ds.leave_calendar_df, pd.DataFrame([new_row])],
+                    ignore_index=True
+                )
+                action = "added"
+
+            # Save file
+            pf.save_data(ds.leave_calendar_df, leave_file_path)
+
+            st.success(f"Leave successfully {action} for {selected_staff} on week {week_commencing}")
+
+    with tab3:
+
+        st.title("📅 Weekly On-Site Planner")
+
+        # ------------------------------------------------
+        # Load staff names (active only)
+        # ------------------------------------------------
+        staff_names = (
+            ds.staff_list.loc[ds.staff_list["archive_flag"] == 0, "staff_member"]
+            .sort_values()
+            .tolist()
+        )
+
+        # ------------------------------------------------
+        # Select Staff Member to Edit
+        # ------------------------------------------------
+        st.subheader("✏️ Add or Edit On-Site Days for a Specific Team Member")
+
+        selected_staff_os = st.selectbox("Select On-site Team Member", staff_names)
+
+        # ------------------------------------------------
+        # Select Week Commencing (Monday)
+        # ------------------------------------------------
+        week_commencing_os = st.date_input(
+            "Select Week Commencing (Monday)",
+            help="Choose the Monday of the week the on-site days apply to"
+        )
+
+        # Make sure the date is a Monday
+        if week_commencing_os.weekday() != 0:
+            st.warning("⚠️ The week commencing date must be a Monday.")
+
+        # ------------------------------------------------
+        # Days On Site Input (0 - 5 in 0.5 increments)
+        # ------------------------------------------------
+        on_site_days = st.selectbox(
+            "Number of On-Site Days",
+            [x * 0.5 for x in range(0, 11)],    # 0 → 5 in half-day steps
+            help="Select whole or half days (max 5)"
+        )
+
+        # ------------------------------------------------
+        # Save Button
+        # ------------------------------------------------
+        if st.button("💾 Save On-Site Changes"):
+            # Identify whether row already exists
+            mask = (
+                (ds.onsite_calendar_df["staff_member"] == selected_staff_os) &
+                (ds.onsite_calendar_df["week_commencing"] == pd.to_datetime(week_commencing_os))
+            )
+
+            if mask.any():
+                # Update existing row
+                ds.onsite_calendar_df.loc[mask, "on_site_days"] = on_site_days
+                action = "updated"
+            else:
+                # Insert new record
+                new_row = {
+                    "staff_member": selected_staff_os,
+                    "week_commencing": pd.to_datetime(week_commencing_os),
+                    "week_number": pd.to_datetime(week_commencing_os).isocalendar().week,
+                    "on_site_days": on_site_days
+                }
+                ds.onsite_calendar_df = pd.concat(
+                    [ds.onsite_calendar_df, pd.DataFrame([new_row])],
+                    ignore_index=True
+                )
+                action = "added"
+
+            # Save the file
+            pf.save_data(ds.onsite_calendar_df, onsite_file_path)
+
+            st.success(f"On-site days {action} for {selected_staff_os} on week {week_commencing_os}")
 
     with tab4:
 

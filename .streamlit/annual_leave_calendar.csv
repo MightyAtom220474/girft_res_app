@@ -1,38 +1,38 @@
 staff_member,week_commencing,week_number,days_leave
-Andy Polychronakis ,2025-01-06,2,0
-Andy Polychronakis ,2025-01-13,3,0
-Andy Polychronakis ,2025-01-20,4,0
-Andy Polychronakis ,2025-01-27,5,0
+Andy Polychronakis ,2025-01-06,2,3
+Andy Polychronakis ,2025-01-13,3,2
+Andy Polychronakis ,2025-01-20,4,1
+Andy Polychronakis ,2025-01-27,5,1
 Andy Polychronakis ,2025-02-03,6,0
-Andy Polychronakis ,2025-02-10,7,0
-Andy Polychronakis ,2025-02-17,8,0
+Andy Polychronakis ,2025-02-10,7,1
+Andy Polychronakis ,2025-02-17,8,1
 Andy Polychronakis ,2025-02-24,9,0
 Andy Polychronakis ,2025-03-03,10,0
-Andy Polychronakis ,2025-03-10,11,0
+Andy Polychronakis ,2025-03-10,11,3
 Andy Polychronakis ,2025-03-17,12,0
 Andy Polychronakis ,2025-03-24,13,0
 Andy Polychronakis ,2025-03-31,14,0
 Andy Polychronakis ,2025-04-07,15,0
 Andy Polychronakis ,2025-04-14,16,0
-Andy Polychronakis ,2025-04-21,17,0
+Andy Polychronakis ,2025-04-21,17,1
 Andy Polychronakis ,2025-04-28,18,0
 Andy Polychronakis ,2025-05-05,19,0
 Andy Polychronakis ,2025-05-12,20,0
 Andy Polychronakis ,2025-05-19,21,0
 Andy Polychronakis ,2025-05-26,22,0
 Andy Polychronakis ,2025-06-02,23,0
-Andy Polychronakis ,2025-06-09,24,0
-Andy Polychronakis ,2025-06-16,25,0
+Andy Polychronakis ,2025-06-09,24,1
+Andy Polychronakis ,2025-06-16,25,3
 Andy Polychronakis ,2025-06-23,26,0
-Andy Polychronakis ,2025-06-30,27,0
-Andy Polychronakis ,2025-07-07,28,0
+Andy Polychronakis ,2025-06-30,27,2
+Andy Polychronakis ,2025-07-07,28,1
 Andy Polychronakis ,2025-07-14,29,0
-Andy Polychronakis ,2025-07-21,30,0
-Andy Polychronakis ,2025-07-28,31,0
+Andy Polychronakis ,2025-07-21,30,1
+Andy Polychronakis ,2025-07-28,31,1
 Andy Polychronakis ,2025-08-04,32,0
-Andy Polychronakis ,2025-08-11,33,0
+Andy Polychronakis ,2025-08-11,33,2
 Andy Polychronakis ,2025-08-18,34,0
-Andy Polychronakis ,2025-08-25,35,0
+Andy Polychronakis ,2025-08-25,35,1
 Andy Polychronakis ,2025-09-01,36,0
 Andy Polychronakis ,2025-09-08,37,0
 Andy Polychronakis ,2025-09-15,38,0
@@ -42,24 +42,24 @@ Andy Polychronakis ,2025-10-06,41,0
 Andy Polychronakis ,2025-10-13,42,0
 Andy Polychronakis ,2025-10-20,43,0
 Andy Polychronakis ,2025-10-27,44,0
-Andy Polychronakis ,2025-11-03,45,0
-Andy Polychronakis ,2025-11-10,46,0
+Andy Polychronakis ,2025-11-03,45,1
+Andy Polychronakis ,2025-11-10,46,1
 Andy Polychronakis ,2025-11-17,47,0
-Andy Polychronakis ,2025-11-24,48,0
-Andy Polychronakis ,2025-12-01,49,0
-Andy Polychronakis ,2025-12-08,50,0
-Andy Polychronakis ,2025-12-15,51,0
+Andy Polychronakis ,2025-11-24,48,1
+Andy Polychronakis ,2025-12-01,49,2
+Andy Polychronakis ,2025-12-08,50,2
+Andy Polychronakis ,2025-12-15,51,2
 Andy Polychronakis ,2025-12-22,52,0
-Andy Polychronakis ,2025-12-29,1,0
-Caroline Attard,2025-01-06,2,0
-Caroline Attard,2025-01-13,3,0
-Caroline Attard,2025-01-20,4,0
-Caroline Attard,2025-01-27,5,0
+Andy Polychronakis ,2025-12-29,1,4
+Caroline Attard,2025-01-06,2,2
+Caroline Attard,2025-01-13,3,1
+Caroline Attard,2025-01-20,4,1
+Caroline Attard,2025-01-27,5,1
 Caroline Attard,2025-02-03,6,0
-Caroline Attard,2025-02-10,7,0
+Caroline Attard,2025-02-10,7,1
 Caroline Attard,2025-02-17,8,0
 Caroline Attard,2025-02-24,9,0
-Caroline Attard,2025-03-03,10,0
+Caroline Attard,2025-03-03,10,1
 Caroline Attard,2025-03-10,11,0
 Caroline Attard,2025-03-17,12,0
 Caroline Attard,2025-03-24,13,0
@@ -72,73 +72,73 @@ Caroline Attard,2025-05-05,19,0
 Caroline Attard,2025-05-12,20,0
 Caroline Attard,2025-05-19,21,0
 Caroline Attard,2025-05-26,22,0
-Caroline Attard,2025-06-02,23,0
-Caroline Attard,2025-06-09,24,0
-Caroline Attard,2025-06-16,25,0
-Caroline Attard,2025-06-23,26,0
-Caroline Attard,2025-06-30,27,0
-Caroline Attard,2025-07-07,28,0
-Caroline Attard,2025-07-14,29,0
-Caroline Attard,2025-07-21,30,0
-Caroline Attard,2025-07-28,31,0
-Caroline Attard,2025-08-04,32,0
+Caroline Attard,2025-06-02,23,2
+Caroline Attard,2025-06-09,24,1
+Caroline Attard,2025-06-16,25,3
+Caroline Attard,2025-06-23,26,3
+Caroline Attard,2025-06-30,27,2
+Caroline Attard,2025-07-07,28,3
+Caroline Attard,2025-07-14,29,1
+Caroline Attard,2025-07-21,30,1
+Caroline Attard,2025-07-28,31,1
+Caroline Attard,2025-08-04,32,3
 Caroline Attard,2025-08-11,33,0
-Caroline Attard,2025-08-18,34,0
-Caroline Attard,2025-08-25,35,0
+Caroline Attard,2025-08-18,34,1
+Caroline Attard,2025-08-25,35,1
 Caroline Attard,2025-09-01,36,0
 Caroline Attard,2025-09-08,37,0
 Caroline Attard,2025-09-15,38,0
 Caroline Attard,2025-09-22,39,0
 Caroline Attard,2025-09-29,40,0
 Caroline Attard,2025-10-06,41,0
-Caroline Attard,2025-10-13,42,0
-Caroline Attard,2025-10-20,43,0
+Caroline Attard,2025-10-13,42,1
+Caroline Attard,2025-10-20,43,1
 Caroline Attard,2025-10-27,44,0
 Caroline Attard,2025-11-03,45,0
-Caroline Attard,2025-11-10,46,0
-Caroline Attard,2025-11-17,47,0
+Caroline Attard,2025-11-10,46,1
+Caroline Attard,2025-11-17,47,1
 Caroline Attard,2025-11-24,48,0
 Caroline Attard,2025-12-01,49,0
-Caroline Attard,2025-12-08,50,0
-Caroline Attard,2025-12-15,51,0
-Caroline Attard,2025-12-22,52,0
-Caroline Attard,2025-12-29,1,0
-Dr David Somerfield,2025-01-06,2,0
-Dr David Somerfield,2025-01-13,3,0
-Dr David Somerfield,2025-01-20,4,0
-Dr David Somerfield,2025-01-27,5,0
+Caroline Attard,2025-12-08,50,2
+Caroline Attard,2025-12-15,51,3
+Caroline Attard,2025-12-22,52,3
+Caroline Attard,2025-12-29,1,3
+Dr David Somerfield,2025-01-06,2,2
+Dr David Somerfield,2025-01-13,3,2
+Dr David Somerfield,2025-01-20,4,1
+Dr David Somerfield,2025-01-27,5,3
 Dr David Somerfield,2025-02-03,6,0
 Dr David Somerfield,2025-02-10,7,0
 Dr David Somerfield,2025-02-17,8,0
 Dr David Somerfield,2025-02-24,9,0
 Dr David Somerfield,2025-03-03,10,0
-Dr David Somerfield,2025-03-10,11,0
+Dr David Somerfield,2025-03-10,11,1
 Dr David Somerfield,2025-03-17,12,0
 Dr David Somerfield,2025-03-24,13,0
 Dr David Somerfield,2025-03-31,14,0
-Dr David Somerfield,2025-04-07,15,0
+Dr David Somerfield,2025-04-07,15,1
 Dr David Somerfield,2025-04-14,16,0
 Dr David Somerfield,2025-04-21,17,0
 Dr David Somerfield,2025-04-28,18,0
 Dr David Somerfield,2025-05-05,19,0
-Dr David Somerfield,2025-05-12,20,0
+Dr David Somerfield,2025-05-12,20,1
 Dr David Somerfield,2025-05-19,21,0
 Dr David Somerfield,2025-05-26,22,0
-Dr David Somerfield,2025-06-02,23,0
+Dr David Somerfield,2025-06-02,23,1
 Dr David Somerfield,2025-06-09,24,0
-Dr David Somerfield,2025-06-16,25,0
-Dr David Somerfield,2025-06-23,26,0
-Dr David Somerfield,2025-06-30,27,0
-Dr David Somerfield,2025-07-07,28,0
-Dr David Somerfield,2025-07-14,29,0
-Dr David Somerfield,2025-07-21,30,0
-Dr David Somerfield,2025-07-28,31,0
-Dr David Somerfield,2025-08-04,32,0
+Dr David Somerfield,2025-06-16,25,1
+Dr David Somerfield,2025-06-23,26,2
+Dr David Somerfield,2025-06-30,27,3
+Dr David Somerfield,2025-07-07,28,1
+Dr David Somerfield,2025-07-14,29,1
+Dr David Somerfield,2025-07-21,30,1
+Dr David Somerfield,2025-07-28,31,2
+Dr David Somerfield,2025-08-04,32,1
 Dr David Somerfield,2025-08-11,33,0
-Dr David Somerfield,2025-08-18,34,0
-Dr David Somerfield,2025-08-25,35,0
+Dr David Somerfield,2025-08-18,34,1
+Dr David Somerfield,2025-08-25,35,1
 Dr David Somerfield,2025-09-01,36,0
-Dr David Somerfield,2025-09-08,37,0
+Dr David Somerfield,2025-09-08,37,1
 Dr David Somerfield,2025-09-15,38,0
 Dr David Somerfield,2025-09-22,39,0
 Dr David Somerfield,2025-09-29,40,0
@@ -146,77 +146,77 @@ Dr David Somerfield,2025-10-06,41,0
 Dr David Somerfield,2025-10-13,42,0
 Dr David Somerfield,2025-10-20,43,0
 Dr David Somerfield,2025-10-27,44,0
-Dr David Somerfield,2025-11-03,45,0
-Dr David Somerfield,2025-11-10,46,0
+Dr David Somerfield,2025-11-03,45,1
+Dr David Somerfield,2025-11-10,46,1
 Dr David Somerfield,2025-11-17,47,0
-Dr David Somerfield,2025-11-24,48,0
-Dr David Somerfield,2025-12-01,49,0
-Dr David Somerfield,2025-12-08,50,0
+Dr David Somerfield,2025-11-24,48,1
+Dr David Somerfield,2025-12-01,49,2
+Dr David Somerfield,2025-12-08,50,2
 Dr David Somerfield,2025-12-15,51,0
-Dr David Somerfield,2025-12-22,52,0
-Dr David Somerfield,2025-12-29,1,0
-Dr Holan Liang,2025-01-06,2,0
-Dr Holan Liang,2025-01-13,3,0
-Dr Holan Liang,2025-01-20,4,0
+Dr David Somerfield,2025-12-22,52,2
+Dr David Somerfield,2025-12-29,1,3
+Dr Holan Liang,2025-01-06,2,2
+Dr Holan Liang,2025-01-13,3,1
+Dr Holan Liang,2025-01-20,4,3
 Dr Holan Liang,2025-01-27,5,0
-Dr Holan Liang,2025-02-03,6,0
-Dr Holan Liang,2025-02-10,7,0
+Dr Holan Liang,2025-02-03,6,1
+Dr Holan Liang,2025-02-10,7,1
 Dr Holan Liang,2025-02-17,8,0
 Dr Holan Liang,2025-02-24,9,0
 Dr Holan Liang,2025-03-03,10,0
-Dr Holan Liang,2025-03-10,11,0
+Dr Holan Liang,2025-03-10,11,1
 Dr Holan Liang,2025-03-17,12,0
 Dr Holan Liang,2025-03-24,13,0
-Dr Holan Liang,2025-03-31,14,0
+Dr Holan Liang,2025-03-31,14,1
 Dr Holan Liang,2025-04-07,15,0
 Dr Holan Liang,2025-04-14,16,0
 Dr Holan Liang,2025-04-21,17,0
-Dr Holan Liang,2025-04-28,18,0
+Dr Holan Liang,2025-04-28,18,1
 Dr Holan Liang,2025-05-05,19,0
-Dr Holan Liang,2025-05-12,20,0
-Dr Holan Liang,2025-05-19,21,0
-Dr Holan Liang,2025-05-26,22,0
-Dr Holan Liang,2025-06-02,23,0
-Dr Holan Liang,2025-06-09,24,0
-Dr Holan Liang,2025-06-16,25,0
-Dr Holan Liang,2025-06-23,26,0
-Dr Holan Liang,2025-06-30,27,0
-Dr Holan Liang,2025-07-07,28,0
+Dr Holan Liang,2025-05-12,20,2
+Dr Holan Liang,2025-05-19,21,2
+Dr Holan Liang,2025-05-26,22,1
+Dr Holan Liang,2025-06-02,23,1
+Dr Holan Liang,2025-06-09,24,2
+Dr Holan Liang,2025-06-16,25,1
+Dr Holan Liang,2025-06-23,26,2
+Dr Holan Liang,2025-06-30,27,3
+Dr Holan Liang,2025-07-07,28,2
 Dr Holan Liang,2025-07-14,29,0
-Dr Holan Liang,2025-07-21,30,0
+Dr Holan Liang,2025-07-21,30,3
 Dr Holan Liang,2025-07-28,31,0
-Dr Holan Liang,2025-08-04,32,0
-Dr Holan Liang,2025-08-11,33,0
-Dr Holan Liang,2025-08-18,34,0
+Dr Holan Liang,2025-08-04,32,2
+Dr Holan Liang,2025-08-11,33,3
+Dr Holan Liang,2025-08-18,34,3
 Dr Holan Liang,2025-08-25,35,0
 Dr Holan Liang,2025-09-01,36,0
-Dr Holan Liang,2025-09-08,37,0
+Dr Holan Liang,2025-09-08,37,1
 Dr Holan Liang,2025-09-15,38,0
 Dr Holan Liang,2025-09-22,39,0
-Dr Holan Liang,2025-09-29,40,0
+Dr Holan Liang,2025-09-29,40,1
 Dr Holan Liang,2025-10-06,41,0
 Dr Holan Liang,2025-10-13,42,0
-Dr Holan Liang,2025-10-20,43,0
+Dr Holan Liang,2025-10-20,43,1
 Dr Holan Liang,2025-10-27,44,0
 Dr Holan Liang,2025-11-03,45,0
-Dr Holan Liang,2025-11-10,46,0
+Dr Holan Liang,2025-11-10,46,1
 Dr Holan Liang,2025-11-17,47,0
 Dr Holan Liang,2025-11-24,48,0
-Dr Holan Liang,2025-12-01,49,0
-Dr Holan Liang,2025-12-08,50,0
+Dr Holan Liang,2025-12-01,49,2
+Dr Holan Liang,2025-12-08,50,2
 Dr Holan Liang,2025-12-15,51,0
-Dr Holan Liang,2025-12-22,52,0
-Dr Holan Liang,2025-12-29,1,0
-Dr Neeraj Berry,2025-01-06,2,0
-Dr Neeraj Berry,2025-01-13,3,0
-Dr Neeraj Berry,2025-01-20,4,0
-Dr Neeraj Berry,2025-01-27,5,0
+Dr Holan Liang,2025-12-22,52,2
+Dr Holan Liang,2025-12-29,1,2
+Dr Neeraj Berry,2025-01-06,2,2
+Dr Neeraj Berry,2025-01-13,3,2
+Dr Neeraj Berry,2025-01-20,4,3
+Dr Neeraj Berry,2025-01-27,5,3
 Dr Neeraj Berry,2025-02-03,6,0
 Dr Neeraj Berry,2025-02-10,7,0
 Dr Neeraj Berry,2025-02-17,8,0
 Dr Neeraj Berry,2025-02-24,9,0
 Dr Neeraj Berry,2025-03-03,10,0
-Dr Neeraj Berry,2025-03-10,11,0
+Dr Neeraj Berry,2025-03-10,11,1
 Dr Neeraj Berry,2025-03-17,12,0
 Dr Neeraj Berry,2025-03-24,13,0
 Dr Neeraj Berry,2025-03-31,14,0
@@ -224,20 +224,20 @@ Dr Neeraj Berry,2025-04-07,15,0
 Dr Neeraj Berry,2025-04-14,16,0
 Dr Neeraj Berry,2025-04-21,17,0
 Dr Neeraj Berry,2025-04-28,18,0
-Dr Neeraj Berry,2025-05-05,19,0
+Dr Neeraj Berry,2025-05-05,19,1
 Dr Neeraj Berry,2025-05-12,20,0
 Dr Neeraj Berry,2025-05-19,21,0
-Dr Neeraj Berry,2025-05-26,22,0
-Dr Neeraj Berry,2025-06-02,23,0
-Dr Neeraj Berry,2025-06-09,24,0
-Dr Neeraj Berry,2025-06-16,25,0
-Dr Neeraj Berry,2025-06-23,26,0
+Dr Neeraj Berry,2025-05-26,22,1
+Dr Neeraj Berry,2025-06-02,23,2
+Dr Neeraj Berry,2025-06-09,24,2
+Dr Neeraj Berry,2025-06-16,25,2
+Dr Neeraj Berry,2025-06-23,26,1
 Dr Neeraj Berry,2025-06-30,27,0
-Dr Neeraj Berry,2025-07-07,28,0
-Dr Neeraj Berry,2025-07-14,29,0
-Dr Neeraj Berry,2025-07-21,30,0
+Dr Neeraj Berry,2025-07-07,28,2
+Dr Neeraj Berry,2025-07-14,29,2
+Dr Neeraj Berry,2025-07-21,30,1
 Dr Neeraj Berry,2025-07-28,31,0
-Dr Neeraj Berry,2025-08-04,32,0
+Dr Neeraj Berry,2025-08-04,32,1
 Dr Neeraj Berry,2025-08-11,33,0
 Dr Neeraj Berry,2025-08-18,34,0
 Dr Neeraj Berry,2025-08-25,35,0
@@ -255,72 +255,72 @@ Dr Neeraj Berry,2025-11-10,46,0
 Dr Neeraj Berry,2025-11-17,47,0
 Dr Neeraj Berry,2025-11-24,48,0
 Dr Neeraj Berry,2025-12-01,49,0
-Dr Neeraj Berry,2025-12-08,50,0
-Dr Neeraj Berry,2025-12-15,51,0
-Dr Neeraj Berry,2025-12-22,52,0
-Dr Neeraj Berry,2025-12-29,1,0
-Dr Sridevi Kalidindi,2025-01-06,2,0
-Dr Sridevi Kalidindi,2025-01-13,3,0
-Dr Sridevi Kalidindi,2025-01-20,4,0
-Dr Sridevi Kalidindi,2025-01-27,5,0
+Dr Neeraj Berry,2025-12-08,50,2
+Dr Neeraj Berry,2025-12-15,51,2
+Dr Neeraj Berry,2025-12-22,52,1
+Dr Neeraj Berry,2025-12-29,1,2
+Dr Sridevi Kalidindi,2025-01-06,2,4
+Dr Sridevi Kalidindi,2025-01-13,3,3
+Dr Sridevi Kalidindi,2025-01-20,4,2
+Dr Sridevi Kalidindi,2025-01-27,5,1
 Dr Sridevi Kalidindi,2025-02-03,6,0
 Dr Sridevi Kalidindi,2025-02-10,7,0
 Dr Sridevi Kalidindi,2025-02-17,8,0
 Dr Sridevi Kalidindi,2025-02-24,9,0
 Dr Sridevi Kalidindi,2025-03-03,10,0
 Dr Sridevi Kalidindi,2025-03-10,11,0
-Dr Sridevi Kalidindi,2025-03-17,12,0
+Dr Sridevi Kalidindi,2025-03-17,12,1
 Dr Sridevi Kalidindi,2025-03-24,13,0
 Dr Sridevi Kalidindi,2025-03-31,14,0
 Dr Sridevi Kalidindi,2025-04-07,15,0
 Dr Sridevi Kalidindi,2025-04-14,16,0
-Dr Sridevi Kalidindi,2025-04-21,17,0
+Dr Sridevi Kalidindi,2025-04-21,17,1
 Dr Sridevi Kalidindi,2025-04-28,18,0
 Dr Sridevi Kalidindi,2025-05-05,19,0
 Dr Sridevi Kalidindi,2025-05-12,20,0
 Dr Sridevi Kalidindi,2025-05-19,21,0
 Dr Sridevi Kalidindi,2025-05-26,22,0
-Dr Sridevi Kalidindi,2025-06-02,23,0
+Dr Sridevi Kalidindi,2025-06-02,23,1
 Dr Sridevi Kalidindi,2025-06-09,24,0
 Dr Sridevi Kalidindi,2025-06-16,25,0
-Dr Sridevi Kalidindi,2025-06-23,26,0
-Dr Sridevi Kalidindi,2025-06-30,27,0
-Dr Sridevi Kalidindi,2025-07-07,28,0
-Dr Sridevi Kalidindi,2025-07-14,29,0
-Dr Sridevi Kalidindi,2025-07-21,30,0
-Dr Sridevi Kalidindi,2025-07-28,31,0
-Dr Sridevi Kalidindi,2025-08-04,32,0
-Dr Sridevi Kalidindi,2025-08-11,33,0
-Dr Sridevi Kalidindi,2025-08-18,34,0
-Dr Sridevi Kalidindi,2025-08-25,35,0
+Dr Sridevi Kalidindi,2025-06-23,26,3
+Dr Sridevi Kalidindi,2025-06-30,27,1
+Dr Sridevi Kalidindi,2025-07-07,28,1
+Dr Sridevi Kalidindi,2025-07-14,29,1
+Dr Sridevi Kalidindi,2025-07-21,30,1
+Dr Sridevi Kalidindi,2025-07-28,31,1
+Dr Sridevi Kalidindi,2025-08-04,32,2
+Dr Sridevi Kalidindi,2025-08-11,33,1
+Dr Sridevi Kalidindi,2025-08-18,34,1
+Dr Sridevi Kalidindi,2025-08-25,35,1
 Dr Sridevi Kalidindi,2025-09-01,36,0
 Dr Sridevi Kalidindi,2025-09-08,37,0
 Dr Sridevi Kalidindi,2025-09-15,38,0
 Dr Sridevi Kalidindi,2025-09-22,39,0
 Dr Sridevi Kalidindi,2025-09-29,40,0
 Dr Sridevi Kalidindi,2025-10-06,41,0
-Dr Sridevi Kalidindi,2025-10-13,42,0
-Dr Sridevi Kalidindi,2025-10-20,43,0
+Dr Sridevi Kalidindi,2025-10-13,42,1
+Dr Sridevi Kalidindi,2025-10-20,43,1
 Dr Sridevi Kalidindi,2025-10-27,44,0
-Dr Sridevi Kalidindi,2025-11-03,45,0
+Dr Sridevi Kalidindi,2025-11-03,45,1
 Dr Sridevi Kalidindi,2025-11-10,46,0
 Dr Sridevi Kalidindi,2025-11-17,47,0
-Dr Sridevi Kalidindi,2025-11-24,48,0
-Dr Sridevi Kalidindi,2025-12-01,49,0
-Dr Sridevi Kalidindi,2025-12-08,50,0
-Dr Sridevi Kalidindi,2025-12-15,51,0
-Dr Sridevi Kalidindi,2025-12-22,52,0
-Dr Sridevi Kalidindi,2025-12-29,1,0
-Fortune Mhlanga,2025-01-06,2,0
+Dr Sridevi Kalidindi,2025-11-24,48,1
+Dr Sridevi Kalidindi,2025-12-01,49,1
+Dr Sridevi Kalidindi,2025-12-08,50,2
+Dr Sridevi Kalidindi,2025-12-15,51,2
+Dr Sridevi Kalidindi,2025-12-22,52,2
+Dr Sridevi Kalidindi,2025-12-29,1,1
+Fortune Mhlanga,2025-01-06,2,1
 Fortune Mhlanga,2025-01-13,3,0
-Fortune Mhlanga,2025-01-20,4,0
-Fortune Mhlanga,2025-01-27,5,0
+Fortune Mhlanga,2025-01-20,4,2
+Fortune Mhlanga,2025-01-27,5,1
 Fortune Mhlanga,2025-02-03,6,0
 Fortune Mhlanga,2025-02-10,7,0
 Fortune Mhlanga,2025-02-17,8,0
-Fortune Mhlanga,2025-02-24,9,0
+Fortune Mhlanga,2025-02-24,9,1
 Fortune Mhlanga,2025-03-03,10,0
-Fortune Mhlanga,2025-03-10,11,0
+Fortune Mhlanga,2025-03-10,11,1
 Fortune Mhlanga,2025-03-17,12,0
 Fortune Mhlanga,2025-03-24,13,0
 Fortune Mhlanga,2025-03-31,14,0
@@ -332,19 +332,19 @@ Fortune Mhlanga,2025-05-05,19,0
 Fortune Mhlanga,2025-05-12,20,0
 Fortune Mhlanga,2025-05-19,21,0
 Fortune Mhlanga,2025-05-26,22,0
-Fortune Mhlanga,2025-06-02,23,0
-Fortune Mhlanga,2025-06-09,24,0
-Fortune Mhlanga,2025-06-16,25,0
-Fortune Mhlanga,2025-06-23,26,0
+Fortune Mhlanga,2025-06-02,23,1
+Fortune Mhlanga,2025-06-09,24,2
+Fortune Mhlanga,2025-06-16,25,1
+Fortune Mhlanga,2025-06-23,26,2
 Fortune Mhlanga,2025-06-30,27,0
-Fortune Mhlanga,2025-07-07,28,0
+Fortune Mhlanga,2025-07-07,28,1
 Fortune Mhlanga,2025-07-14,29,0
-Fortune Mhlanga,2025-07-21,30,0
-Fortune Mhlanga,2025-07-28,31,0
+Fortune Mhlanga,2025-07-21,30,1
+Fortune Mhlanga,2025-07-28,31,1
 Fortune Mhlanga,2025-08-04,32,0
-Fortune Mhlanga,2025-08-11,33,0
-Fortune Mhlanga,2025-08-18,34,0
-Fortune Mhlanga,2025-08-25,35,0
+Fortune Mhlanga,2025-08-11,33,3
+Fortune Mhlanga,2025-08-18,34,2
+Fortune Mhlanga,2025-08-25,35,3
 Fortune Mhlanga,2025-09-01,36,0
 Fortune Mhlanga,2025-09-08,37,0
 Fortune Mhlanga,2025-09-15,38,0
@@ -354,105 +354,105 @@ Fortune Mhlanga,2025-10-06,41,0
 Fortune Mhlanga,2025-10-13,42,0
 Fortune Mhlanga,2025-10-20,43,0
 Fortune Mhlanga,2025-10-27,44,0
-Fortune Mhlanga,2025-11-03,45,0
+Fortune Mhlanga,2025-11-03,45,1
 Fortune Mhlanga,2025-11-10,46,0
-Fortune Mhlanga,2025-11-17,47,0
-Fortune Mhlanga,2025-11-24,48,0
-Fortune Mhlanga,2025-12-01,49,0
-Fortune Mhlanga,2025-12-08,50,0
-Fortune Mhlanga,2025-12-15,51,0
-Fortune Mhlanga,2025-12-22,52,0
-Fortune Mhlanga,2025-12-29,1,0
-Frances Igbonwoke,2025-01-06,2,0
-Frances Igbonwoke,2025-01-13,3,0
-Frances Igbonwoke,2025-01-20,4,0
-Frances Igbonwoke,2025-01-27,5,0
-Frances Igbonwoke,2025-02-03,6,0
+Fortune Mhlanga,2025-11-17,47,1
+Fortune Mhlanga,2025-11-24,48,1
+Fortune Mhlanga,2025-12-01,49,2
+Fortune Mhlanga,2025-12-08,50,1
+Fortune Mhlanga,2025-12-15,51,3
+Fortune Mhlanga,2025-12-22,52,2
+Fortune Mhlanga,2025-12-29,1,4
+Frances Igbonwoke,2025-01-06,2,1
+Frances Igbonwoke,2025-01-13,3,2
+Frances Igbonwoke,2025-01-20,4,2
+Frances Igbonwoke,2025-01-27,5,2
+Frances Igbonwoke,2025-02-03,6,1
 Frances Igbonwoke,2025-02-10,7,0
 Frances Igbonwoke,2025-02-17,8,0
 Frances Igbonwoke,2025-02-24,9,0
 Frances Igbonwoke,2025-03-03,10,0
 Frances Igbonwoke,2025-03-10,11,0
-Frances Igbonwoke,2025-03-17,12,0
+Frances Igbonwoke,2025-03-17,12,1
 Frances Igbonwoke,2025-03-24,13,0
 Frances Igbonwoke,2025-03-31,14,0
 Frances Igbonwoke,2025-04-07,15,0
 Frances Igbonwoke,2025-04-14,16,0
-Frances Igbonwoke,2025-04-21,17,0
+Frances Igbonwoke,2025-04-21,17,1
 Frances Igbonwoke,2025-04-28,18,0
 Frances Igbonwoke,2025-05-05,19,0
 Frances Igbonwoke,2025-05-12,20,0
 Frances Igbonwoke,2025-05-19,21,0
-Frances Igbonwoke,2025-05-26,22,0
-Frances Igbonwoke,2025-06-02,23,0
-Frances Igbonwoke,2025-06-09,24,0
-Frances Igbonwoke,2025-06-16,25,0
-Frances Igbonwoke,2025-06-23,26,0
+Frances Igbonwoke,2025-05-26,22,1
+Frances Igbonwoke,2025-06-02,23,1
+Frances Igbonwoke,2025-06-09,24,2
+Frances Igbonwoke,2025-06-16,25,3
+Frances Igbonwoke,2025-06-23,26,2
 Frances Igbonwoke,2025-06-30,27,0
-Frances Igbonwoke,2025-07-07,28,0
-Frances Igbonwoke,2025-07-14,29,0
-Frances Igbonwoke,2025-07-21,30,0
-Frances Igbonwoke,2025-07-28,31,0
-Frances Igbonwoke,2025-08-04,32,0
-Frances Igbonwoke,2025-08-11,33,0
-Frances Igbonwoke,2025-08-18,34,0
-Frances Igbonwoke,2025-08-25,35,0
-Frances Igbonwoke,2025-09-01,36,0
+Frances Igbonwoke,2025-07-07,28,2
+Frances Igbonwoke,2025-07-14,29,3
+Frances Igbonwoke,2025-07-21,30,1
+Frances Igbonwoke,2025-07-28,31,3
+Frances Igbonwoke,2025-08-04,32,3
+Frances Igbonwoke,2025-08-11,33,1
+Frances Igbonwoke,2025-08-18,34,1
+Frances Igbonwoke,2025-08-25,35,2
+Frances Igbonwoke,2025-09-01,36,1
 Frances Igbonwoke,2025-09-08,37,0
-Frances Igbonwoke,2025-09-15,38,0
+Frances Igbonwoke,2025-09-15,38,1
 Frances Igbonwoke,2025-09-22,39,0
 Frances Igbonwoke,2025-09-29,40,0
 Frances Igbonwoke,2025-10-06,41,0
 Frances Igbonwoke,2025-10-13,42,0
 Frances Igbonwoke,2025-10-20,43,0
 Frances Igbonwoke,2025-10-27,44,0
-Frances Igbonwoke,2025-11-03,45,0
+Frances Igbonwoke,2025-11-03,45,3
 Frances Igbonwoke,2025-11-10,46,0
 Frances Igbonwoke,2025-11-17,47,0
 Frances Igbonwoke,2025-11-24,48,0
-Frances Igbonwoke,2025-12-01,49,0
-Frances Igbonwoke,2025-12-08,50,0
-Frances Igbonwoke,2025-12-15,51,0
-Frances Igbonwoke,2025-12-22,52,0
-Frances Igbonwoke,2025-12-29,1,0
-Gareth Price,2025-01-06,2,0
-Gareth Price,2025-01-13,3,0
-Gareth Price,2025-01-20,4,0
-Gareth Price,2025-01-27,5,0
-Gareth Price,2025-02-03,6,0
+Frances Igbonwoke,2025-12-01,49,3
+Frances Igbonwoke,2025-12-08,50,2
+Frances Igbonwoke,2025-12-15,51,2
+Frances Igbonwoke,2025-12-22,52,5
+Frances Igbonwoke,2025-12-29,1,2
+Gareth Price,2025-01-06,2,1
+Gareth Price,2025-01-13,3,2
+Gareth Price,2025-01-20,4,3
+Gareth Price,2025-01-27,5,1
+Gareth Price,2025-02-03,6,1
 Gareth Price,2025-02-10,7,0
-Gareth Price,2025-02-17,8,0
+Gareth Price,2025-02-17,8,1
 Gareth Price,2025-02-24,9,0
-Gareth Price,2025-03-03,10,0
+Gareth Price,2025-03-03,10,2
 Gareth Price,2025-03-10,11,0
 Gareth Price,2025-03-17,12,0
 Gareth Price,2025-03-24,13,0
-Gareth Price,2025-03-31,14,0
+Gareth Price,2025-03-31,14,1
 Gareth Price,2025-04-07,15,0
-Gareth Price,2025-04-14,16,0
+Gareth Price,2025-04-14,16,1
 Gareth Price,2025-04-21,17,0
 Gareth Price,2025-04-28,18,0
 Gareth Price,2025-05-05,19,0
 Gareth Price,2025-05-12,20,0
 Gareth Price,2025-05-19,21,0
 Gareth Price,2025-05-26,22,0
-Gareth Price,2025-06-02,23,0
-Gareth Price,2025-06-09,24,0
-Gareth Price,2025-06-16,25,0
-Gareth Price,2025-06-23,26,0
-Gareth Price,2025-06-30,27,0
-Gareth Price,2025-07-07,28,0
-Gareth Price,2025-07-14,29,0
-Gareth Price,2025-07-21,30,0
-Gareth Price,2025-07-28,31,0
-Gareth Price,2025-08-04,32,0
-Gareth Price,2025-08-11,33,0
-Gareth Price,2025-08-18,34,0
-Gareth Price,2025-08-25,35,0
+Gareth Price,2025-06-02,23,2
+Gareth Price,2025-06-09,24,1
+Gareth Price,2025-06-16,25,3
+Gareth Price,2025-06-23,26,2
+Gareth Price,2025-06-30,27,4
+Gareth Price,2025-07-07,28,1
+Gareth Price,2025-07-14,29,2
+Gareth Price,2025-07-21,30,2
+Gareth Price,2025-07-28,31,1
+Gareth Price,2025-08-04,32,1
+Gareth Price,2025-08-11,33,1
+Gareth Price,2025-08-18,34,3
+Gareth Price,2025-08-25,35,2
 Gareth Price,2025-09-01,36,0
 Gareth Price,2025-09-08,37,0
-Gareth Price,2025-09-15,38,0
-Gareth Price,2025-09-22,39,0
+Gareth Price,2025-09-15,38,1
+Gareth Price,2025-09-22,39,1
 Gareth Price,2025-09-29,40,0
 Gareth Price,2025-10-06,41,0
 Gareth Price,2025-10-13,42,0
@@ -461,18 +461,18 @@ Gareth Price,2025-10-27,44,0
 Gareth Price,2025-11-03,45,0
 Gareth Price,2025-11-10,46,0
 Gareth Price,2025-11-17,47,0
-Gareth Price,2025-11-24,48,0
-Gareth Price,2025-12-01,49,0
-Gareth Price,2025-12-08,50,0
-Gareth Price,2025-12-15,51,0
-Gareth Price,2025-12-22,52,0
+Gareth Price,2025-11-24,48,1
+Gareth Price,2025-12-01,49,2
+Gareth Price,2025-12-08,50,1
+Gareth Price,2025-12-15,51,3
+Gareth Price,2025-12-22,52,2
 Gareth Price,2025-12-29,1,0
-Heath McDonald,2025-01-06,2,0
-Heath McDonald,2025-01-13,3,0
-Heath McDonald,2025-01-20,4,0
-Heath McDonald,2025-01-27,5,0
+Heath McDonald,2025-01-06,2,3
+Heath McDonald,2025-01-13,3,1
+Heath McDonald,2025-01-20,4,2
+Heath McDonald,2025-01-27,5,1
 Heath McDonald,2025-02-03,6,0
-Heath McDonald,2025-02-10,7,0
+Heath McDonald,2025-02-10,7,1
 Heath McDonald,2025-02-17,8,0
 Heath McDonald,2025-02-24,9,0
 Heath McDonald,2025-03-03,10,0
@@ -486,157 +486,157 @@ Heath McDonald,2025-04-21,17,0
 Heath McDonald,2025-04-28,18,0
 Heath McDonald,2025-05-05,19,0
 Heath McDonald,2025-05-12,20,0
-Heath McDonald,2025-05-19,21,0
+Heath McDonald,2025-05-19,21,1
 Heath McDonald,2025-05-26,22,0
-Heath McDonald,2025-06-02,23,0
-Heath McDonald,2025-06-09,24,0
-Heath McDonald,2025-06-16,25,0
-Heath McDonald,2025-06-23,26,0
-Heath McDonald,2025-06-30,27,0
-Heath McDonald,2025-07-07,28,0
+Heath McDonald,2025-06-02,23,1
+Heath McDonald,2025-06-09,24,2
+Heath McDonald,2025-06-16,25,2
+Heath McDonald,2025-06-23,26,1
+Heath McDonald,2025-06-30,27,1
+Heath McDonald,2025-07-07,28,1
 Heath McDonald,2025-07-14,29,0
-Heath McDonald,2025-07-21,30,0
-Heath McDonald,2025-07-28,31,0
-Heath McDonald,2025-08-04,32,0
-Heath McDonald,2025-08-11,33,0
-Heath McDonald,2025-08-18,34,0
-Heath McDonald,2025-08-25,35,0
+Heath McDonald,2025-07-21,30,1
+Heath McDonald,2025-07-28,31,1
+Heath McDonald,2025-08-04,32,1
+Heath McDonald,2025-08-11,33,1
+Heath McDonald,2025-08-18,34,2
+Heath McDonald,2025-08-25,35,2
 Heath McDonald,2025-09-01,36,0
 Heath McDonald,2025-09-08,37,0
-Heath McDonald,2025-09-15,38,0
+Heath McDonald,2025-09-15,38,1
 Heath McDonald,2025-09-22,39,0
-Heath McDonald,2025-09-29,40,0
+Heath McDonald,2025-09-29,40,1
 Heath McDonald,2025-10-06,41,0
-Heath McDonald,2025-10-13,42,0
+Heath McDonald,2025-10-13,42,1
 Heath McDonald,2025-10-20,43,0
 Heath McDonald,2025-10-27,44,0
-Heath McDonald,2025-11-03,45,0
-Heath McDonald,2025-11-10,46,0
+Heath McDonald,2025-11-03,45,1
+Heath McDonald,2025-11-10,46,1
 Heath McDonald,2025-11-17,47,0
 Heath McDonald,2025-11-24,48,0
-Heath McDonald,2025-12-01,49,0
-Heath McDonald,2025-12-08,50,0
-Heath McDonald,2025-12-15,51,0
-Heath McDonald,2025-12-22,52,0
-Heath McDonald,2025-12-29,1,0
-Helen Embleton,2025-01-06,2,0
-Helen Embleton,2025-01-13,3,0
-Helen Embleton,2025-01-20,4,0
-Helen Embleton,2025-01-27,5,0
+Heath McDonald,2025-12-01,49,1
+Heath McDonald,2025-12-08,50,1
+Heath McDonald,2025-12-15,51,1
+Heath McDonald,2025-12-22,52,1
+Heath McDonald,2025-12-29,1,2
+Helen Embleton,2025-01-06,2,2
+Helen Embleton,2025-01-13,3,1
+Helen Embleton,2025-01-20,4,1
+Helen Embleton,2025-01-27,5,1
 Helen Embleton,2025-02-03,6,0
-Helen Embleton,2025-02-10,7,0
+Helen Embleton,2025-02-10,7,1
 Helen Embleton,2025-02-17,8,0
 Helen Embleton,2025-02-24,9,0
 Helen Embleton,2025-03-03,10,0
 Helen Embleton,2025-03-10,11,0
-Helen Embleton,2025-03-17,12,0
-Helen Embleton,2025-03-24,13,0
+Helen Embleton,2025-03-17,12,2
+Helen Embleton,2025-03-24,13,1
 Helen Embleton,2025-03-31,14,0
-Helen Embleton,2025-04-07,15,0
+Helen Embleton,2025-04-07,15,1
 Helen Embleton,2025-04-14,16,0
 Helen Embleton,2025-04-21,17,0
 Helen Embleton,2025-04-28,18,0
 Helen Embleton,2025-05-05,19,0
-Helen Embleton,2025-05-12,20,0
+Helen Embleton,2025-05-12,20,1
 Helen Embleton,2025-05-19,21,0
 Helen Embleton,2025-05-26,22,0
-Helen Embleton,2025-06-02,23,0
-Helen Embleton,2025-06-09,24,0
-Helen Embleton,2025-06-16,25,0
-Helen Embleton,2025-06-23,26,0
-Helen Embleton,2025-06-30,27,0
+Helen Embleton,2025-06-02,23,4
+Helen Embleton,2025-06-09,24,2
+Helen Embleton,2025-06-16,25,1
+Helen Embleton,2025-06-23,26,1
+Helen Embleton,2025-06-30,27,3
 Helen Embleton,2025-07-07,28,0
-Helen Embleton,2025-07-14,29,0
-Helen Embleton,2025-07-21,30,0
-Helen Embleton,2025-07-28,31,0
-Helen Embleton,2025-08-04,32,0
-Helen Embleton,2025-08-11,33,0
-Helen Embleton,2025-08-18,34,0
-Helen Embleton,2025-08-25,35,0
+Helen Embleton,2025-07-14,29,2
+Helen Embleton,2025-07-21,30,1
+Helen Embleton,2025-07-28,31,1
+Helen Embleton,2025-08-04,32,1
+Helen Embleton,2025-08-11,33,2
+Helen Embleton,2025-08-18,34,2
+Helen Embleton,2025-08-25,35,1
 Helen Embleton,2025-09-01,36,0
-Helen Embleton,2025-09-08,37,0
-Helen Embleton,2025-09-15,38,0
-Helen Embleton,2025-09-22,39,0
-Helen Embleton,2025-09-29,40,0
+Helen Embleton,2025-09-08,37,1
+Helen Embleton,2025-09-15,38,1
+Helen Embleton,2025-09-22,39,1
+Helen Embleton,2025-09-29,40,1
 Helen Embleton,2025-10-06,41,0
 Helen Embleton,2025-10-13,42,0
 Helen Embleton,2025-10-20,43,0
 Helen Embleton,2025-10-27,44,0
-Helen Embleton,2025-11-03,45,0
+Helen Embleton,2025-11-03,45,1
 Helen Embleton,2025-11-10,46,0
-Helen Embleton,2025-11-17,47,0
-Helen Embleton,2025-11-24,48,0
-Helen Embleton,2025-12-01,49,0
-Helen Embleton,2025-12-08,50,0
-Helen Embleton,2025-12-15,51,0
-Helen Embleton,2025-12-22,52,0
-Helen Embleton,2025-12-29,1,0
-Lizell Smit ,2025-01-06,2,0
-Lizell Smit ,2025-01-13,3,0
-Lizell Smit ,2025-01-20,4,0
-Lizell Smit ,2025-01-27,5,0
+Helen Embleton,2025-11-17,47,1
+Helen Embleton,2025-11-24,48,1
+Helen Embleton,2025-12-01,49,2
+Helen Embleton,2025-12-08,50,3
+Helen Embleton,2025-12-15,51,3
+Helen Embleton,2025-12-22,52,3
+Helen Embleton,2025-12-29,1,2
+Lizell Smit ,2025-01-06,2,3
+Lizell Smit ,2025-01-13,3,2
+Lizell Smit ,2025-01-20,4,2
+Lizell Smit ,2025-01-27,5,3
 Lizell Smit ,2025-02-03,6,0
 Lizell Smit ,2025-02-10,7,0
 Lizell Smit ,2025-02-17,8,0
 Lizell Smit ,2025-02-24,9,0
 Lizell Smit ,2025-03-03,10,0
 Lizell Smit ,2025-03-10,11,0
-Lizell Smit ,2025-03-17,12,0
+Lizell Smit ,2025-03-17,12,1
 Lizell Smit ,2025-03-24,13,0
 Lizell Smit ,2025-03-31,14,0
 Lizell Smit ,2025-04-07,15,0
 Lizell Smit ,2025-04-14,16,0
 Lizell Smit ,2025-04-21,17,0
 Lizell Smit ,2025-04-28,18,0
-Lizell Smit ,2025-05-05,19,0
+Lizell Smit ,2025-05-05,19,1
 Lizell Smit ,2025-05-12,20,0
-Lizell Smit ,2025-05-19,21,0
+Lizell Smit ,2025-05-19,21,1
 Lizell Smit ,2025-05-26,22,0
-Lizell Smit ,2025-06-02,23,0
+Lizell Smit ,2025-06-02,23,2
 Lizell Smit ,2025-06-09,24,0
-Lizell Smit ,2025-06-16,25,0
+Lizell Smit ,2025-06-16,25,2
 Lizell Smit ,2025-06-23,26,0
-Lizell Smit ,2025-06-30,27,0
-Lizell Smit ,2025-07-07,28,0
-Lizell Smit ,2025-07-14,29,0
-Lizell Smit ,2025-07-21,30,0
-Lizell Smit ,2025-07-28,31,0
+Lizell Smit ,2025-06-30,27,1
+Lizell Smit ,2025-07-07,28,1
+Lizell Smit ,2025-07-14,29,2
+Lizell Smit ,2025-07-21,30,1
+Lizell Smit ,2025-07-28,31,2
 Lizell Smit ,2025-08-04,32,0
-Lizell Smit ,2025-08-11,33,0
-Lizell Smit ,2025-08-18,34,0
-Lizell Smit ,2025-08-25,35,0
+Lizell Smit ,2025-08-11,33,1
+Lizell Smit ,2025-08-18,34,1
+Lizell Smit ,2025-08-25,35,3
 Lizell Smit ,2025-09-01,36,0
 Lizell Smit ,2025-09-08,37,0
 Lizell Smit ,2025-09-15,38,0
-Lizell Smit ,2025-09-22,39,0
-Lizell Smit ,2025-09-29,40,0
+Lizell Smit ,2025-09-22,39,1
+Lizell Smit ,2025-09-29,40,1
 Lizell Smit ,2025-10-06,41,0
 Lizell Smit ,2025-10-13,42,0
 Lizell Smit ,2025-10-20,43,0
 Lizell Smit ,2025-10-27,44,0
 Lizell Smit ,2025-11-03,45,0
-Lizell Smit ,2025-11-10,46,0
+Lizell Smit ,2025-11-10,46,2
 Lizell Smit ,2025-11-17,47,0
-Lizell Smit ,2025-11-24,48,0
-Lizell Smit ,2025-12-01,49,0
-Lizell Smit ,2025-12-08,50,0
-Lizell Smit ,2025-12-15,51,0
-Lizell Smit ,2025-12-22,52,0
-Lizell Smit ,2025-12-29,1,0
-Louise Thomas,2025-01-06,2,0
-Louise Thomas,2025-01-13,3,0
-Louise Thomas,2025-01-20,4,0
-Louise Thomas,2025-01-27,5,0
-Louise Thomas,2025-02-03,6,0
+Lizell Smit ,2025-11-24,48,1
+Lizell Smit ,2025-12-01,49,2
+Lizell Smit ,2025-12-08,50,2
+Lizell Smit ,2025-12-15,51,4
+Lizell Smit ,2025-12-22,52,2
+Lizell Smit ,2025-12-29,1,2
+Louise Thomas,2025-01-06,2,4
+Louise Thomas,2025-01-13,3,3
+Louise Thomas,2025-01-20,4,1
+Louise Thomas,2025-01-27,5,2
+Louise Thomas,2025-02-03,6,1
 Louise Thomas,2025-02-10,7,0
-Louise Thomas,2025-02-17,8,0
+Louise Thomas,2025-02-17,8,1
 Louise Thomas,2025-02-24,9,0
 Louise Thomas,2025-03-03,10,0
 Louise Thomas,2025-03-10,11,0
-Louise Thomas,2025-03-17,12,0
-Louise Thomas,2025-03-24,13,0
+Louise Thomas,2025-03-17,12,1
+Louise Thomas,2025-03-24,13,1
 Louise Thomas,2025-03-31,14,0
-Louise Thomas,2025-04-07,15,0
+Louise Thomas,2025-04-07,15,1
 Louise Thomas,2025-04-14,16,0
 Louise Thomas,2025-04-21,17,0
 Louise Thomas,2025-04-28,18,0
@@ -644,41 +644,41 @@ Louise Thomas,2025-05-05,19,0
 Louise Thomas,2025-05-12,20,0
 Louise Thomas,2025-05-19,21,0
 Louise Thomas,2025-05-26,22,0
-Louise Thomas,2025-06-02,23,0
-Louise Thomas,2025-06-09,24,0
-Louise Thomas,2025-06-16,25,0
+Louise Thomas,2025-06-02,23,2
+Louise Thomas,2025-06-09,24,1
+Louise Thomas,2025-06-16,25,1
 Louise Thomas,2025-06-23,26,0
-Louise Thomas,2025-06-30,27,0
-Louise Thomas,2025-07-07,28,0
-Louise Thomas,2025-07-14,29,0
-Louise Thomas,2025-07-21,30,0
-Louise Thomas,2025-07-28,31,0
-Louise Thomas,2025-08-04,32,0
-Louise Thomas,2025-08-11,33,0
-Louise Thomas,2025-08-18,34,0
-Louise Thomas,2025-08-25,35,0
-Louise Thomas,2025-09-01,36,0
-Louise Thomas,2025-09-08,37,0
+Louise Thomas,2025-06-30,27,1
+Louise Thomas,2025-07-07,28,1
+Louise Thomas,2025-07-14,29,2
+Louise Thomas,2025-07-21,30,1
+Louise Thomas,2025-07-28,31,1
+Louise Thomas,2025-08-04,32,1
+Louise Thomas,2025-08-11,33,3
+Louise Thomas,2025-08-18,34,2
+Louise Thomas,2025-08-25,35,2
+Louise Thomas,2025-09-01,36,2
+Louise Thomas,2025-09-08,37,1
 Louise Thomas,2025-09-15,38,0
 Louise Thomas,2025-09-22,39,0
 Louise Thomas,2025-09-29,40,0
 Louise Thomas,2025-10-06,41,0
 Louise Thomas,2025-10-13,42,0
 Louise Thomas,2025-10-20,43,0
-Louise Thomas,2025-10-27,44,0
+Louise Thomas,2025-10-27,44,1
 Louise Thomas,2025-11-03,45,0
 Louise Thomas,2025-11-10,46,0
 Louise Thomas,2025-11-17,47,0
-Louise Thomas,2025-11-24,48,0
-Louise Thomas,2025-12-01,49,0
-Louise Thomas,2025-12-08,50,0
-Louise Thomas,2025-12-15,51,0
-Louise Thomas,2025-12-22,52,0
-Louise Thomas,2025-12-29,1,0
-Maureen Banda,2025-01-06,2,0
-Maureen Banda,2025-01-13,3,0
+Louise Thomas,2025-11-24,48,1
+Louise Thomas,2025-12-01,49,1
+Louise Thomas,2025-12-08,50,2
+Louise Thomas,2025-12-15,51,2
+Louise Thomas,2025-12-22,52,2
+Louise Thomas,2025-12-29,1,1
+Maureen Banda,2025-01-06,2,2
+Maureen Banda,2025-01-13,3,2
 Maureen Banda,2025-01-20,4,0
-Maureen Banda,2025-01-27,5,0
+Maureen Banda,2025-01-27,5,2
 Maureen Banda,2025-02-03,6,0
 Maureen Banda,2025-02-10,7,0
 Maureen Banda,2025-02-17,8,0
@@ -688,56 +688,56 @@ Maureen Banda,2025-03-10,11,0
 Maureen Banda,2025-03-17,12,0
 Maureen Banda,2025-03-24,13,0
 Maureen Banda,2025-03-31,14,0
-Maureen Banda,2025-04-07,15,0
-Maureen Banda,2025-04-14,16,0
+Maureen Banda,2025-04-07,15,1
+Maureen Banda,2025-04-14,16,1
 Maureen Banda,2025-04-21,17,0
 Maureen Banda,2025-04-28,18,0
 Maureen Banda,2025-05-05,19,0
 Maureen Banda,2025-05-12,20,0
 Maureen Banda,2025-05-19,21,0
 Maureen Banda,2025-05-26,22,0
-Maureen Banda,2025-06-02,23,0
-Maureen Banda,2025-06-09,24,0
+Maureen Banda,2025-06-02,23,1
+Maureen Banda,2025-06-09,24,2
 Maureen Banda,2025-06-16,25,0
-Maureen Banda,2025-06-23,26,0
-Maureen Banda,2025-06-30,27,0
-Maureen Banda,2025-07-07,28,0
-Maureen Banda,2025-07-14,29,0
-Maureen Banda,2025-07-21,30,0
-Maureen Banda,2025-07-28,31,0
-Maureen Banda,2025-08-04,32,0
-Maureen Banda,2025-08-11,33,0
-Maureen Banda,2025-08-18,34,0
-Maureen Banda,2025-08-25,35,0
+Maureen Banda,2025-06-23,26,1
+Maureen Banda,2025-06-30,27,1
+Maureen Banda,2025-07-07,28,2
+Maureen Banda,2025-07-14,29,4
+Maureen Banda,2025-07-21,30,2
+Maureen Banda,2025-07-28,31,2
+Maureen Banda,2025-08-04,32,1
+Maureen Banda,2025-08-11,33,1
+Maureen Banda,2025-08-18,34,2
+Maureen Banda,2025-08-25,35,1
 Maureen Banda,2025-09-01,36,0
 Maureen Banda,2025-09-08,37,0
 Maureen Banda,2025-09-15,38,0
 Maureen Banda,2025-09-22,39,0
-Maureen Banda,2025-09-29,40,0
-Maureen Banda,2025-10-06,41,0
-Maureen Banda,2025-10-13,42,0
-Maureen Banda,2025-10-20,43,0
+Maureen Banda,2025-09-29,40,1
+Maureen Banda,2025-10-06,41,1
+Maureen Banda,2025-10-13,42,1
+Maureen Banda,2025-10-20,43,1
 Maureen Banda,2025-10-27,44,0
-Maureen Banda,2025-11-03,45,0
-Maureen Banda,2025-11-10,46,0
+Maureen Banda,2025-11-03,45,1
+Maureen Banda,2025-11-10,46,1
 Maureen Banda,2025-11-17,47,0
 Maureen Banda,2025-11-24,48,0
-Maureen Banda,2025-12-01,49,0
-Maureen Banda,2025-12-08,50,0
-Maureen Banda,2025-12-15,51,0
-Maureen Banda,2025-12-22,52,0
+Maureen Banda,2025-12-01,49,2
+Maureen Banda,2025-12-08,50,2
+Maureen Banda,2025-12-15,51,2
+Maureen Banda,2025-12-22,52,2
 Maureen Banda,2025-12-29,1,0
-Michael Connell,2025-01-06,2,0
-Michael Connell,2025-01-13,3,0
-Michael Connell,2025-01-20,4,0
-Michael Connell,2025-01-27,5,0
+Michael Connell,2025-01-06,2,3
+Michael Connell,2025-01-13,3,1
+Michael Connell,2025-01-20,4,1
+Michael Connell,2025-01-27,5,4
 Michael Connell,2025-02-03,6,0
 Michael Connell,2025-02-10,7,0
 Michael Connell,2025-02-17,8,0
 Michael Connell,2025-02-24,9,0
-Michael Connell,2025-03-03,10,0
+Michael Connell,2025-03-03,10,1
 Michael Connell,2025-03-10,11,0
-Michael Connell,2025-03-17,12,0
+Michael Connell,2025-03-17,12,1
 Michael Connell,2025-03-24,13,0
 Michael Connell,2025-03-31,14,0
 Michael Connell,2025-04-07,15,0
@@ -747,95 +747,95 @@ Michael Connell,2025-04-28,18,0
 Michael Connell,2025-05-05,19,0
 Michael Connell,2025-05-12,20,0
 Michael Connell,2025-05-19,21,0
-Michael Connell,2025-05-26,22,0
-Michael Connell,2025-06-02,23,0
-Michael Connell,2025-06-09,24,0
-Michael Connell,2025-06-16,25,0
-Michael Connell,2025-06-23,26,0
-Michael Connell,2025-06-30,27,0
-Michael Connell,2025-07-07,28,0
-Michael Connell,2025-07-14,29,0
-Michael Connell,2025-07-21,30,0
-Michael Connell,2025-07-28,31,0
-Michael Connell,2025-08-04,32,0
-Michael Connell,2025-08-11,33,0
-Michael Connell,2025-08-18,34,0
-Michael Connell,2025-08-25,35,0
+Michael Connell,2025-05-26,22,1
+Michael Connell,2025-06-02,23,1
+Michael Connell,2025-06-09,24,2
+Michael Connell,2025-06-16,25,3
+Michael Connell,2025-06-23,26,2
+Michael Connell,2025-06-30,27,1
+Michael Connell,2025-07-07,28,1
+Michael Connell,2025-07-14,29,3
+Michael Connell,2025-07-21,30,1
+Michael Connell,2025-07-28,31,1
+Michael Connell,2025-08-04,32,3
+Michael Connell,2025-08-11,33,1
+Michael Connell,2025-08-18,34,2
+Michael Connell,2025-08-25,35,1
 Michael Connell,2025-09-01,36,0
 Michael Connell,2025-09-08,37,0
 Michael Connell,2025-09-15,38,0
-Michael Connell,2025-09-22,39,0
-Michael Connell,2025-09-29,40,0
+Michael Connell,2025-09-22,39,1
+Michael Connell,2025-09-29,40,1
 Michael Connell,2025-10-06,41,0
 Michael Connell,2025-10-13,42,0
 Michael Connell,2025-10-20,43,0
 Michael Connell,2025-10-27,44,0
-Michael Connell,2025-11-03,45,0
+Michael Connell,2025-11-03,45,2
 Michael Connell,2025-11-10,46,0
 Michael Connell,2025-11-17,47,0
 Michael Connell,2025-11-24,48,0
-Michael Connell,2025-12-01,49,0
-Michael Connell,2025-12-08,50,0
-Michael Connell,2025-12-15,51,0
-Michael Connell,2025-12-22,52,0
-Michael Connell,2025-12-29,1,0
-Nick Gitsham,2025-01-06,2,0
+Michael Connell,2025-12-01,49,4
+Michael Connell,2025-12-08,50,2
+Michael Connell,2025-12-15,51,2
+Michael Connell,2025-12-22,52,2
+Michael Connell,2025-12-29,1,2
+Nick Gitsham,2025-01-06,2,1
 Nick Gitsham,2025-01-13,3,0
-Nick Gitsham,2025-01-20,4,0
+Nick Gitsham,2025-01-20,4,2
 Nick Gitsham,2025-01-27,5,0
 Nick Gitsham,2025-02-03,6,0
-Nick Gitsham,2025-02-10,7,0
+Nick Gitsham,2025-02-10,7,1
 Nick Gitsham,2025-02-17,8,0
 Nick Gitsham,2025-02-24,9,0
-Nick Gitsham,2025-03-03,10,0
+Nick Gitsham,2025-03-03,10,1
 Nick Gitsham,2025-03-10,11,0
 Nick Gitsham,2025-03-17,12,0
 Nick Gitsham,2025-03-24,13,0
-Nick Gitsham,2025-03-31,14,0
+Nick Gitsham,2025-03-31,14,1
 Nick Gitsham,2025-04-07,15,0
 Nick Gitsham,2025-04-14,16,0
 Nick Gitsham,2025-04-21,17,0
 Nick Gitsham,2025-04-28,18,0
 Nick Gitsham,2025-05-05,19,0
 Nick Gitsham,2025-05-12,20,0
-Nick Gitsham,2025-05-19,21,0
-Nick Gitsham,2025-05-26,22,0
-Nick Gitsham,2025-06-02,23,0
-Nick Gitsham,2025-06-09,24,0
+Nick Gitsham,2025-05-19,21,1
+Nick Gitsham,2025-05-26,22,1
+Nick Gitsham,2025-06-02,23,1
+Nick Gitsham,2025-06-09,24,1
 Nick Gitsham,2025-06-16,25,0
-Nick Gitsham,2025-06-23,26,0
-Nick Gitsham,2025-06-30,27,0
+Nick Gitsham,2025-06-23,26,1
+Nick Gitsham,2025-06-30,27,1
 Nick Gitsham,2025-07-07,28,0
 Nick Gitsham,2025-07-14,29,0
-Nick Gitsham,2025-07-21,30,0
-Nick Gitsham,2025-07-28,31,0
-Nick Gitsham,2025-08-04,32,0
-Nick Gitsham,2025-08-11,33,0
-Nick Gitsham,2025-08-18,34,0
-Nick Gitsham,2025-08-25,35,0
+Nick Gitsham,2025-07-21,30,1
+Nick Gitsham,2025-07-28,31,4
+Nick Gitsham,2025-08-04,32,4
+Nick Gitsham,2025-08-11,33,3
+Nick Gitsham,2025-08-18,34,2
+Nick Gitsham,2025-08-25,35,2
 Nick Gitsham,2025-09-01,36,0
-Nick Gitsham,2025-09-08,37,0
+Nick Gitsham,2025-09-08,37,1
 Nick Gitsham,2025-09-15,38,0
 Nick Gitsham,2025-09-22,39,0
 Nick Gitsham,2025-09-29,40,0
 Nick Gitsham,2025-10-06,41,0
-Nick Gitsham,2025-10-13,42,0
+Nick Gitsham,2025-10-13,42,1
 Nick Gitsham,2025-10-20,43,0
 Nick Gitsham,2025-10-27,44,0
 Nick Gitsham,2025-11-03,45,0
-Nick Gitsham,2025-11-10,46,0
+Nick Gitsham,2025-11-10,46,1
 Nick Gitsham,2025-11-17,47,0
 Nick Gitsham,2025-11-24,48,0
-Nick Gitsham,2025-12-01,49,0
+Nick Gitsham,2025-12-01,49,3
 Nick Gitsham,2025-12-08,50,0
-Nick Gitsham,2025-12-15,51,0
-Nick Gitsham,2025-12-22,52,0
-Nick Gitsham,2025-12-29,1,0
-Paul Hopley ,2025-01-06,2,0
-Paul Hopley ,2025-01-13,3,0
-Paul Hopley ,2025-01-20,4,0
-Paul Hopley ,2025-01-27,5,0
-Paul Hopley ,2025-02-03,6,0
+Nick Gitsham,2025-12-15,51,2
+Nick Gitsham,2025-12-22,52,1
+Nick Gitsham,2025-12-29,1,3
+Paul Hopley ,2025-01-06,2,2
+Paul Hopley ,2025-01-13,3,2
+Paul Hopley ,2025-01-20,4,1
+Paul Hopley ,2025-01-27,5,2
+Paul Hopley ,2025-02-03,6,1
 Paul Hopley ,2025-02-10,7,0
 Paul Hopley ,2025-02-17,8,0
 Paul Hopley ,2025-02-24,9,0
@@ -851,74 +851,74 @@ Paul Hopley ,2025-04-28,18,0
 Paul Hopley ,2025-05-05,19,0
 Paul Hopley ,2025-05-12,20,0
 Paul Hopley ,2025-05-19,21,0
-Paul Hopley ,2025-05-26,22,0
-Paul Hopley ,2025-06-02,23,0
-Paul Hopley ,2025-06-09,24,0
-Paul Hopley ,2025-06-16,25,0
-Paul Hopley ,2025-06-23,26,0
-Paul Hopley ,2025-06-30,27,0
-Paul Hopley ,2025-07-07,28,0
-Paul Hopley ,2025-07-14,29,0
-Paul Hopley ,2025-07-21,30,0
-Paul Hopley ,2025-07-28,31,0
-Paul Hopley ,2025-08-04,32,0
-Paul Hopley ,2025-08-11,33,0
-Paul Hopley ,2025-08-18,34,0
-Paul Hopley ,2025-08-25,35,0
+Paul Hopley ,2025-05-26,22,1
+Paul Hopley ,2025-06-02,23,3
+Paul Hopley ,2025-06-09,24,2
+Paul Hopley ,2025-06-16,25,2
+Paul Hopley ,2025-06-23,26,1
+Paul Hopley ,2025-06-30,27,2
+Paul Hopley ,2025-07-07,28,1
+Paul Hopley ,2025-07-14,29,2
+Paul Hopley ,2025-07-21,30,1
+Paul Hopley ,2025-07-28,31,3
+Paul Hopley ,2025-08-04,32,2
+Paul Hopley ,2025-08-11,33,2
+Paul Hopley ,2025-08-18,34,1
+Paul Hopley ,2025-08-25,35,2
 Paul Hopley ,2025-09-01,36,0
 Paul Hopley ,2025-09-08,37,0
 Paul Hopley ,2025-09-15,38,0
 Paul Hopley ,2025-09-22,39,0
 Paul Hopley ,2025-09-29,40,0
 Paul Hopley ,2025-10-06,41,0
-Paul Hopley ,2025-10-13,42,0
-Paul Hopley ,2025-10-20,43,0
+Paul Hopley ,2025-10-13,42,1
+Paul Hopley ,2025-10-20,43,1
 Paul Hopley ,2025-10-27,44,0
 Paul Hopley ,2025-11-03,45,0
 Paul Hopley ,2025-11-10,46,0
 Paul Hopley ,2025-11-17,47,0
-Paul Hopley ,2025-11-24,48,0
-Paul Hopley ,2025-12-01,49,0
-Paul Hopley ,2025-12-08,50,0
-Paul Hopley ,2025-12-15,51,0
-Paul Hopley ,2025-12-22,52,0
-Paul Hopley ,2025-12-29,1,0
-Prof. Johnny Downs,2025-01-06,2,0
-Prof. Johnny Downs,2025-01-13,3,0
-Prof. Johnny Downs,2025-01-20,4,0
-Prof. Johnny Downs,2025-01-27,5,0
+Paul Hopley ,2025-11-24,48,1
+Paul Hopley ,2025-12-01,49,1
+Paul Hopley ,2025-12-08,50,3
+Paul Hopley ,2025-12-15,51,4
+Paul Hopley ,2025-12-22,52,3
+Paul Hopley ,2025-12-29,1,1
+Prof. Johnny Downs,2025-01-06,2,2
+Prof. Johnny Downs,2025-01-13,3,3
+Prof. Johnny Downs,2025-01-20,4,2
+Prof. Johnny Downs,2025-01-27,5,1
 Prof. Johnny Downs,2025-02-03,6,0
 Prof. Johnny Downs,2025-02-10,7,0
-Prof. Johnny Downs,2025-02-17,8,0
+Prof. Johnny Downs,2025-02-17,8,1
 Prof. Johnny Downs,2025-02-24,9,0
 Prof. Johnny Downs,2025-03-03,10,0
 Prof. Johnny Downs,2025-03-10,11,0
-Prof. Johnny Downs,2025-03-17,12,0
+Prof. Johnny Downs,2025-03-17,12,1
 Prof. Johnny Downs,2025-03-24,13,0
 Prof. Johnny Downs,2025-03-31,14,0
 Prof. Johnny Downs,2025-04-07,15,0
 Prof. Johnny Downs,2025-04-14,16,0
 Prof. Johnny Downs,2025-04-21,17,0
-Prof. Johnny Downs,2025-04-28,18,0
+Prof. Johnny Downs,2025-04-28,18,2
 Prof. Johnny Downs,2025-05-05,19,0
 Prof. Johnny Downs,2025-05-12,20,0
-Prof. Johnny Downs,2025-05-19,21,0
+Prof. Johnny Downs,2025-05-19,21,2
 Prof. Johnny Downs,2025-05-26,22,0
-Prof. Johnny Downs,2025-06-02,23,0
-Prof. Johnny Downs,2025-06-09,24,0
+Prof. Johnny Downs,2025-06-02,23,3
+Prof. Johnny Downs,2025-06-09,24,2
 Prof. Johnny Downs,2025-06-16,25,0
-Prof. Johnny Downs,2025-06-23,26,0
-Prof. Johnny Downs,2025-06-30,27,0
-Prof. Johnny Downs,2025-07-07,28,0
-Prof. Johnny Downs,2025-07-14,29,0
-Prof. Johnny Downs,2025-07-21,30,0
-Prof. Johnny Downs,2025-07-28,31,0
-Prof. Johnny Downs,2025-08-04,32,0
-Prof. Johnny Downs,2025-08-11,33,0
+Prof. Johnny Downs,2025-06-23,26,2
+Prof. Johnny Downs,2025-06-30,27,3
+Prof. Johnny Downs,2025-07-07,28,2
+Prof. Johnny Downs,2025-07-14,29,1
+Prof. Johnny Downs,2025-07-21,30,3
+Prof. Johnny Downs,2025-07-28,31,1
+Prof. Johnny Downs,2025-08-04,32,3
+Prof. Johnny Downs,2025-08-11,33,1
 Prof. Johnny Downs,2025-08-18,34,0
-Prof. Johnny Downs,2025-08-25,35,0
-Prof. Johnny Downs,2025-09-01,36,0
-Prof. Johnny Downs,2025-09-08,37,0
+Prof. Johnny Downs,2025-08-25,35,3
+Prof. Johnny Downs,2025-09-01,36,1
+Prof. Johnny Downs,2025-09-08,37,1
 Prof. Johnny Downs,2025-09-15,38,0
 Prof. Johnny Downs,2025-09-22,39,0
 Prof. Johnny Downs,2025-09-29,40,0
@@ -928,26 +928,26 @@ Prof. Johnny Downs,2025-10-20,43,0
 Prof. Johnny Downs,2025-10-27,44,0
 Prof. Johnny Downs,2025-11-03,45,0
 Prof. Johnny Downs,2025-11-10,46,0
-Prof. Johnny Downs,2025-11-17,47,0
-Prof. Johnny Downs,2025-11-24,48,0
-Prof. Johnny Downs,2025-12-01,49,0
-Prof. Johnny Downs,2025-12-08,50,0
-Prof. Johnny Downs,2025-12-15,51,0
-Prof. Johnny Downs,2025-12-22,52,0
-Prof. Johnny Downs,2025-12-29,1,0
-Sarah Brennan,2025-01-06,2,0
-Sarah Brennan,2025-01-13,3,0
-Sarah Brennan,2025-01-20,4,0
+Prof. Johnny Downs,2025-11-17,47,1
+Prof. Johnny Downs,2025-11-24,48,1
+Prof. Johnny Downs,2025-12-01,49,3
+Prof. Johnny Downs,2025-12-08,50,2
+Prof. Johnny Downs,2025-12-15,51,1
+Prof. Johnny Downs,2025-12-22,52,2
+Prof. Johnny Downs,2025-12-29,1,2
+Sarah Brennan,2025-01-06,2,2
+Sarah Brennan,2025-01-13,3,2
+Sarah Brennan,2025-01-20,4,2
 Sarah Brennan,2025-01-27,5,0
 Sarah Brennan,2025-02-03,6,0
 Sarah Brennan,2025-02-10,7,0
 Sarah Brennan,2025-02-17,8,0
 Sarah Brennan,2025-02-24,9,0
 Sarah Brennan,2025-03-03,10,0
-Sarah Brennan,2025-03-10,11,0
+Sarah Brennan,2025-03-10,11,2
 Sarah Brennan,2025-03-17,12,0
 Sarah Brennan,2025-03-24,13,0
-Sarah Brennan,2025-03-31,14,0
+Sarah Brennan,2025-03-31,14,1
 Sarah Brennan,2025-04-07,15,0
 Sarah Brennan,2025-04-14,16,0
 Sarah Brennan,2025-04-21,17,0
@@ -956,101 +956,101 @@ Sarah Brennan,2025-05-05,19,0
 Sarah Brennan,2025-05-12,20,0
 Sarah Brennan,2025-05-19,21,0
 Sarah Brennan,2025-05-26,22,0
-Sarah Brennan,2025-06-02,23,0
-Sarah Brennan,2025-06-09,24,0
-Sarah Brennan,2025-06-16,25,0
-Sarah Brennan,2025-06-23,26,0
+Sarah Brennan,2025-06-02,23,2
+Sarah Brennan,2025-06-09,24,1
+Sarah Brennan,2025-06-16,25,2
+Sarah Brennan,2025-06-23,26,2
 Sarah Brennan,2025-06-30,27,0
-Sarah Brennan,2025-07-07,28,0
-Sarah Brennan,2025-07-14,29,0
-Sarah Brennan,2025-07-21,30,0
+Sarah Brennan,2025-07-07,28,2
+Sarah Brennan,2025-07-14,29,1
+Sarah Brennan,2025-07-21,30,1
 Sarah Brennan,2025-07-28,31,0
-Sarah Brennan,2025-08-04,32,0
-Sarah Brennan,2025-08-11,33,0
-Sarah Brennan,2025-08-18,34,0
-Sarah Brennan,2025-08-25,35,0
+Sarah Brennan,2025-08-04,32,1
+Sarah Brennan,2025-08-11,33,1
+Sarah Brennan,2025-08-18,34,2
+Sarah Brennan,2025-08-25,35,2
 Sarah Brennan,2025-09-01,36,0
 Sarah Brennan,2025-09-08,37,0
-Sarah Brennan,2025-09-15,38,0
+Sarah Brennan,2025-09-15,38,1
 Sarah Brennan,2025-09-22,39,0
 Sarah Brennan,2025-09-29,40,0
 Sarah Brennan,2025-10-06,41,0
-Sarah Brennan,2025-10-13,42,0
-Sarah Brennan,2025-10-20,43,0
+Sarah Brennan,2025-10-13,42,1
+Sarah Brennan,2025-10-20,43,2
 Sarah Brennan,2025-10-27,44,0
-Sarah Brennan,2025-11-03,45,0
+Sarah Brennan,2025-11-03,45,2
 Sarah Brennan,2025-11-10,46,0
 Sarah Brennan,2025-11-17,47,0
 Sarah Brennan,2025-11-24,48,0
-Sarah Brennan,2025-12-01,49,0
-Sarah Brennan,2025-12-08,50,0
-Sarah Brennan,2025-12-15,51,0
-Sarah Brennan,2025-12-22,52,0
-Sarah Brennan,2025-12-29,1,0
-Shaun Griffiths,2025-01-06,2,0
-Shaun Griffiths,2025-01-13,3,0
-Shaun Griffiths,2025-01-20,4,0
-Shaun Griffiths,2025-01-27,5,0
+Sarah Brennan,2025-12-01,49,2
+Sarah Brennan,2025-12-08,50,3
+Sarah Brennan,2025-12-15,51,2
+Sarah Brennan,2025-12-22,52,2
+Sarah Brennan,2025-12-29,1,1
+Shaun Griffiths,2025-01-06,2,3
+Shaun Griffiths,2025-01-13,3,1
+Shaun Griffiths,2025-01-20,4,2
+Shaun Griffiths,2025-01-27,5,2
 Shaun Griffiths,2025-02-03,6,0
 Shaun Griffiths,2025-02-10,7,0
-Shaun Griffiths,2025-02-17,8,0
+Shaun Griffiths,2025-02-17,8,1
 Shaun Griffiths,2025-02-24,9,0
 Shaun Griffiths,2025-03-03,10,0
-Shaun Griffiths,2025-03-10,11,0
+Shaun Griffiths,2025-03-10,11,1
 Shaun Griffiths,2025-03-17,12,0
 Shaun Griffiths,2025-03-24,13,0
-Shaun Griffiths,2025-03-31,14,0
+Shaun Griffiths,2025-03-31,14,1
 Shaun Griffiths,2025-04-07,15,0
-Shaun Griffiths,2025-04-14,16,0
+Shaun Griffiths,2025-04-14,16,1
 Shaun Griffiths,2025-04-21,17,0
-Shaun Griffiths,2025-04-28,18,0
+Shaun Griffiths,2025-04-28,18,2
 Shaun Griffiths,2025-05-05,19,0
-Shaun Griffiths,2025-05-12,20,0
+Shaun Griffiths,2025-05-12,20,1
 Shaun Griffiths,2025-05-19,21,0
 Shaun Griffiths,2025-05-26,22,0
-Shaun Griffiths,2025-06-02,23,0
+Shaun Griffiths,2025-06-02,23,3
 Shaun Griffiths,2025-06-09,24,0
-Shaun Griffiths,2025-06-16,25,0
-Shaun Griffiths,2025-06-23,26,0
-Shaun Griffiths,2025-06-30,27,0
-Shaun Griffiths,2025-07-07,28,0
+Shaun Griffiths,2025-06-16,25,2
+Shaun Griffiths,2025-06-23,26,1
+Shaun Griffiths,2025-06-30,27,1
+Shaun Griffiths,2025-07-07,28,2
 Shaun Griffiths,2025-07-14,29,0
-Shaun Griffiths,2025-07-21,30,0
-Shaun Griffiths,2025-07-28,31,0
+Shaun Griffiths,2025-07-21,30,2
+Shaun Griffiths,2025-07-28,31,2
 Shaun Griffiths,2025-08-04,32,0
-Shaun Griffiths,2025-08-11,33,0
-Shaun Griffiths,2025-08-18,34,0
-Shaun Griffiths,2025-08-25,35,0
+Shaun Griffiths,2025-08-11,33,1
+Shaun Griffiths,2025-08-18,34,1
+Shaun Griffiths,2025-08-25,35,1
 Shaun Griffiths,2025-09-01,36,0
 Shaun Griffiths,2025-09-08,37,0
 Shaun Griffiths,2025-09-15,38,0
 Shaun Griffiths,2025-09-22,39,0
 Shaun Griffiths,2025-09-29,40,0
-Shaun Griffiths,2025-10-06,41,0
-Shaun Griffiths,2025-10-13,42,0
-Shaun Griffiths,2025-10-20,43,0
-Shaun Griffiths,2025-10-27,44,0
+Shaun Griffiths,2025-10-06,41,1
+Shaun Griffiths,2025-10-13,42,1
+Shaun Griffiths,2025-10-20,43,1
+Shaun Griffiths,2025-10-27,44,1
 Shaun Griffiths,2025-11-03,45,0
-Shaun Griffiths,2025-11-10,46,0
+Shaun Griffiths,2025-11-10,46,1
 Shaun Griffiths,2025-11-17,47,0
-Shaun Griffiths,2025-11-24,48,0
-Shaun Griffiths,2025-12-01,49,0
-Shaun Griffiths,2025-12-08,50,0
-Shaun Griffiths,2025-12-15,51,0
-Shaun Griffiths,2025-12-22,52,0
-Shaun Griffiths,2025-12-29,1,0
-Simon Bristow,2025-01-06,2,0
-Simon Bristow,2025-01-13,3,0
-Simon Bristow,2025-01-20,4,0
-Simon Bristow,2025-01-27,5,0
+Shaun Griffiths,2025-11-24,48,1
+Shaun Griffiths,2025-12-01,49,3
+Shaun Griffiths,2025-12-08,50,3
+Shaun Griffiths,2025-12-15,51,3
+Shaun Griffiths,2025-12-22,52,2
+Shaun Griffiths,2025-12-29,1,2
+Simon Bristow,2025-01-06,2,1
+Simon Bristow,2025-01-13,3,2
+Simon Bristow,2025-01-20,4,1
+Simon Bristow,2025-01-27,5,4
 Simon Bristow,2025-02-03,6,0
 Simon Bristow,2025-02-10,7,0
 Simon Bristow,2025-02-17,8,0
 Simon Bristow,2025-02-24,9,0
 Simon Bristow,2025-03-03,10,0
 Simon Bristow,2025-03-10,11,0
-Simon Bristow,2025-03-17,12,0
-Simon Bristow,2025-03-24,13,0
+Simon Bristow,2025-03-17,12,1
+Simon Bristow,2025-03-24,13,1
 Simon Bristow,2025-03-31,14,0
 Simon Bristow,2025-04-07,15,0
 Simon Bristow,2025-04-14,16,0
@@ -1059,123 +1059,123 @@ Simon Bristow,2025-04-28,18,0
 Simon Bristow,2025-05-05,19,0
 Simon Bristow,2025-05-12,20,0
 Simon Bristow,2025-05-19,21,0
-Simon Bristow,2025-05-26,22,0
-Simon Bristow,2025-06-02,23,0
-Simon Bristow,2025-06-09,24,0
-Simon Bristow,2025-06-16,25,0
-Simon Bristow,2025-06-23,26,0
+Simon Bristow,2025-05-26,22,1
+Simon Bristow,2025-06-02,23,3
+Simon Bristow,2025-06-09,24,1
+Simon Bristow,2025-06-16,25,2
+Simon Bristow,2025-06-23,26,1
 Simon Bristow,2025-06-30,27,0
-Simon Bristow,2025-07-07,28,0
-Simon Bristow,2025-07-14,29,0
-Simon Bristow,2025-07-21,30,0
-Simon Bristow,2025-07-28,31,0
-Simon Bristow,2025-08-04,32,0
+Simon Bristow,2025-07-07,28,1
+Simon Bristow,2025-07-14,29,1
+Simon Bristow,2025-07-21,30,1
+Simon Bristow,2025-07-28,31,2
+Simon Bristow,2025-08-04,32,3
 Simon Bristow,2025-08-11,33,0
 Simon Bristow,2025-08-18,34,0
-Simon Bristow,2025-08-25,35,0
-Simon Bristow,2025-09-01,36,0
+Simon Bristow,2025-08-25,35,2
+Simon Bristow,2025-09-01,36,1
 Simon Bristow,2025-09-08,37,0
 Simon Bristow,2025-09-15,38,0
-Simon Bristow,2025-09-22,39,0
-Simon Bristow,2025-09-29,40,0
-Simon Bristow,2025-10-06,41,0
+Simon Bristow,2025-09-22,39,1
+Simon Bristow,2025-09-29,40,1
+Simon Bristow,2025-10-06,41,1
 Simon Bristow,2025-10-13,42,0
-Simon Bristow,2025-10-20,43,0
+Simon Bristow,2025-10-20,43,1
 Simon Bristow,2025-10-27,44,0
 Simon Bristow,2025-11-03,45,0
-Simon Bristow,2025-11-10,46,0
+Simon Bristow,2025-11-10,46,1
 Simon Bristow,2025-11-17,47,0
 Simon Bristow,2025-11-24,48,0
-Simon Bristow,2025-12-01,49,0
-Simon Bristow,2025-12-08,50,0
-Simon Bristow,2025-12-15,51,0
-Simon Bristow,2025-12-22,52,0
-Simon Bristow,2025-12-29,1,0
-Stephen Duncan,2025-01-06,2,0
-Stephen Duncan,2025-01-13,3,0
-Stephen Duncan,2025-01-20,4,0
-Stephen Duncan,2025-01-27,5,0
+Simon Bristow,2025-12-01,49,2
+Simon Bristow,2025-12-08,50,2
+Simon Bristow,2025-12-15,51,3
+Simon Bristow,2025-12-22,52,2
+Simon Bristow,2025-12-29,1,1
+Stephen Duncan,2025-01-06,2,3
+Stephen Duncan,2025-01-13,3,4
+Stephen Duncan,2025-01-20,4,2
+Stephen Duncan,2025-01-27,5,1
 Stephen Duncan,2025-02-03,6,0
 Stephen Duncan,2025-02-10,7,0
 Stephen Duncan,2025-02-17,8,0
-Stephen Duncan,2025-02-24,9,0
+Stephen Duncan,2025-02-24,9,1
 Stephen Duncan,2025-03-03,10,0
 Stephen Duncan,2025-03-10,11,0
 Stephen Duncan,2025-03-17,12,0
 Stephen Duncan,2025-03-24,13,0
-Stephen Duncan,2025-03-31,14,0
+Stephen Duncan,2025-03-31,14,1
 Stephen Duncan,2025-04-07,15,0
 Stephen Duncan,2025-04-14,16,0
 Stephen Duncan,2025-04-21,17,0
-Stephen Duncan,2025-04-28,18,0
+Stephen Duncan,2025-04-28,18,1
 Stephen Duncan,2025-05-05,19,0
 Stephen Duncan,2025-05-12,20,0
-Stephen Duncan,2025-05-19,21,0
+Stephen Duncan,2025-05-19,21,1
 Stephen Duncan,2025-05-26,22,0
-Stephen Duncan,2025-06-02,23,0
-Stephen Duncan,2025-06-09,24,0
-Stephen Duncan,2025-06-16,25,0
+Stephen Duncan,2025-06-02,23,3
+Stephen Duncan,2025-06-09,24,2
+Stephen Duncan,2025-06-16,25,2
 Stephen Duncan,2025-06-23,26,0
-Stephen Duncan,2025-06-30,27,0
-Stephen Duncan,2025-07-07,28,0
-Stephen Duncan,2025-07-14,29,0
+Stephen Duncan,2025-06-30,27,2
+Stephen Duncan,2025-07-07,28,2
+Stephen Duncan,2025-07-14,29,2
 Stephen Duncan,2025-07-21,30,0
-Stephen Duncan,2025-07-28,31,0
+Stephen Duncan,2025-07-28,31,3
 Stephen Duncan,2025-08-04,32,0
 Stephen Duncan,2025-08-11,33,0
-Stephen Duncan,2025-08-18,34,0
-Stephen Duncan,2025-08-25,35,0
-Stephen Duncan,2025-09-01,36,0
+Stephen Duncan,2025-08-18,34,2
+Stephen Duncan,2025-08-25,35,2
+Stephen Duncan,2025-09-01,36,1
 Stephen Duncan,2025-09-08,37,0
 Stephen Duncan,2025-09-15,38,0
 Stephen Duncan,2025-09-22,39,0
-Stephen Duncan,2025-09-29,40,0
-Stephen Duncan,2025-10-06,41,0
-Stephen Duncan,2025-10-13,42,0
+Stephen Duncan,2025-09-29,40,1
+Stephen Duncan,2025-10-06,41,1
+Stephen Duncan,2025-10-13,42,1
 Stephen Duncan,2025-10-20,43,0
-Stephen Duncan,2025-10-27,44,0
-Stephen Duncan,2025-11-03,45,0
+Stephen Duncan,2025-10-27,44,1
+Stephen Duncan,2025-11-03,45,1
 Stephen Duncan,2025-11-10,46,0
 Stephen Duncan,2025-11-17,47,0
 Stephen Duncan,2025-11-24,48,0
-Stephen Duncan,2025-12-01,49,0
-Stephen Duncan,2025-12-08,50,0
-Stephen Duncan,2025-12-15,51,0
-Stephen Duncan,2025-12-22,52,0
-Stephen Duncan,2025-12-29,1,0
-Suzannah Davies,2025-01-06,2,0
-Suzannah Davies,2025-01-13,3,0
-Suzannah Davies,2025-01-20,4,0
-Suzannah Davies,2025-01-27,5,0
+Stephen Duncan,2025-12-01,49,1
+Stephen Duncan,2025-12-08,50,1
+Stephen Duncan,2025-12-15,51,1
+Stephen Duncan,2025-12-22,52,1
+Stephen Duncan,2025-12-29,1,2
+Suzannah Davies,2025-01-06,2,2
+Suzannah Davies,2025-01-13,3,3
+Suzannah Davies,2025-01-20,4,1
+Suzannah Davies,2025-01-27,5,2
 Suzannah Davies,2025-02-03,6,0
 Suzannah Davies,2025-02-10,7,0
-Suzannah Davies,2025-02-17,8,0
-Suzannah Davies,2025-02-24,9,0
-Suzannah Davies,2025-03-03,10,0
+Suzannah Davies,2025-02-17,8,1
+Suzannah Davies,2025-02-24,9,1
+Suzannah Davies,2025-03-03,10,1
 Suzannah Davies,2025-03-10,11,0
 Suzannah Davies,2025-03-17,12,0
 Suzannah Davies,2025-03-24,13,0
 Suzannah Davies,2025-03-31,14,0
 Suzannah Davies,2025-04-07,15,0
-Suzannah Davies,2025-04-14,16,0
+Suzannah Davies,2025-04-14,16,2
 Suzannah Davies,2025-04-21,17,0
 Suzannah Davies,2025-04-28,18,0
-Suzannah Davies,2025-05-05,19,0
+Suzannah Davies,2025-05-05,19,2
 Suzannah Davies,2025-05-12,20,0
 Suzannah Davies,2025-05-19,21,0
 Suzannah Davies,2025-05-26,22,0
-Suzannah Davies,2025-06-02,23,0
-Suzannah Davies,2025-06-09,24,0
+Suzannah Davies,2025-06-02,23,2
+Suzannah Davies,2025-06-09,24,1
 Suzannah Davies,2025-06-16,25,0
-Suzannah Davies,2025-06-23,26,0
-Suzannah Davies,2025-06-30,27,0
+Suzannah Davies,2025-06-23,26,2
+Suzannah Davies,2025-06-30,27,2
 Suzannah Davies,2025-07-07,28,0
-Suzannah Davies,2025-07-14,29,0
-Suzannah Davies,2025-07-21,30,0
-Suzannah Davies,2025-07-28,31,0
+Suzannah Davies,2025-07-14,29,1
+Suzannah Davies,2025-07-21,30,1
+Suzannah Davies,2025-07-28,31,2
 Suzannah Davies,2025-08-04,32,0
-Suzannah Davies,2025-08-11,33,0
-Suzannah Davies,2025-08-18,34,0
+Suzannah Davies,2025-08-11,33,1
+Suzannah Davies,2025-08-18,34,2
 Suzannah Davies,2025-08-25,35,0
 Suzannah Davies,2025-09-01,36,0
 Suzannah Davies,2025-09-08,37,0
@@ -1188,22 +1188,22 @@ Suzannah Davies,2025-10-20,43,0
 Suzannah Davies,2025-10-27,44,0
 Suzannah Davies,2025-11-03,45,0
 Suzannah Davies,2025-11-10,46,0
-Suzannah Davies,2025-11-17,47,0
+Suzannah Davies,2025-11-17,47,1
 Suzannah Davies,2025-11-24,48,0
-Suzannah Davies,2025-12-01,49,0
-Suzannah Davies,2025-12-08,50,0
-Suzannah Davies,2025-12-15,51,0
-Suzannah Davies,2025-12-22,52,0
-Suzannah Davies,2025-12-29,1,0
-Vicki Baxendale,2025-01-06,2,0
-Vicki Baxendale,2025-01-13,3,0
-Vicki Baxendale,2025-01-20,4,0
-Vicki Baxendale,2025-01-27,5,0
+Suzannah Davies,2025-12-01,49,3
+Suzannah Davies,2025-12-08,50,2
+Suzannah Davies,2025-12-15,51,4
+Suzannah Davies,2025-12-22,52,3
+Suzannah Davies,2025-12-29,1,1
+Vicki Baxendale,2025-01-06,2,1
+Vicki Baxendale,2025-01-13,3,3
+Vicki Baxendale,2025-01-20,4,1
+Vicki Baxendale,2025-01-27,5,3
 Vicki Baxendale,2025-02-03,6,0
 Vicki Baxendale,2025-02-10,7,0
 Vicki Baxendale,2025-02-17,8,0
 Vicki Baxendale,2025-02-24,9,0
-Vicki Baxendale,2025-03-03,10,0
+Vicki Baxendale,2025-03-03,10,1
 Vicki Baxendale,2025-03-10,11,0
 Vicki Baxendale,2025-03-17,12,0
 Vicki Baxendale,2025-03-24,13,0
@@ -1216,41 +1216,41 @@ Vicki Baxendale,2025-05-05,19,0
 Vicki Baxendale,2025-05-12,20,0
 Vicki Baxendale,2025-05-19,21,0
 Vicki Baxendale,2025-05-26,22,0
-Vicki Baxendale,2025-06-02,23,0
-Vicki Baxendale,2025-06-09,24,0
-Vicki Baxendale,2025-06-16,25,0
-Vicki Baxendale,2025-06-23,26,0
-Vicki Baxendale,2025-06-30,27,0
-Vicki Baxendale,2025-07-07,28,0
-Vicki Baxendale,2025-07-14,29,0
-Vicki Baxendale,2025-07-21,30,0
-Vicki Baxendale,2025-07-28,31,0
-Vicki Baxendale,2025-08-04,32,0
-Vicki Baxendale,2025-08-11,33,0
+Vicki Baxendale,2025-06-02,23,1
+Vicki Baxendale,2025-06-09,24,2
+Vicki Baxendale,2025-06-16,25,3
+Vicki Baxendale,2025-06-23,26,3
+Vicki Baxendale,2025-06-30,27,2
+Vicki Baxendale,2025-07-07,28,3
+Vicki Baxendale,2025-07-14,29,1
+Vicki Baxendale,2025-07-21,30,3
+Vicki Baxendale,2025-07-28,31,1
+Vicki Baxendale,2025-08-04,32,2
+Vicki Baxendale,2025-08-11,33,1
 Vicki Baxendale,2025-08-18,34,0
-Vicki Baxendale,2025-08-25,35,0
+Vicki Baxendale,2025-08-25,35,1
 Vicki Baxendale,2025-09-01,36,0
 Vicki Baxendale,2025-09-08,37,0
 Vicki Baxendale,2025-09-15,38,0
 Vicki Baxendale,2025-09-22,39,0
 Vicki Baxendale,2025-09-29,40,0
 Vicki Baxendale,2025-10-06,41,0
-Vicki Baxendale,2025-10-13,42,0
-Vicki Baxendale,2025-10-20,43,0
+Vicki Baxendale,2025-10-13,42,1
+Vicki Baxendale,2025-10-20,43,2
 Vicki Baxendale,2025-10-27,44,0
 Vicki Baxendale,2025-11-03,45,0
 Vicki Baxendale,2025-11-10,46,0
-Vicki Baxendale,2025-11-17,47,0
+Vicki Baxendale,2025-11-17,47,1
 Vicki Baxendale,2025-11-24,48,0
-Vicki Baxendale,2025-12-01,49,0
-Vicki Baxendale,2025-12-08,50,0
+Vicki Baxendale,2025-12-01,49,1
+Vicki Baxendale,2025-12-08,50,2
 Vicki Baxendale,2025-12-15,51,0
-Vicki Baxendale,2025-12-22,52,0
-Vicki Baxendale,2025-12-29,1,0
-Heath McDonald test,2025-01-06,2,0
-Heath McDonald test,2025-01-13,3,0
-Heath McDonald test,2025-01-20,4,0
-Heath McDonald test,2025-01-27,5,0
+Vicki Baxendale,2025-12-22,52,1
+Vicki Baxendale,2025-12-29,1,1
+Heath McDonald test,2025-01-06,2,4
+Heath McDonald test,2025-01-13,3,3
+Heath McDonald test,2025-01-20,4,1
+Heath McDonald test,2025-01-27,5,3
 Heath McDonald test,2025-02-03,6,0
 Heath McDonald test,2025-02-10,7,0
 Heath McDonald test,2025-02-17,8,0
@@ -1258,44 +1258,44 @@ Heath McDonald test,2025-02-24,9,0
 Heath McDonald test,2025-03-03,10,0
 Heath McDonald test,2025-03-10,11,0
 Heath McDonald test,2025-03-17,12,0
-Heath McDonald test,2025-03-24,13,0
+Heath McDonald test,2025-03-24,13,1
 Heath McDonald test,2025-03-31,14,0
 Heath McDonald test,2025-04-07,15,0
 Heath McDonald test,2025-04-14,16,0
 Heath McDonald test,2025-04-21,17,0
-Heath McDonald test,2025-04-28,18,0
+Heath McDonald test,2025-04-28,18,1
 Heath McDonald test,2025-05-05,19,0
 Heath McDonald test,2025-05-12,20,0
-Heath McDonald test,2025-05-19,21,0
-Heath McDonald test,2025-05-26,22,0
-Heath McDonald test,2025-06-02,23,0
-Heath McDonald test,2025-06-09,24,0
-Heath McDonald test,2025-06-16,25,0
-Heath McDonald test,2025-06-23,26,0
-Heath McDonald test,2025-06-30,27,0
-Heath McDonald test,2025-07-07,28,0
-Heath McDonald test,2025-07-14,29,0
-Heath McDonald test,2025-07-21,30,0
-Heath McDonald test,2025-07-28,31,0
-Heath McDonald test,2025-08-04,32,0
-Heath McDonald test,2025-08-11,33,0
-Heath McDonald test,2025-08-18,34,0
-Heath McDonald test,2025-08-25,35,0
+Heath McDonald test,2025-05-19,21,1
+Heath McDonald test,2025-05-26,22,2
+Heath McDonald test,2025-06-02,23,2
+Heath McDonald test,2025-06-09,24,1
+Heath McDonald test,2025-06-16,25,3
+Heath McDonald test,2025-06-23,26,1
+Heath McDonald test,2025-06-30,27,2
+Heath McDonald test,2025-07-07,28,2
+Heath McDonald test,2025-07-14,29,2
+Heath McDonald test,2025-07-21,30,1
+Heath McDonald test,2025-07-28,31,1
+Heath McDonald test,2025-08-04,32,3
+Heath McDonald test,2025-08-11,33,2
+Heath McDonald test,2025-08-18,34,1
+Heath McDonald test,2025-08-25,35,2
 Heath McDonald test,2025-09-01,36,0
 Heath McDonald test,2025-09-08,37,0
 Heath McDonald test,2025-09-15,38,0
 Heath McDonald test,2025-09-22,39,0
 Heath McDonald test,2025-09-29,40,0
-Heath McDonald test,2025-10-06,41,0
+Heath McDonald test,2025-10-06,41,1
 Heath McDonald test,2025-10-13,42,0
 Heath McDonald test,2025-10-20,43,0
-Heath McDonald test,2025-10-27,44,0
-Heath McDonald test,2025-11-03,45,0
+Heath McDonald test,2025-10-27,44,1
+Heath McDonald test,2025-11-03,45,1
 Heath McDonald test,2025-11-10,46,0
 Heath McDonald test,2025-11-17,47,0
 Heath McDonald test,2025-11-24,48,0
 Heath McDonald test,2025-12-01,49,0
-Heath McDonald test,2025-12-08,50,0
-Heath McDonald test,2025-12-15,51,0
-Heath McDonald test,2025-12-22,52,0
+Heath McDonald test,2025-12-08,50,2
+Heath McDonald test,2025-12-15,51,3
+Heath McDonald test,2025-12-22,52,2
 Heath McDonald test,2025-12-29,1,0

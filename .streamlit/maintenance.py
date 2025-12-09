@@ -21,6 +21,7 @@ def maintenance():
     programme_list_sorted = ds.programme_list.sort_values(by="programme_categories")
 
     with st.expander("🔧 Manage Staff List"):
+        
         st.subheader("Add New Staff Member")
 
         new_staff = st.text_input("Staff member name (Forename Surname)")
@@ -63,9 +64,7 @@ def maintenance():
                 deploy_ratio=deploy_ratio
             )
 
-            # Refresh list so new staff becomes immediately available to archive
             ds.staff_list = updated.sort_values(by="staff_member")
-
             st.success(f"{new_staff} added successfully.")
 
         # -----------------------------------------------------------------
@@ -89,12 +88,39 @@ def maintenance():
                 csv_path="staff_list.csv",
                 archive_staff=staff_to_archive
             )
-
             ds.staff_list = updated.sort_values(by="staff_member")
             st.success(f"{staff_to_archive} archived successfully.")
 
+        # -----------------------------------------------------------------
+        # RESTORE ARCHIVED STAFF
+        # -----------------------------------------------------------------
+        st.subheader("Restore Archived Staff Member")
+
+        archived_staff_sorted = ds.staff_list.loc[
+            ds.staff_list["archive_flag"] == 1
+        ].sort_values(by="staff_member")["staff_member"]
+
+        if not archived_staff_sorted.empty:
+            staff_to_restore = st.selectbox(
+                "Select archived staff member to restore",
+                archived_staff_sorted
+            )
+
+            # --- RESTORE STAFF MEMBER ---
+            if st.button("♻️ Restore Selected Staff"):
+                updated = update_staff_list(
+                    staff_list_df=ds.staff_list,
+                    csv_path="staff_list.csv",
+                    restore_staff=staff_to_restore
+                )
+                ds.staff_list = updated.sort_values(by="staff_member")
+                st.success(f"{staff_to_restore} restored successfully.")
+        else:
+            st.info("No archived staff to restore.")
+
+
     with st.expander("🔧 Manage Programme List"):
-        st.subheader("Add New Programme")
+        st.subheader("Add New Programme Category")
 
         # ----------------------------
         # Inputs for new programme
