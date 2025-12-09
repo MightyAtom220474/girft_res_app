@@ -30,8 +30,8 @@ pg = st.navigation(
     [
         st.Page(login_page, title="Login", icon="🔑"),
         st.Page(secure_page(home_page, ["admin", "user", "viewer"]),title="Homepage", icon="🏠"),
-        st.Page(secure_page(planner_page, ["admin", "user"]), title="Capacity Planner", icon="📊"),
-        st.Page(secure_page(dashboard_page, ["admin", "user", "viewer"]), title="Capacity Dashboard", icon="📈"),
+        st.Page(secure_page(planner_page, ["admin", "user"]), title="Capacity Planner", icon="🗓️"),
+        st.Page(secure_page(dashboard_page, ["admin", "user", "viewer"]), title="Capacity Dashboard", icon="📊"),
         st.Page(secure_page(maintenance_page, ["admin"]), title="System Maintenance", icon="🛠️")
     ]
 )
