@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import os
 from datetime import date, timedelta
+import data_store as ds
 #import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 #import numpy as np
@@ -88,36 +89,54 @@ def load_or_update_leave_file(filepath, staff_list,leave_type):
     
     return df
 
-# function to load or create leave planner
-def load_or_update_planner_file(filepath, staff_list,programme_list):
+def load_or_update_planner_file(filepath, staff_list, programme_categories):
     """
-    Loads an existing weekly leave CSV OR creates/updates one
-    with all weeks of the current year for all staff.
-
-    Weeks are auto-generated based on today's date.
+    programme_categories may be:
+      - a list of strings (["CBT", "Assessment"])
+      - OR a list of dicts ({"programme": "...", "archived_flag": ...})
     """
 
-    # -----------------------------------------
-    # Auto-generate weekly start/end dates
-    # -----------------------------------------
+    # ---------------------------------------------------------
+    # NORMALISE PROGRAMME DATA
+    # Convert to a simple list of active programme names
+    # ---------------------------------------------------------
+    active_programmes = []
+
+    for p in programme_categories:
+
+        # Case 1 → p is a dict
+        if isinstance(p, dict):
+            if p.get("archived_flag", 0) == 0:
+                active_programmes.append(p.get("programme") or p.get("programme_categories"))
+
+        # Case 2 → p is a string
+        elif isinstance(p, str):
+            active_programmes.append(p)
+
+        # Ignore anything else silently
+        else:
+            continue
+
+    # Remove Nones + duplicates
+    active_programmes = [a for a in active_programmes if a]
+    active_programmes = sorted(set(active_programmes))
+
+    # ---------------------------------------------------------
+    # Continue with your existing logic…
+    # ---------------------------------------------------------
     today = date.today()
     year = today.year
 
-    # First Monday of the year
     first_day = date(year, 1, 1)
     first_monday = first_day + timedelta(days=(7 - first_day.weekday()) % 7)
 
-    # Last Monday of the year
     last_day = date(year, 12, 31)
     last_monday = last_day - timedelta(days=last_day.weekday())
 
-    # Weekly list of Mondays
     planner_weeks = pd.date_range(start=first_monday, end=last_monday, freq="W-MON")
 
-    # Create full weekly structure
     def create_planner_structure(staff, programme_list):
         rows = []
-
         for s in staff:
             for w in planner_weeks:
                 row = {
@@ -125,40 +144,47 @@ def load_or_update_planner_file(filepath, staff_list,programme_list):
                     "week_commencing": w,
                     "week_number": w.isocalendar().week
                 }
-
-                # Add one column per activity type
                 for act in programme_list:
                     row[act] = 0
-
                 rows.append(row)
-
         return pd.DataFrame(rows)
 
-    # -----------------------------------------
-    # CASE 1: File exists → load + update
-    # -----------------------------------------
+    # =========================================================
+    # CASE 1: FILE EXISTS
+    # =========================================================
     if os.path.exists(filepath):
         existing = pd.read_csv(filepath, parse_dates=["week_commencing"])
 
+        base_cols = {"staff_member", "week_commencing", "week_number"}
+        existing_programmes = set(existing.columns) - base_cols
+
+        updated = existing.copy()
+
+        # Add new staff
         existing_staff = set(existing["staff_member"].unique())
         new_staff = set(staff_list) - existing_staff
-
         if new_staff:
-            add_df = create_planner_structure(new_staff,programme_list)
-            updated = pd.concat([existing, add_df], ignore_index=True)
-            updated.to_csv(filepath, index=False)
-            return updated
+            add_df = create_planner_structure(new_staff, active_programmes)
+            updated = pd.concat([updated, add_df], ignore_index=True)
 
-        return existing
+        # Add missing programmes
+        missing = set(active_programmes) - existing_programmes
+        for m in missing:
+            updated[m] = 0
 
-    # -----------------------------------------
-    # CASE 2: File does not exist → create new file
-    # -----------------------------------------
-    df = create_planner_structure(staff_list,programme_list)
+        updated = updated.round(decimals)
+        updated.to_csv(filepath, index=False)
+        return updated
+
+    # =========================================================
+    # CASE 2: FILE DOES NOT EXIST
+    # =========================================================
+    df = create_planner_structure(staff_list, active_programmes)
     df = df.round(decimals)
     df.to_csv(filepath, index=False)
-    
     return df
+
+
 
 def make_activity_chart(activity_calendar_df, activity_types):
     fig = go.Figure()

@@ -170,37 +170,56 @@ def planner():
         st.title("📅 Programme of Work")
         st.subheader("✏️ Add or Edit Programme Activity for a Specific Team Member")
 
-        # ------------------------------------------------
-        # Load active staff names
-        # ------------------------------------------------
-        staff_names = (
-            ds.staff_list.loc[ds.staff_list["archive_flag"] == 0, "staff_member"]
-            .sort_values()
-            .tolist()
-        )
+        # ---------------------------
+        # 1️⃣ Load active staff
+        # ---------------------------
+        staff_names = ds.staff_list.loc[ds.staff_list["archive_flag"] == 0, "staff_member"].sort_values().tolist()
 
-        # ------------------------------------------------
-        # Select Staff Member
-        # ------------------------------------------------
-        selected_staff_act = st.selectbox("Select Programme Team Member", staff_names)
+        selected_staff = st.selectbox("Select Programme Team Member", staff_names)
 
-        # ------------------------------------------------
-        # Select Week Commencing (Must be Monday)
-        # ------------------------------------------------
-        week_commencing_act = st.date_input(
+        # ---------------------------
+        # 2️⃣ Week commencing
+        # ---------------------------
+        week_commencing = st.date_input(
             "Select Week Commencing (Monday)",
-            help="Choose the Monday of the week you want to enter activity for",
+            help="Choose the Monday of the week you want to enter activity for"
         )
 
-        if week_commencing_act.weekday() != 0:
+        if week_commencing.weekday() != 0:
             st.warning("⚠️ The week commencing date must be a Monday.")
 
-        # ------------------------------------------------
-        # If a record exists for this staff + week, load it
-        # ------------------------------------------------
+        # ---------------------------
+        # 3️⃣ Programme group filter
+        # ---------------------------
+        # Only non-archived programmes
+        active_programmes = ds.programme_list.loc[ds.programme_list["archive_flag"] == 0].copy()
+
+        programme_groups = ["All"] + sorted(active_programmes["programme_group"].dropna().unique().tolist())
+        selected_group = st.selectbox("Select Programme Group", programme_groups, index=0)
+
+        if selected_group == "All":
+            programmes_filtered = active_programmes
+        else:
+            programmes_filtered = active_programmes.loc[active_programmes["programme_group"] == selected_group]
+
+        # Programme categories to display
+        programme_categories_filtered = programmes_filtered["programme_categories"].tolist()
+
+        # ---------------------------
+        # 4️⃣ Determine activity columns in planner
+        # ---------------------------
+        base_cols = {"staff_member", "week_number", "week_commencing", "Total Act Hours"}
+        activity_cols = [c for c in ds.programme_calendar_df.columns if c not in base_cols]
+
+        # Only include activity columns that are in the filtered programme categories
+        activity_cols = [c for c in activity_cols if c in programme_categories_filtered]
+
+        # ---------------------------
+        # 5️⃣ Load existing row if exists
+        # ---------------------------
         mask = (
-            (ds.programme_calendar_df["staff_member"] == selected_staff_act) &
-            (ds.programme_calendar_df["week_commencing"] == pd.to_datetime(week_commencing_act))
+            (ds.programme_calendar_df["staff_member"] == selected_staff) &
+            (ds.programme_calendar_df["week_commencing"] == pd.to_datetime(week_commencing))
         )
 
         if mask.any():
@@ -208,56 +227,20 @@ def planner():
         else:
             staff_row = pd.Series({col: 0.0 for col in activity_cols})
 
-        # ------------------------------------------------
-        # Build selectboxes for each activity
-        # ------------------------------------------------
-        st.write(f"### Editing Programme Activity for: **{selected_staff_act}**")
-        st.write(f"#### Week Commencing: **{week_commencing_act}**")
+        # ---------------------------
+        # 6️⃣ Build selectboxes for each activity
+        # ---------------------------
+        st.write(f"### Editing Programme Activity for: **{selected_staff}**")
+        st.write(f"#### Week Commencing: **{week_commencing}**")
 
-        # ------------------------------------------------
-        # Programme Group Selector (default to "All")
-        # ------------------------------------------------
-        # Only non-archived programmes
-        programmes_available = ds.programme_list.loc[ds.programme_list["archive_flag"] == 0]
-
-        # Programme groups from non-archived programmes
-        programme_groups = programmes_available["programme_group"].dropna().unique().tolist()
-        programme_groups = ["All"] + sorted(programme_groups)
-        selected_group = st.selectbox("Select Programme Group", programme_groups, index=0)
-
-        # Filter programme categories belonging to this group
-        if selected_group == "All":
-            filtered_programmes = programmes_available["programme_categories"].sort_values().tolist()
-        else:
-            filtered_programmes = programmes_available.loc[
-                programmes_available["programme_group"] == selected_group,
-                "programme_categories"
-            ].sort_values().tolist()
-
-        
-        # ------------------------------------------------
-        # Identify activity columns dynamically (exclude protected)
-        # ------------------------------------------------
-        protected_cols = [
-            "staff_member",
-            "week_number",
-            "week_commencing",
-            "Total Act Hours"
-        ]
-
-        # Only use activities from selected programme group
-        activity_cols = [
-            c for c in filtered_programmes if c not in protected_cols
-        ]
-
-
-        hour_values = [x * 0.5 for x in range(0, 76)]  # 0 to 37.5 inclusive
+        # 0 → 37.5 in 0.5 steps
+        hour_values = [x * 0.5 for x in range(0, 76)]
 
         activity_inputs = {}
 
         for col in activity_cols:
+            default_value = float(staff_row[col]) if col in staff_row else 0.0
             pretty_name = col.replace("_", " ").title()
-            default_value = float(staff_row.get(col, 0.0))
 
             activity_inputs[col] = st.selectbox(
                 pretty_name,
@@ -265,34 +248,33 @@ def planner():
                 index=hour_values.index(default_value) if default_value in hour_values else 0
             )
 
-        # ------------------------------------------------
-        # Save Button
-        # ------------------------------------------------
+        # ---------------------------
+        # 7️⃣ Save button
+        # ---------------------------
         if st.button("💾 Save Programme Activity Changes"):
-
             updated_row = {
-                "staff_member": selected_staff_act,
-                "week_commencing": pd.to_datetime(week_commencing_act),
-                "week_number": pd.to_datetime(week_commencing_act).isocalendar().week,
+                "staff_member": selected_staff,
+                "week_commencing": pd.to_datetime(week_commencing),
+                "week_number": pd.to_datetime(week_commencing).isocalendar().week,
                 **activity_inputs
             }
 
             if mask.any():
+                # Update existing row
                 ds.programme_calendar_df.loc[mask, activity_cols] = pd.DataFrame([updated_row])[activity_cols].values
                 action = "updated"
             else:
+                # Add new row
                 ds.programme_calendar_df = pd.concat(
                     [ds.programme_calendar_df, pd.DataFrame([updated_row])],
                     ignore_index=True
                 )
                 action = "added"
 
-            pf.save_data(ds.programme_calendar_df, ds.programme_file_path)
+            # Save to CSV
+            pf.save_data(ds.programme_calendar_df, "programme_calendar.csv")
 
-            st.success(
-                f"Programme activity successfully {action} for {selected_staff_act} "
-                f"on week {week_commencing_act}"
-            )
+            st.success(f"Programme activity successfully {action} for {selected_staff} on week {week_commencing}")
 
     with tab4:
 
