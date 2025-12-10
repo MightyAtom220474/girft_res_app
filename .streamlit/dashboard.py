@@ -1,64 +1,89 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
-# bring in data from Capacity Planner page
-from planner_app import staff_leave_merged_df, activity_calendar_df, activity_names
+# bring in data from data store
+import data_store as ds
 
-st.title("MHIST Capacity Dashboard")
+def dashboard():
 
-st.write(staff_leave_merged_df)
+    st.title("MHIST Capacity Dashboard")
 
-# df = pd.DataFrame(data)
+    ds.load_or_refresh_all()
+    
+    fig = go.Figure()
 
-staff_avail_grouped = staff_leave_merged_df.groupby("week_number").agg(
-    total_hours=("hours_pw", "sum"),
-    available_hours=("avail_hours", "sum")  # or mean if it varies
-).reset_index()
-
-activity_calendar_df['total_act_hours'] = activity_calendar_df[activity_names].sum(axis=1)
-
-staff_act_grouped = activity_calendar_df.groupby("week_number").agg(
-    total_hours=("total_act_hours", "sum")
-    #available_hours=("avail_hours", "sum")  # or mean if it varies
-).reset_index()
-
-# Create figure
-fig = go.Figure()
-
-# Add histogram / bar for total hours
-fig.add_trace(
-    go.Bar(
-        x=staff_act_grouped["week_number"],
-        y=staff_act_grouped["total_act_hours"],
-        name="Total Activity Hours",
-        marker_color="lightblue",
-        yaxis="y1"
+    # --- Available Hours (yellow line, Y1 axis) ---
+    fig.add_trace(
+        go.Scatter(
+            x=ds.staff_prog_pivot_df["week_number"],
+            y=ds.staff_prog_pivot_df["total_avail_hours"],
+            name="Available Hours",
+            mode="lines",
+            line=dict(color="yellow"),
+            yaxis="y1"
+        )
     )
-)
 
-# Add line for available hours
-fig.add_trace(
-    go.Scatter(
-        x=staff_avail_grouped["week"],
-        y=staff_avail_grouped["avail_hours"],
-        name="Available Hours",
-        mode="lines+markers",
-        marker_color="red",
-        yaxis="y1"
+    # --- Utilisation Rate (dashed-line, Y2 axis) ---
+    fig.add_trace(
+        go.Scatter(
+            x=ds.staff_prog_pivot_df["week_number"],
+            y=ds.staff_prog_pivot_df["util_rate"],
+            name="Utilisation Rate (%)",
+            yaxis="y2",
+            mode="lines",
+            line=dict(color="darkblue", dash="dash", width=2)
+        )
     )
-)
 
-# Update layout
-fig.update_layout(
-    title="Available Hours vs Total Activity Hours",
-    xaxis_title="Week",
-    yaxis_title="Hours",
-    barmode="overlay",  # or "group" if you prefer
-    template="plotly_white",
-    height=500
-)
+    # --- Utilisation Hours (bar chart, Y1 axis) ---
+    fig.add_trace(
+        go.Bar(
+            x=ds.staff_prog_pivot_df["week_number"],
+            y=ds.staff_prog_pivot_df["total_util_hours"],
+            name="Utilisation (Hours)",
+            yaxis="y1",
+            opacity=0.8,
+            marker_color="#003f7f" # NHS Blue
+        )
+    )
 
-fig.show()
+    # Utilisation Target (red dashed line)
+    fig.add_trace(
+        go.Scatter(
+            x=ds.staff_prog_pivot_df["week_number"],
+            y=ds.staff_prog_pivot_df["util_target"],   # must exist in your DF
+            name="Utilisation Target (%)",
+            mode="lines",
+            line=dict(color="red", dash="dash", width=2),
+            yaxis="y2"
+        )
+    )
+
+    # --- Layout: dual axes ---
+    fig.update_layout(
+        xaxis=dict(title="Week Number"),
+
+        yaxis=dict(
+            title="Available Hours",
+            side="left",
+            showgrid=False
+        ),
+
+        yaxis2=dict(
+            title="Utilisation Rate (%)",
+            overlaying="y",
+            side="right",
+            showgrid=False
+        ),
+
+        barmode="overlay",
+        legend=dict(x=0.01, y=0.99)
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
+
+    st.write(ds.staff_prog_pivot_df)
 
 
 

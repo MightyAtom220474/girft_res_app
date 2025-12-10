@@ -2,9 +2,10 @@ import streamlit as st
 import pandas as pd
 import os
 from datetime import date, timedelta
-import matplotlib.pyplot as plt
+import data_store as ds
+#import matplotlib.pyplot as plt
 import plotly.graph_objects as go
-import numpy as np
+#import numpy as np
 
 num_weeks = 52
 year = 2025   # you can make this a user input if you want
@@ -18,7 +19,11 @@ def load_data(file_name):
     df = pd.read_csv(file_name)
     
     return df
-    
+
+def save_data(df,file_path):
+        
+    df.to_csv(file_path, index=False)
+        
 # function to load or create leave planner
 def load_or_update_leave_file(filepath, staff_list,leave_type):
     """
@@ -84,36 +89,49 @@ def load_or_update_leave_file(filepath, staff_list,leave_type):
     
     return df
 
-# function to load or create leave planner
-def load_or_update_planner_file(filepath, staff_list,activity_list):
-    """
-    Loads an existing weekly leave CSV OR creates/updates one
-    with all weeks of the current year for all staff.
+def load_or_update_planner_file(filepath, staff_list, programme_categories):
+    
+    # ---------------------------------------------------------
+    # NORMALISE PROGRAMME DATA
+    # Convert to a simple list of active programme names
+    # ---------------------------------------------------------
+    active_programmes = []
 
-    Weeks are auto-generated based on today's date.
-    """
+    for p in programme_categories:
 
-    # -----------------------------------------
-    # Auto-generate weekly start/end dates
-    # -----------------------------------------
+        # Case 1 → p is a dict
+        if isinstance(p, dict):
+            if p.get("archived_flag", 0) == 0:
+                active_programmes.append(p.get("programme") or p.get("programme_categories"))
+
+        # Case 2 → p is a string
+        elif isinstance(p, str):
+            active_programmes.append(p)
+
+        # Ignore anything else silently
+        else:
+            continue
+
+    # Remove Nones + duplicates
+    active_programmes = [a for a in active_programmes if a]
+    active_programmes = sorted(set(active_programmes))
+
+    # ---------------------------------------------------------
+    # Continue with your existing logic…
+    # ---------------------------------------------------------
     today = date.today()
     year = today.year
 
-    # First Monday of the year
     first_day = date(year, 1, 1)
     first_monday = first_day + timedelta(days=(7 - first_day.weekday()) % 7)
 
-    # Last Monday of the year
     last_day = date(year, 12, 31)
     last_monday = last_day - timedelta(days=last_day.weekday())
 
-    # Weekly list of Mondays
     planner_weeks = pd.date_range(start=first_monday, end=last_monday, freq="W-MON")
 
-    # Create full weekly structure
-    def create_planner_structure(staff, activity_list):
+    def create_planner_structure(staff, programme_list):
         rows = []
-
         for s in staff:
             for w in planner_weeks:
                 row = {
@@ -121,40 +139,47 @@ def load_or_update_planner_file(filepath, staff_list,activity_list):
                     "week_commencing": w,
                     "week_number": w.isocalendar().week
                 }
-
-                # Add one column per activity type
-                for act in activity_list:
+                for act in programme_list:
                     row[act] = 0
-
                 rows.append(row)
-
         return pd.DataFrame(rows)
 
-    # -----------------------------------------
-    # CASE 1: File exists → load + update
-    # -----------------------------------------
+    # =========================================================
+    # CASE 1: FILE EXISTS
+    # =========================================================
     if os.path.exists(filepath):
         existing = pd.read_csv(filepath, parse_dates=["week_commencing"])
 
+        base_cols = {"staff_member", "week_commencing", "week_number"}
+        existing_programmes = set(existing.columns) - base_cols
+
+        updated = existing.copy()
+
+        # Add new staff
         existing_staff = set(existing["staff_member"].unique())
         new_staff = set(staff_list) - existing_staff
-
         if new_staff:
-            add_df = create_planner_structure(new_staff,activity_list)
-            updated = pd.concat([existing, add_df], ignore_index=True)
-            updated.to_csv(filepath, index=False)
-            return updated
+            add_df = create_planner_structure(new_staff, active_programmes)
+            updated = pd.concat([updated, add_df], ignore_index=True)
 
-        return existing
+        # Add missing programmes
+        missing = set(active_programmes) - existing_programmes
+        for m in missing:
+            updated[m] = 0
 
-    # -----------------------------------------
-    # CASE 2: File does not exist → create new file
-    # -----------------------------------------
-    df = create_planner_structure(staff_list,activity_list)
+        updated = updated.round(decimals)
+        updated.to_csv(filepath, index=False)
+        return updated
+
+    # =========================================================
+    # CASE 2: FILE DOES NOT EXIST
+    # =========================================================
+    df = create_planner_structure(staff_list, active_programmes)
     df = df.round(decimals)
     df.to_csv(filepath, index=False)
-    
     return df
+
+
 
 def make_activity_chart(activity_calendar_df, activity_types):
     fig = go.Figure()
@@ -178,48 +203,106 @@ def make_activity_chart(activity_calendar_df, activity_types):
 
     return fig
 
-def update_staff_list(staff_list_df, csv_path, new_staff=None, archive_staff=None):
+def update_staff_list(
+    staff_list_df,
+    csv_path,
+    new_staff=None,
+    job_role=None,
+    hours_pw=None,
+    leave_allowance_days=None,
+    is_deployable=None,
+    deploy_ratio=None,
+    archive_staff=None
+):
     """
-    new_staff: string of staff name to add
-    archive_staff: string of staff name to set archive_flag = 1
+    Update the staff list with new staff or archive existing staff.
+
+    Parameters:
+    - new_staff: name of new staff member to add
+    - job_role: text input
+    - hours_pw: float (0–37.5 step 0.5)
+    - leave_allowance_days: integer (0–35)
+    - is_deployable: bool or "Yes"/"No"
+    - deploy_ratio: float (0–1 step 0.1)
+    - archive_staff: name of staff member to archive
     """
-    
-    # --- Add new staff ---
+
+    # --- Ensure required columns exist ---
+    required_cols = [
+        "staff_member", "job_role", "hours_pw", "leave_allowance_days",
+        "is_deployable", "deploy_ratio", "archive_flag"
+    ]
+    for col in required_cols:
+        if col not in staff_list_df.columns:
+            staff_list_df[col] = None
+
+    # --- ADD NEW STAFF MEMBER ---
     if new_staff:
         if new_staff not in staff_list_df["staff_member"].values:
-            staff_list_df.loc[len(staff_list_df)] = {
+            new_row = {
                 "staff_member": new_staff,
+                "job_role": job_role,
+                "hours_pw": hours_pw,
+                "leave_allowance_days": leave_allowance_days,
+                "is_deployable": is_deployable,
+                "deploy_ratio": deploy_ratio,
                 "archive_flag": 0
             }
+            staff_list_df.loc[len(staff_list_df)] = new_row
 
-    # --- Archive staff ---
+    # --- ARCHIVE STAFF MEMBER ---
     if archive_staff:
         staff_list_df.loc[
-            staff_list_df["staff_member"] == archive_staff, "archive_flag"
+            staff_list_df["staff_member"] == archive_staff,
+            "archive_flag"
         ] = 1
 
-    # --- Save back to CSV ---
+    # --- SAVE CSV ---
     staff_list_df.to_csv(csv_path, index=False)
 
     return staff_list_df
 
-def update_programme_list(programme_list_df, csv_path, new_programme=None, archive_programme=None):
-    
-    # --- Add new staff ---
+def update_programme_list(
+    programme_list_df,
+    csv_path,
+    new_programme=None,
+    programme_type=None,
+    programme_group=None,
+    archive_programme=None
+):
+    """
+    Add or archive programme entries.
+
+    new_programme: str - programme category
+    programme_type: str - 'Deployable' or 'Non-Deployable'
+    programme_group: str - programme group category
+    archive_programme: str - programme description to archive
+    """
+
+    # --- Add new programme ---
     if new_programme:
-        if new_programme not in programme_list_df["programme_member"].values:
+        if new_programme not in programme_list_df["programme_categories"].values:
+
+            # Append new row
             programme_list_df.loc[len(programme_list_df)] = {
-                "programme_member": new_programme,
+                "programme_categories": new_programme,
+                "programme_type": programme_type,
+                "programme_group": programme_group,
                 "archive_flag": 0
             }
 
     # --- Archive programme ---
     if archive_programme:
         programme_list_df.loc[
-            programme_list_df["programme_member"] == archive_programme, "archive_flag"
+            programme_list_df["programme_categories"] == archive_programme,
+            "archive_flag"
         ] = 1
 
     # --- Save back to CSV ---
     programme_list_df.to_csv(csv_path, index=False)
 
+<<<<<<< HEAD:.streamlit/girft_planner_app.py
     return programme_list_df
+=======
+    return programme_list_df
+>>>>>>> form_input_dev:.streamlit/planner_functions.py

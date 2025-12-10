@@ -1,0 +1,26 @@
+staff_member,job_role,hours_pw,leave_allowance_days,is_deployable,deploy_ratio,archive_flag
+Andy Polychronakis ,PMO Support,37.5,30.0,1.0,0.5,1
+Caroline Attard,,37.5,30.0,1.0,1.0,0
+Dr David Somerfield,Medic,7.5,30.0,1.0,0.9,0
+Dr Holan Liang,Medic,7.5,30.0,1.0,0.9,0
+Dr Neeraj Berry,Medic,7.5,30.0,1.0,0.9,0
+Dr Sridevi Kalidindi,Medic,7.5,30.0,1.0,0.9,0
+Fortune Mhlanga,,37.5,30.0,1.0,1.0,0
+Frances Igbonwoke,,37.5,30.0,1.0,1.0,0
+Gareth Price,,7.5,30.0,1.0,0.7,0
+Heath McDonald,,7.5,33.0,1.0,0.7,0
+Helen Embleton,,7.5,30.0,1.0,0.7,0
+Lizell Smit ,PMO Support,37.5,30.0,1.0,0.5,0
+Louise Thomas,,37.5,30.0,1.0,1.0,0
+Maureen Banda,,37.5,30.0,1.0,1.0,0
+Michael Connell,,37.5,30.0,1.0,1.0,0
+Nick Gitsham,,37.5,30.0,1.0,1.0,0
+Paul Hopley ,,37.5,30.0,1.0,0.6,0
+Prof. Johnny Downs,Medic,7.5,30.0,1.0,0.9,0
+Sarah Brennan,,37.5,30.0,1.0,1.0,0
+Shaun Griffiths,,37.5,30.0,1.0,1.0,0
+Simon Bristow,,37.5,30.0,1.0,1.0,0
+Stephen Duncan,,15.0,30.0,1.0,0.5,0
+Suzannah Davies,,37.5,30.0,1.0,1.0,0
+Vicki Baxendale,,37.5,30.0,1.0,1.0,0
+Heath McDonald test,,,,,,1
