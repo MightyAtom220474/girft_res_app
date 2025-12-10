@@ -17,7 +17,7 @@ def dashboard():
         go.Scatter(
             x=ds.staff_prog_pivot_df["week_number"],
             y=ds.staff_prog_pivot_df["total_avail_hours"],
-            name="Available Hours",
+            name="Hours",
             mode="lines",
             line=dict(color="yellow"),
             yaxis="y1"
@@ -41,7 +41,7 @@ def dashboard():
         go.Bar(
             x=ds.staff_prog_pivot_df["week_number"],
             y=ds.staff_prog_pivot_df["total_util_hours"],
-            name="Utilisation (Hours)",
+            name="Utilisation Hours",
             yaxis="y1",
             opacity=0.8,
             marker_color="#003f7f" # NHS Blue
@@ -53,7 +53,7 @@ def dashboard():
         go.Scatter(
             x=ds.staff_prog_pivot_df["week_number"],
             y=ds.staff_prog_pivot_df["util_target"],   # must exist in your DF
-            name="Utilisation Target (%)",
+            name="Utilisation Target (85%)",
             mode="lines",
             line=dict(color="red", dash="dash", width=2),
             yaxis="y2"
@@ -65,7 +65,7 @@ def dashboard():
         xaxis=dict(title="Week Number"),
 
         yaxis=dict(
-            title="Available Hours",
+            title="Hours",
             side="left",
             showgrid=False
         ),
@@ -83,7 +83,7 @@ def dashboard():
 
     st.plotly_chart(fig, use_container_width=True)
 
-    st.write(ds.staff_prog_pivot_df)
+    #st.write(ds.staff_prog_pivot_df)
 
 
 
