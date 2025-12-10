@@ -16,7 +16,7 @@ def planner():
     programme_file_path = "programme_calendar.csv"
 
     # set up separate tabs for leave, on-site, and programme
-    tab1, tab2, tab3, tab4 = st.tabs(["Annual Leave","On-Site","Programme of Work","All Activity"])
+    tab1, tab2, tab3, tab4 = st.tabs(["Programme of Work","Annual Leave","On-Site","All Activity"])
 
     with tab1:
         
