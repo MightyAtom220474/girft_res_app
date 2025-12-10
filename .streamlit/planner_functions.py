@@ -301,8 +301,4 @@ def update_programme_list(
     # --- Save back to CSV ---
     programme_list_df.to_csv(csv_path, index=False)
 
-<<<<<<< HEAD:.streamlit/girft_planner_app.py
     return programme_list_df
-=======
-    return programme_list_df
->>>>>>> form_input_dev:.streamlit/planner_functions.py
