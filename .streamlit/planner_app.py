@@ -125,7 +125,7 @@ def planner():
                 action = "added"
 
             # Save to CSV
-            pf.save_data(ds.programme_calendar_df, "programme_calendar.csv")
+            pf.save_data(ds.programme_calendar_df, programme_file_path)
 
             st.success(f"Programme activity successfully {action} for {selected_staff} on week {week_commencing}")
     
@@ -286,7 +286,9 @@ def planner():
         # ------------------------------------------------
         st.subheader("📊 Team Leave Calendar View (Weekly Heatmap)")
 
-        pivot = ds.leave_calendar_df.pivot_table(
+        leave_df = pf.filter_by_access(ds.leave_calendar_df)
+
+        pivot = leave_df.pivot_table(
             index="staff_member",
             columns="week_number",
             values="days_leave",
@@ -353,7 +355,9 @@ def planner():
         # ------------------------------------------------
         st.subheader("📊 Team On-Site View (Weekly Heatmap)")
 
-        pivot = ds.onsite_calendar_df.pivot_table(
+        onsite_df = pf.filter_by_access(ds.onsite_calendar_df)
+
+        pivot = onsite_df.pivot_table(
             index="staff_member",
             columns="week_number",
             values="on_site_days",
@@ -416,7 +420,10 @@ def planner():
 
         # summary of weekly programme activity
         st.subheader("📊 Weekly Programme Activity Breakdown")
-        fig = pf.make_activity_chart(ds.programme_calendar_df, ds.programme_names)
+
+        prog_df = pf.filter_by_access(ds.programme_calendar_df)
+
+        fig = pf.make_activity_chart(prog_df, ds.programme_names)
         
         fig.update_layout(
                         width=1200,

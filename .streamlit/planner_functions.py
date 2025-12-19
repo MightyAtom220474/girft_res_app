@@ -3,6 +3,7 @@ import pandas as pd
 import os
 from datetime import date, timedelta
 import data_store as ds
+from werkzeug.security import generate_password_hash
 #import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 #import numpy as np
@@ -302,3 +303,30 @@ def update_programme_list(
     programme_list_df.to_csv(csv_path, index=False)
 
     return programme_list_df
+
+# function to dynamically change what users can view based on their access level
+def filter_by_access(df, staff_col="staff_member"):
+    access = st.session_state.access_level
+    username = st.session_state.username
+
+    # Admins and viewers see everything
+    if access in ("admin", "viewer"):
+        return df
+
+    # Users only see their own rows
+    if access == "user":
+        return df[df["username"] == username]
+
+    # Safety fallback
+    return df.iloc[0:0]
+
+def update_password(username, new_password):
+    ds.staff_list.loc[
+        ds.staff_list["username"] == username, "password"
+    ] = generate_password_hash(new_password)
+
+    ds.staff_list.loc[
+        ds.staff_list["username"] == username, "must_change_password"
+    ] = False
+
+    ds.staff_list.to_csv("staff_list.csv", index=False)
