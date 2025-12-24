@@ -2,11 +2,21 @@ import streamlit as st
 import pandas as pd
 from planner_functions import update_staff_list, update_programme_list
 import data_store as ds
+import sqlite3
 
+DB_PATH = "girft_capacity_planner.db"
 
 def maintenance():
 
     ds.load_or_refresh_all()
+
+    staff_list = st.session_state.staff_list
+    programme_list = st.session_state.programme_list
+    programme_calendar_df = st.session_state.programme_calendar_df
+    leave_calendar_df = st.session_state.leave_calendar_df
+    onsite_calendar_df = st.session_state.onsite_calendar_df
+    staff_names = st.session_state.staff_list
+    programme_names = st.session_state.programme_list
 
     st.title("System Maintenance")
 
@@ -14,11 +24,11 @@ def maintenance():
 
     #staff_list = staff_list
 
-    staff_list_sorted = ds.staff_list.sort_values(by="staff_member")
+    #staff_list_sorted = staff_list.sort_values(by="staff_member")
 
     #programme_list = programme_list
 
-    programme_list_sorted = ds.programme_list.sort_values(by="programme_categories")
+    programme_list_sorted = programme_list.sort_values(by="programme_categories")
 
     with st.expander("🔧 Manage Staff List"):
         
@@ -51,20 +61,30 @@ def maintenance():
             format_func=lambda x: f"{x:.1f}"
         )
 
-        # --- ADD STAFF MEMBER ---
+        username_input = st.text_input("Staff member User Name (.net email address if available)")
+
+        access_level = st.selectbox(
+                                    "User Access Level",
+                                    options=["admin", "user", "viewer"],
+                                    key="access_level"
+                                    )
+
         if st.button("➕ Add Staff Member"):
-            updated = update_staff_list(
-                staff_list_df=staff_list_sorted,      
-                csv_path="staff_list.csv",
+            update_staff_list(
                 new_staff=new_staff,
                 job_role=job_role,
                 hours_pw=hours_pw,
                 leave_allowance_days=leave_allowance_days,
                 is_deployable=is_deployable_flag,
-                deploy_ratio=deploy_ratio
+                deploy_ratio=deploy_ratio,
+                username=username_input,
+                password=ds.default_password,
+                user_access=access_level
             )
 
-            ds.staff_list = updated.sort_values(by="staff_member")
+            # Reload fresh data from the database
+            #staff_list = ds.load_staff_list().sort_values(by="staff_member")
+
             st.success(f"{new_staff} added successfully.")
 
         # -----------------------------------------------------------------
@@ -72,49 +92,107 @@ def maintenance():
         # -----------------------------------------------------------------
         st.subheader("Archive Staff Member")
 
-        active_staff_sorted = ds.staff_list.loc[
-            ds.staff_list["archive_flag"] == 0
-        ].sort_values(by="staff_member")["staff_member"]
-
-        staff_to_archive = st.selectbox(
-            "Select staff member to archive",
-            active_staff_sorted
-        )
-
-        # --- ARCHIVE STAFF MEMBER ---
-        if st.button("📦 Archive Selected Staff"):
-            updated = update_staff_list(
-                staff_list_df=ds.staff_list,
-                csv_path="staff_list.csv",
-                archive_staff=staff_to_archive
+        # ---------------------------
+        # Load active staff from DB
+        # ---------------------------
+        with sqlite3.connect(DB_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                SELECT staff_member
+                FROM staff_list
+                WHERE archive_flag = 0
+                ORDER BY staff_member
+                """
             )
-            ds.staff_list = updated.sort_values(by="staff_member")
-            st.success(f"{staff_to_archive} archived successfully.")
 
+        archive_staff = [row[0] for row in cursor.fetchall()]
+
+        if archive_staff:
+            staff_to_archive = st.selectbox(
+                "Select staff member to archive",
+                archive_staff
+            )
+
+            # ---------------------------
+            # ARCHIVE STAFF MEMBER
+            # ---------------------------
+            with sqlite3.connect(DB_PATH) as conn:
+                cursor = conn.cursor()
+                if st.button("Archive Selected Staff"):
+                    cursor.execute(
+                        """
+                        UPDATE staff_list
+                        SET archive_flag = 1
+                        WHERE staff_member = ?
+                        """,
+                        (staff_to_archive,)
+                    )
+                    conn.commit()
+
+                    st.success(f"{staff_to_archive} archived successfully.")
+
+                    # Optional: refresh cached data
+                    ds.load_or_refresh_all()
+
+        else:
+            st.info("No active staff to archive.")
+
+            # Optional: refresh cached data
+            ds.load_or_refresh_all()
+
+            st.rerun()   # ← force immediate refresh
+        
         # -----------------------------------------------------------------
         # RESTORE ARCHIVED STAFF
         # -----------------------------------------------------------------
         st.subheader("Restore Archived Staff Member")
 
-        archived_staff_sorted = ds.staff_list.loc[
-            ds.staff_list["archive_flag"] == 1
-        ].sort_values(by="staff_member")["staff_member"]
-
-        if not archived_staff_sorted.empty:
-            staff_to_restore = st.selectbox(
-                "Select archived staff member to restore",
-                archived_staff_sorted
+        # ---------------------------
+        # Load archived staff from DB
+        # ---------------------------
+        with sqlite3.connect(DB_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                SELECT staff_member
+                FROM staff_list
+                WHERE archive_flag = 1
+                ORDER BY staff_member
+                """
             )
 
-            # --- RESTORE STAFF MEMBER ---
-            if st.button("♻️ Restore Selected Staff"):
-                updated = update_staff_list(
-                    staff_list_df=ds.staff_list,
-                    csv_path="staff_list.csv",
-                    restore_staff=staff_to_restore
-                )
-                ds.staff_list = updated.sort_values(by="staff_member")
-                st.success(f"{staff_to_restore} restored successfully.")
+        archived_staff = [row[0] for row in cursor.fetchall()]
+
+        if archived_staff:
+            staff_to_restore = st.selectbox(
+                "Select archived staff member to restore",
+                archived_staff
+            )
+
+            # ---------------------------
+            # RESTORE STAFF MEMBER
+            # ---------------------------
+            with sqlite3.connect(DB_PATH) as conn:
+                cursor = conn.cursor()
+                if st.button("Restore Selected Staff"):
+                    cursor.execute(
+                        """
+                        UPDATE staff_list
+                        SET archive_flag = 0
+                        WHERE staff_member = ?
+                        """,
+                        (staff_to_restore,)
+                    )
+                    conn.commit()
+
+                    st.success(f"{staff_to_restore} restored successfully.")
+
+                    # Optional: refresh cached data
+                    ds.load_or_refresh_all()
+
+                    st.rerun()   # ← force immediate refresh
+
         else:
             st.info("No archived staff to restore.")
 
@@ -147,44 +225,107 @@ def maintenance():
         )
 
         # --- ADD PROGRAMME ---
+
         if st.button("➕ Add Programme"):
-            ds.programme_list = update_programme_list(
-                programme_list_df=programme_list_sorted,          # <-- use live df, NOT sorted copy
-                csv_path="programme_categories.csv",
+            update_programme_list(
                 new_programme=new_programme,
                 programme_type=programme_type,
                 programme_group=programme_group
             )
 
-            ds.programme_list = ds.programme_list.sort_values(by="programme_categories")
+            programme_list = programme_list.sort_values(by="programme_categories")
 
             st.success(f"{new_programme} added successfully.")
+
+            st.rerun()   # ← force immediate refresh
 
         # ----------------------------
         # Archive existing programmes
         # ----------------------------
+
         st.subheader("Archive Programme Category")
 
-        active_programme_sorted = (
-            ds.programme_list.loc[ds.programme_list["archive_flag"] == 0]
-            .sort_values(by="programme_categories")["programme_categories"]
-        )
+        with sqlite3.connect(DB_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                    """
+                    SELECT programme_categories
+                    FROM programme_categories
+                    WHERE archive_flag = 0
+                    ORDER BY programme_categories
+                    """
+                )
+            
+            active_programmes = [row[0] for row in cursor.fetchall()]
 
-        programme_to_archive = st.selectbox(
-            "Select programme to archive",
-            active_programme_sorted
-        )
-
-        if st.button("📦 Archive Selected Programme"):
-            ds.programme_list = update_programme_list(
-                programme_list_df=ds.programme_list,
-                csv_path="programme_categories.csv",
-                archive_programme=programme_to_archive
+            programme_to_archive = st.selectbox(
+                "Select programme to archive",
+                active_programmes
             )
 
-            ds.programme_list = ds.programme_list.sort_values(by="programme_categories")
+        with sqlite3.connect(DB_PATH) as conn:
+            cursor = conn.cursor()
+            if st.button("Archive Selected Programme"):
+                cursor.execute(
+                    """
+                    UPDATE programme_categories
+                    SET archive_flag = 1
+                    WHERE programme_categories = ?
+                    """,
+                    (programme_to_archive,)
+                )
+                conn.commit()
 
-            st.success(f"{programme_to_archive} archived successfully.")
+                st.success(f"{programme_to_archive} archived successfully.")
+
+                # Optional: refresh cached data
+                ds.load_or_refresh_all()
+
+                st.rerun()   # ← force immediate refresh
+
+        # ----------------------------
+        # Archive existing programmes
+        # ----------------------------
+
+        st.subheader("Restore Programme Category")
+
+        with sqlite3.connect(DB_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                    """
+                    SELECT programme_categories
+                    FROM programme_categories
+                    WHERE archive_flag = 1
+                    ORDER BY programme_categories
+                    """
+                )
+            
+            archived_programmes = [row[0] for row in cursor.fetchall()]
+
+            programme_to_restore = st.selectbox(
+                "Select programme to restore",
+                archived_programmes
+            )
+
+        with sqlite3.connect(DB_PATH) as conn:
+            cursor = conn.cursor()
+            if st.button("Restore Selected Programme"):
+                cursor.execute(
+                    """
+                    UPDATE programme_categories
+                    SET archive_flag = 0
+                    WHERE programme_categories = ?
+                    """,
+                    (programme_to_restore,)
+                )
+                conn.commit()
+
+                st.success(f"{programme_to_restore} restored successfully.")
+
+                # Optional: refresh cached data
+                ds.load_or_refresh_all()
+
+                st.rerun()   # ← force immediate refresh    
 
 
 

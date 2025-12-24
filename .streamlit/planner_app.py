@@ -7,13 +7,16 @@ import data_store as ds
 
 def planner():
     
-    ds.load_or_refresh_all()
-
-    leave_file_path = "annual_leave_calendar.csv"
-
-    onsite_file_path = "on_site_calendar.csv"
-
-    programme_file_path = "programme_calendar.csv"
+    if "staff_list" not in st.session_state:
+        ds.load_or_refresh_all()
+        
+    staff_list = st.session_state.staff_list
+    programme_list = st.session_state.programme_list
+    programme_calendar_df = st.session_state.programme_calendar_df
+    leave_calendar_df = st.session_state.leave_calendar_df
+    onsite_calendar_df = st.session_state.onsite_calendar_df
+    staff_names = st.session_state.staff_list
+    programme_names = st.session_state.programme_list
 
     # set up separate tabs for leave, on-site, and programme
     tab1, tab2, tab3, tab4 = st.tabs(["Programme of Work","Annual Leave","On-Site","All Activity"])
@@ -26,7 +29,7 @@ def planner():
         # ---------------------------
         # 1️⃣ Load active staff
         # ---------------------------
-        staff_names = ds.staff_list.loc[ds.staff_list["archive_flag"] == 0, "staff_member"].sort_values().tolist()
+        staff_names = staff_list.loc[staff_list["archive_flag"] == 0, "staff_member"].sort_values().tolist()
 
         selected_staff = st.selectbox("Select Programme Team Member", staff_names)
 
@@ -45,7 +48,7 @@ def planner():
         # 3️⃣ Programme group filter
         # ---------------------------
         # Only non-archived programmes
-        active_programmes = ds.programme_list.loc[ds.programme_list["archive_flag"] == 0].copy()
+        active_programmes = programme_list.loc[programme_list["archive_flag"] == 0].copy()
 
         programme_groups = ["All"] + sorted(active_programmes["programme_group"].dropna().unique().tolist())
         selected_group = st.selectbox("Select Programme Group", programme_groups, index=0)
@@ -59,26 +62,26 @@ def planner():
         programme_categories_filtered = programmes_filtered["programme_categories"].tolist()
 
         # ---------------------------
-        # 4️⃣ Determine activity columns in planner
-        # ---------------------------
-        base_cols = {"staff_member", "week_number", "week_commencing", "Total Act Hours"}
-        activity_cols = [c for c in ds.programme_calendar_df.columns if c not in base_cols]
-
-        # Only include activity columns that are in the filtered programme categories
-        activity_cols = [c for c in activity_cols if c in programme_categories_filtered]
-
-        # ---------------------------
-        # 5️⃣ Load existing row if exists
+        # Determine activity rows for selected staff & week
         # ---------------------------
         mask = (
-            (ds.programme_calendar_df["staff_member"] == selected_staff) &
-            (ds.programme_calendar_df["week_commencing"] == pd.to_datetime(week_commencing))
+            (programme_calendar_df["staff_member"] == selected_staff) &
+            (programme_calendar_df["week_commencing"] == pd.to_datetime(week_commencing)) &
+            (programme_calendar_df["programme_category"].isin(programme_categories_filtered))
         )
 
-        if mask.any():
-            staff_row = ds.programme_calendar_df.loc[mask].iloc[0]
-        else:
-            staff_row = pd.Series({col: 0.0 for col in activity_cols})
+        # Filter the relevant rows
+        staff_activities = programme_calendar_df.loc[mask].copy()
+
+        # If no activity exists yet, create a default row with zeros
+        if staff_activities.empty:
+            staff_activities = pd.DataFrame({
+                "staff_member": [selected_staff]*len(programme_categories_filtered),
+                "week_commencing": [pd.to_datetime(week_commencing)]*len(programme_categories_filtered),
+                "week_number": [pd.to_datetime(week_commencing).isocalendar()[1]]*len(programme_categories_filtered),
+                "programme_category": programme_categories_filtered,
+                "activity_value": [0.0]*len(programme_categories_filtered)
+            })
 
         # ---------------------------
         # 6️⃣ Build selectboxes for each activity
@@ -86,12 +89,22 @@ def planner():
         st.write(f"### Editing Programme Activity for: **{selected_staff}**")
         st.write(f"#### Week Commencing: **{week_commencing}**")
 
+        mask = (
+            (programme_calendar_df["staff_member"] == selected_staff) &
+            (programme_calendar_df["week_commencing"] == pd.to_datetime(week_commencing))
+        )
+
+        if mask.any():
+            staff_row = programme_calendar_df.loc[mask].iloc[0]
+        else:
+            staff_row = pd.Series({col: 0.0 for col in programme_categories_filtered})
+
         # 0 → 37.5 in 0.5 steps
         hour_values = [x * 0.5 for x in range(0, 76)]
 
         activity_inputs = {}
 
-        for col in activity_cols:
+        for col in programme_categories_filtered:
             default_value = float(staff_row[col]) if col in staff_row else 0.0
             pretty_name = col.replace("_", " ").title()
 
@@ -105,29 +118,18 @@ def planner():
         # 7️⃣ Save button
         # ---------------------------
         if st.button("💾 Save Programme Activity Changes"):
-            updated_row = {
-                "staff_member": selected_staff,
-                "week_commencing": pd.to_datetime(week_commencing),
-                "week_number": pd.to_datetime(week_commencing).isocalendar().week,
-                **activity_inputs
-            }
+            pf.save_programme_activity(
+                selected_staff=selected_staff,
+                week_commencing=week_commencing,
+                activity_inputs=activity_inputs
+            )
 
-            if mask.any():
-                # Update existing row
-                ds.programme_calendar_df.loc[mask, activity_cols] = pd.DataFrame([updated_row])[activity_cols].values
-                action = "updated"
-            else:
-                # Add new row
-                ds.programme_calendar_df = pd.concat(
-                    [ds.programme_calendar_df, pd.DataFrame([updated_row])],
-                    ignore_index=True
-                )
-                action = "added"
+            st.success(
+                f"Programme activity saved for {selected_staff} "
+                f"week commencing {pd.to_datetime(week_commencing).date()}"
+            )
 
-            # Save to CSV
-            pf.save_data(ds.programme_calendar_df, programme_file_path)
-
-            st.success(f"Programme activity successfully {action} for {selected_staff} on week {week_commencing}")
+            st.rerun()   # ← force immediate refresh
     
     with tab2:
 
@@ -141,7 +143,7 @@ def planner():
         # Select Staff Member
         # ------------------------------------------------
         staff_names = (
-            ds.staff_list.loc[ds.staff_list["archive_flag"] == 0, "staff_member"]
+            st.session_state.staff_list.loc[staff_list["archive_flag"] == 0, "staff_member"]
             .sort_values()
             .tolist()
         )
@@ -172,35 +174,19 @@ def planner():
         # ------------------------------------------------
         # Save Button
         # ------------------------------------------------
-        if st.button("💾 Save"):
-            # Check if row already exists for staff + week
-            mask = (
-                (ds.leave_calendar_df["staff_member"] == selected_staff) &
-                (ds.leave_calendar_df["week_commencing"] == pd.to_datetime(week_commencing))
+        if st.button("💾 Save Leave Changes"):
+            pf.save_annual_leave(
+                staff_member=selected_staff,
+                week_commencing=week_commencing,
+                days_leave=days_leave
             )
 
-            if mask.any():
-                # Update existing row
-                ds.leave_calendar_df.loc[mask, "days_leave"] = days_leave
-                action = "updated"
-            else:
-                # Add new row
-                new_row = {
-                    "staff_member": selected_staff,
-                    "week_commencing": pd.to_datetime(week_commencing),
-                    "week_number": pd.to_datetime(week_commencing).isocalendar().week,
-                    "days_leave": days_leave
-                }
-                ds.leave_calendar_df = pd.concat(
-                    [ds.leave_calendar_df, pd.DataFrame([new_row])],
-                    ignore_index=True
-                )
-                action = "added"
+            st.success(
+                f"Leave saved for {selected_staff} "
+                f"week commencing {pd.to_datetime(week_commencing).date()}"
+            )
 
-            # Save file
-            pf.save_data(ds.leave_calendar_df, leave_file_path)
-
-            st.success(f"Leave successfully {action} for {selected_staff} on week {week_commencing}")
+            st.rerun()   # ← force immediate refresh
 
     with tab3:
 
@@ -210,7 +196,7 @@ def planner():
         # Load staff names (active only)
         # ------------------------------------------------
         staff_names = (
-            ds.staff_list.loc[ds.staff_list["archive_flag"] == 0, "staff_member"]
+            st.session_state.staff_list.loc[staff_list["archive_flag"] == 0, "staff_member"]
             .sort_values()
             .tolist()
         )
@@ -246,35 +232,19 @@ def planner():
         # ------------------------------------------------
         # Save Button
         # ------------------------------------------------
-        if st.button("💾 Save On-Site Changes"):
-            # Identify whether row already exists
-            mask = (
-                (ds.onsite_calendar_df["staff_member"] == selected_staff_os) &
-                (ds.onsite_calendar_df["week_commencing"] == pd.to_datetime(week_commencing_os))
+        if st.button("💾 Save Staff Changes"):
+            pf.save_on_site(
+                staff_member=selected_staff,
+                week_commencing=week_commencing,
+                on_site_days=on_site_days
             )
 
-            if mask.any():
-                # Update existing row
-                ds.onsite_calendar_df.loc[mask, "on_site_days"] = on_site_days
-                action = "updated"
-            else:
-                # Insert new record
-                new_row = {
-                    "staff_member": selected_staff_os,
-                    "week_commencing": pd.to_datetime(week_commencing_os),
-                    "week_number": pd.to_datetime(week_commencing_os).isocalendar().week,
-                    "on_site_days": on_site_days
-                }
-                ds.onsite_calendar_df = pd.concat(
-                    [ds.onsite_calendar_df, pd.DataFrame([new_row])],
-                    ignore_index=True
-                )
-                action = "added"
+            st.success(
+                f"On-Site saved for {selected_staff} "
+                f"week commencing {pd.to_datetime(week_commencing).date()}"
+            )
 
-            # Save the file
-            pf.save_data(ds.onsite_calendar_df, onsite_file_path)
-
-            st.success(f"On-site days {action} for {selected_staff_os} on week {week_commencing_os}")
+            st.rerun()   # ← force immediate refresh
 
     with tab4:
 
@@ -286,7 +256,7 @@ def planner():
         # ------------------------------------------------
         st.subheader("📊 Team Leave Calendar View (Weekly Heatmap)")
 
-        leave_df = pf.filter_by_access(ds.leave_calendar_df)
+        leave_df = pf.filter_by_access(leave_calendar_df)
 
         pivot = leave_df.pivot_table(
             index="staff_member",
@@ -355,7 +325,7 @@ def planner():
         # ------------------------------------------------
         st.subheader("📊 Team On-Site View (Weekly Heatmap)")
 
-        onsite_df = pf.filter_by_access(ds.onsite_calendar_df)
+        onsite_df = pf.filter_by_access(onsite_calendar_df)
 
         pivot = onsite_df.pivot_table(
             index="staff_member",
@@ -421,9 +391,9 @@ def planner():
         # summary of weekly programme activity
         st.subheader("📊 Weekly Programme Activity Breakdown")
 
-        prog_df = pf.filter_by_access(ds.programme_calendar_df)
+        prog_df = pf.filter_by_access(st.session_state.programme_calendar_df)
 
-        fig = pf.make_activity_chart(prog_df, ds.programme_names)
+        fig = pf.make_activity_chart(prog_df, programme_names)
         
         fig.update_layout(
                         width=1200,

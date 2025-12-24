@@ -5,14 +5,25 @@ import data_store as ds
 # Load data
 ds.load_or_refresh_all()
 
+staff_list = st.session_state.staff_list
+programme_list = st.session_state.programme_list
+programme_calendar_df = st.session_state.programme_calendar_df
+leave_calendar_df = st.session_state.leave_calendar_df
+onsite_calendar_df = st.session_state.onsite_calendar_df
+staff_names = st.session_state.staff_list
+programme_names = st.session_state.programme_list
+
+
 # Ensure column exists
-if "must_change_password" not in ds.staff_list.columns:
-    ds.staff_list["must_change_password"] = True
-    ds.staff_list.to_csv("staff_list.csv", index=False)
+if "must_change_password" not in staff_list.columns:
+    staff_list["must_change_password"] = True
+    staff_list.to_csv("staff_list.csv", index=False)
 
 def login_page():
+
     st.title("Login")
 
+    
     # ---------------------------
     # NOT LOGGED IN
     # ---------------------------
@@ -22,7 +33,7 @@ def login_page():
         password = st.text_input("Password", type="password", key="login_password")
 
         if st.button("Login", key="login_button"):
-            user_row = ds.staff_list[ds.staff_list["username"] == username]
+            user_row = staff_list[staff_list["username"] == username]
 
             if user_row.empty:
                 st.error("Invalid username or password")
@@ -63,16 +74,16 @@ def login_page():
 
             hashed = generate_password_hash(new_password)
 
-            ds.staff_list.loc[
-                ds.staff_list["username"] == st.session_state.username, "password"
+            staff_list.loc[
+                staff_list["username"] == st.session_state.username, "password"
             ] = hashed
 
-            ds.staff_list.loc[
-                ds.staff_list["username"] == st.session_state.username,
+            staff_list.loc[
+                staff_list["username"] == st.session_state.username,
                 "must_change_password"
             ] = False
 
-            ds.staff_list.to_csv("staff_list.csv", index=False)
+            staff_list.to_csv("staff_list.csv", index=False)
 
             st.session_state.must_change_password = False
             st.success("Password updated successfully")
