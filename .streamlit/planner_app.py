@@ -31,7 +31,7 @@ def planner():
         # ---------------------------
         staff_names = staff_list.loc[staff_list["archive_flag"] == 0, "staff_member"].sort_values().tolist()
 
-        selected_staff = st.selectbox("Select Programme Team Member", staff_names)
+        selected_staff = st.selectbox("Select Programme Team Member", staff_names, index=None)
 
         # ---------------------------
         # 2️⃣ Week commencing
@@ -148,7 +148,7 @@ def planner():
             .tolist()
         )
 
-        selected_staff = st.selectbox("Select Leave Team Member", staff_names)
+        selected_staff = st.selectbox("Select Leave Team Member", staff_names, index=None)
 
         # ------------------------------------------------
         # Pick Week Commencing (Monday only)
@@ -206,7 +206,7 @@ def planner():
         # ------------------------------------------------
         st.subheader("✏️ Add or Edit On-Site Days for a Specific Team Member")
 
-        selected_staff_os = st.selectbox("Select On-site Team Member", staff_names)
+        selected_staff_os = st.selectbox("Select On-site Team Member", staff_names, index=None)
 
         # ------------------------------------------------
         # Select Week Commencing (Monday)
@@ -232,7 +232,7 @@ def planner():
         # ------------------------------------------------
         # Save Button
         # ------------------------------------------------
-        if st.button("💾 Save Staff Changes"):
+        if st.button("💾 Save On-Site Changes"):
             pf.save_on_site(
                 staff_member=selected_staff,
                 week_commencing=week_commencing,
