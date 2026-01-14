@@ -3,6 +3,7 @@ import pandas as pd
 import os
 import planner_functions as pf
 import data_store as ds
+import numpy as np
 
 
 def planner():
@@ -328,6 +329,37 @@ def planner():
         with st.container():
             st.dataframe(styled, use_container_width=True, height=len(staff_names)*39)
 
+        # --- Leave Heatmap Key ---
+        st.markdown("**Key (Days of Leave)**")
+
+        max_days = 5
+        steps = 50
+
+        def leave_rgb(v):
+            intensity = min(v / max_days, 1)
+            r = int(255 * intensity)
+            g = int(200 * (1 - intensity))
+            return f"rgb({r},{g},0)"
+
+        gradient = ", ".join([leave_rgb(v) for v in np.linspace(0, max_days, steps)])
+
+        st.markdown(
+            f"""
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:25px;">
+                <div style="
+                    background: linear-gradient(to right, {gradient});
+                    height: 20px;
+                    width: 300px;
+                    border: 1px solid #ccc;
+                    border-radius: 4px;
+                "></div>
+                <div>0 → 5 days</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+
         st.set_page_config(layout="wide")
         # ------------------------------------------------
         # Weekly On-Site Calendar
@@ -405,6 +437,37 @@ def planner():
 
         with st.container():
             st.dataframe(styled, use_container_width=True, height=len(staff_names)*39)
+
+        # --- On-Site Heatmap Key ---
+        st.markdown("**Key (Days On Site)**")
+
+        max_days = 5
+        steps = 50
+
+        def onsite_rgb(v):
+            intensity = min(v / max_days, 1)
+            r = 0
+            g = int(200 * (1 - intensity))
+            b = int(255 * intensity)
+            return f"rgb({r},{g},{b})"
+
+        gradient = ", ".join([onsite_rgb(v) for v in np.linspace(0, max_days, steps)])
+
+        st.markdown(
+            f"""
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:25px;">
+                <div style="
+                    background: linear-gradient(to right, {gradient});
+                    height: 20px;
+                    width: 300px;
+                    border: 1px solid #ccc;
+                    border-radius: 4px;
+                "></div>
+                <div>0 → 5 days</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
         # summary of weekly programme activity
         st.subheader("📊 Weekly Programme Activity Breakdown")
