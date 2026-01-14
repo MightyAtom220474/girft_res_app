@@ -16,6 +16,7 @@ SL_CSV_PATH = os.path.join(BASE_DIR, "staff_list.csv")
 LC_CSV_PATH = os.path.join(BASE_DIR, "annual_leave_calendar.csv")
 PR_CSV_PATH = os.path.join(BASE_DIR, "programme_calendar.csv")
 OS_CSV_PATH = os.path.join(BASE_DIR, "on_site_calendar.csv")
+LD_CSV_PATH = os.path.join(BASE_DIR, "legacy_activity_weekly_normalised.csv") # legacy programme data
 
 for path in [DB_PATH, PC_CSV_PATH, SL_CSV_PATH, LC_CSV_PATH, PR_CSV_PATH, OS_CSV_PATH]:
     if not os.path.exists(path):
@@ -225,6 +226,28 @@ if os.path.exists(PR_CSV_PATH):
 
 else:
     print("CSV not found – programme_activity table created only")
+
+##### load in legacy data if supplied #####
+
+legacy_df = pd.read_csv(LD_CSV_PATH)
+
+print(legacy_df.columns)
+legacy_df.head()
+
+if os.path.exists(LD_CSV_PATH):
+
+    # load normalised data into table
+    legacy_df.to_sql(
+        "programme_activity",
+        conn,
+        if_exists="append",
+        index=False
+    )
+
+    #conn.close()
+
+else:
+    print("CSV for legacy data not found – programme_activity table created only")
 
 ##### On-Site Calendar #####
 cursor.execute("""

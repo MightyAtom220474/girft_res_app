@@ -266,6 +266,15 @@ def planner():
         )
 
         # Manual gradient colouring without matplotlib
+        # def cell_color(val):
+        #     # Scale 0–5 days (feel free to adjust)
+        #     max_days = 5
+        #     intensity = min(val / max_days, 1)
+        #     r = int(255 * intensity)
+        #     g = int(200 * (1 - intensity))
+        #     b = 0
+        #     return f"background-color: rgb({r}, {g}, {b})"
+        
         def cell_color(val):
             # Scale 0–5 days (feel free to adjust)
             max_days = 5
@@ -273,7 +282,7 @@ def planner():
             r = int(255 * intensity)
             g = int(200 * (1 - intensity))
             b = 0
-            return f"background-color: rgb({r}, {g}, {b})"
+            return f"background-color: rgb({r}, {g}, {b}); color: rgb({r}, {g}, {b});"
 
         staff_col_px = 140
         week_col_px = 22   # works for 52 weeks
@@ -335,6 +344,15 @@ def planner():
         )
 
         # Manual gradient colouring without matplotlib
+        # def cell_color(val):
+        #     # Scale 0–5 days (feel free to adjust)
+        #     max_days = 5
+        #     intensity = min(val / max_days, 1)
+        #     r = 0
+        #     g = int(200 * (1 - intensity))
+        #     b = int(255 * intensity)
+        #     return f"background-color: rgb({r}, {g}, {b})"
+        
         def cell_color(val):
             # Scale 0–5 days (feel free to adjust)
             max_days = 5
@@ -342,7 +360,7 @@ def planner():
             r = 0
             g = int(200 * (1 - intensity))
             b = int(255 * intensity)
-            return f"background-color: rgb({r}, {g}, {b})"
+            return f"background-color: rgb({r}, {g}, {b}); color: rgb({r}, {g}, {b});"
 
         staff_col_px = 140
         week_col_px = 22   # works for 52 weeks
