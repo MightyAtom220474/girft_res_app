@@ -111,7 +111,7 @@ def maintenance():
         if archive_staff:
             staff_to_archive = st.selectbox(
                 "Select staff member to archive",
-                archive_staff
+                archive_staff, index=None
             )
 
             # ---------------------------
@@ -167,7 +167,7 @@ def maintenance():
         if archived_staff:
             staff_to_restore = st.selectbox(
                 "Select archived staff member to restore",
-                archived_staff
+                archived_staff, index=None
             )
 
             # ---------------------------
@@ -260,7 +260,7 @@ def maintenance():
 
             programme_to_archive = st.selectbox(
                 "Select programme to archive",
-                active_programmes
+                active_programmes, index=None
             )
 
         with sqlite3.connect(DB_PATH) as conn:
@@ -304,7 +304,7 @@ def maintenance():
 
             programme_to_restore = st.selectbox(
                 "Select programme to restore",
-                archived_programmes
+                archived_programmes, index=None
             )
 
         with sqlite3.connect(DB_PATH) as conn:

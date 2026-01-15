@@ -19,13 +19,30 @@ def dashboard():
     staff_names = st.session_state.staff_list
     programme_names = st.session_state.programme_list
     
+    
+    # st.write(st.session_state.programme_calendar_df)
+    
+    # st.write(st.session_state.staff_prog_pivot_df)
+
+    df = st.session_state.staff_prog_pivot_df.copy()
+
+    start_date = pd.Timestamp("2025-01-01")
+    end_date   = start_date + pd.DateOffset(years=1)   # 12 months window
+
+    df_12m = df[
+        (df["week_commencing"] >= start_date) &
+        (df["week_commencing"] < end_date)
+    ]
+
+    st.session_state.staff_prog_pivot_df_12m = df_12m
+    
     fig = go.Figure()
 
     # --- Available Hours (yellow line, Y1 axis) ---
     fig.add_trace(
         go.Scatter(
-            x=st.session_state.staff_prog_pivot_df["week_number"],
-            y=st.session_state.staff_prog_pivot_df["total_avail_hours"],
+            x=st.session_state.staff_prog_pivot_df_12m["week_commencing"],
+            y=st.session_state.staff_prog_pivot_df_12m["total_avail_hours"],
             name="Hours",
             mode="lines",
             line=dict(color="yellow"),
@@ -36,8 +53,8 @@ def dashboard():
     # --- Utilisation Rate (dashed-line, Y2 axis) ---
     fig.add_trace(
         go.Scatter(
-            x=st.session_state.staff_prog_pivot_df["week_number"],
-            y=st.session_state.staff_prog_pivot_df["util_rate"],
+            x=st.session_state.staff_prog_pivot_df_12m["week_commencing"],
+            y=st.session_state.staff_prog_pivot_df_12m["util_rate"],
             name="Utilisation Rate (%)",
             yaxis="y2",
             mode="lines",
@@ -48,20 +65,21 @@ def dashboard():
     # --- Utilisation Hours (bar chart, Y1 axis) ---
     fig.add_trace(
         go.Bar(
-            x=st.session_state.staff_prog_pivot_df["week_number"],
-            y=st.session_state.staff_prog_pivot_df["total_util_hours"],
+            x=st.session_state.staff_prog_pivot_df_12m["week_commencing"],
+            y=st.session_state.staff_prog_pivot_df_12m["total_util_hours"],
             name="Utilisation Hours",
             yaxis="y1",
             opacity=0.8,
-            marker_color="#003f7f" # NHS Blue
+            marker_color="#003f7f", # NHS Blue
+            width=0.9
         )
     )
 
     # Utilisation Target (red dashed line)
     fig.add_trace(
         go.Scatter(
-            x=st.session_state.staff_prog_pivot_df["week_number"],
-            y=st.session_state.staff_prog_pivot_df["util_target"],   # must exist in your DF
+            x=st.session_state.staff_prog_pivot_df_12m["week_commencing"],
+            y=st.session_state.staff_prog_pivot_df_12m["util_target"],   # must exist in your DF
             name="Utilisation Target (85%)",
             mode="lines",
             line=dict(color="red", dash="dash", width=2),
@@ -71,7 +89,7 @@ def dashboard():
 
     # --- Layout: dual axes ---
     fig.update_layout(
-        xaxis=dict(title="Week Number"),
+        xaxis=dict(title="Week Commencing"),
 
         yaxis=dict(
             title="Hours",
@@ -92,7 +110,7 @@ def dashboard():
 
     st.plotly_chart(fig, use_container_width=True)
 
-    #st.write(st.session_state.staff_prog_pivot_df)
+    #st.write(st.session_state.staff_prog_pivot_df_12m)
 
 
 

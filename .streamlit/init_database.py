@@ -7,13 +7,16 @@
 import sqlite3
 import pandas as pd
 import os
+import numpy as np
+import pandas as pd
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 DB_PATH = os.path.join(BASE_DIR, "girft_capacity_planner.db")
 PC_CSV_PATH = os.path.join(BASE_DIR, "programme_categories.csv")
 SL_CSV_PATH = os.path.join(BASE_DIR, "staff_list.csv")
-LC_CSV_PATH = os.path.join(BASE_DIR, "annual_leave_calendar.csv")
+LC_CSV_PATH = os.path.join(BASE_DIR, "legacy_leave_weekly_normalised.csv")
+#LC_CSV_PATH = os.path.join(BASE_DIR, "annual_leave_calendar.csv")
 PR_CSV_PATH = os.path.join(BASE_DIR, "programme_calendar.csv")
 OS_CSV_PATH = os.path.join(BASE_DIR, "on_site_calendar.csv")
 LD_CSV_PATH = os.path.join(BASE_DIR, "legacy_activity_weekly_normalised.csv") # legacy programme data
@@ -155,8 +158,6 @@ else:
     print("CSV not found – leave_calendar table created only")
 
 ##### Planner Calendar #####
-
-
 # List of programme activity columns in your CSV
 programme_columns = [
     "Action Cards and other resource development",
@@ -200,7 +201,7 @@ cursor = conn.cursor()
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS programme_activity (
     staff_member TEXT NOT NULL,
-    week_commencing DATE NOT NULL,
+    week_commencing TEXT NOT NULL,
     week_number INTEGER NOT NULL,
     programme_category TEXT NOT NULL,
     activity_value REAL NOT NULL,
@@ -229,23 +230,27 @@ else:
 
 ##### load in legacy data if supplied #####
 
-legacy_df = pd.read_csv(LD_CSV_PATH)
-
-print(legacy_df.columns)
-legacy_df.head()
-
 if os.path.exists(LD_CSV_PATH):
 
-    # load normalised data into table
+    legacy_df = pd.read_csv(LD_CSV_PATH)
+    legacy_df.columns = legacy_df.columns.str.strip()
+
+    # Parse UK-style dd/mm/yyyy to real datetime
+    legacy_df["week_commencing"] = pd.to_datetime(
+        legacy_df["week_commencing"],
+        errors="coerce",
+        dayfirst=True,   # 👈 important
+    )
+
+    # If you want them stored as pure dates in SQLite:
+    legacy_df["week_commencing"] = legacy_df["week_commencing"].dt.date
+
     legacy_df.to_sql(
         "programme_activity",
         conn,
         if_exists="append",
         index=False
     )
-
-    #conn.close()
-
 else:
     print("CSV for legacy data not found – programme_activity table created only")
 

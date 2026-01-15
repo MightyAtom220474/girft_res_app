@@ -1,10 +1,16 @@
 import streamlit as st
+from streamlit import components
 import pandas as pd
 import os
 import planner_functions as pf
 import data_store as ds
 import numpy as np
+import plotly.graph_objects as go
 
+st.set_page_config(layout="wide")
+
+max_days = 5
+steps = 50
 
 def planner():
     
@@ -251,7 +257,30 @@ def planner():
 
         st.title("📅 Programme Overview")
 
-        st.set_page_config(layout="wide")
+        from datetime import date, timedelta
+        import numpy as np
+
+        MAX_DAYS = 5
+        KEY_STEPS = 100
+
+        # Helper functions for keys
+        def leave_rgb(val: float) -> str:
+            t = min(max(val / MAX_DAYS, 0), 1)
+            r = int(255 * t)
+            g = int(200 * (1 - t))
+            return f"rgb({r},{g},0)"
+
+        def onsite_rgb(val: float) -> str:
+            t = min(max(val / MAX_DAYS, 0), 1)
+            r = 0
+            g = int(200 * (1 - t))
+            b = int(255 * t)
+            return f"rgb({r},{g},{b})"
+
+        # Figure out current week start (assume Monday)
+        today = date.today()
+        current_week_start = today - timedelta(days=today.weekday())
+
         # ------------------------------------------------
         # Weekly Leave Calendar
         # ------------------------------------------------
@@ -261,91 +290,101 @@ def planner():
 
         pivot = leave_df.pivot_table(
             index="staff_member",
-            columns="week_number",
+            columns="week_commencing",
             values="days_leave",
             fill_value=0
         )
 
-        # Manual gradient colouring without matplotlib
-        # def cell_color(val):
-        #     # Scale 0–5 days (feel free to adjust)
-        #     max_days = 5
-        #     intensity = min(val / max_days, 1)
-        #     r = int(255 * intensity)
-        #     g = int(200 * (1 - intensity))
-        #     b = 0
-        #     return f"background-color: rgb({r}, {g}, {b})"
-        
-        def cell_color(val):
-            # Scale 0–5 days (feel free to adjust)
-            max_days = 5
-            intensity = min(val / max_days, 1)
-            r = int(255 * intensity)
-            g = int(200 * (1 - intensity))
-            b = 0
-            return f"background-color: rgb({r}, {g}, {b}); color: rgb({r}, {g}, {b});"
+        # Data for Plotly
+        z = pivot.to_numpy()
+        y = pivot.index.astype(str).tolist()
+        cols = list(pivot.columns)
 
-        staff_col_px = 140
-        week_col_px = 22   # works for 52 weeks
+        # Use numeric x positions so we can highlight a full column
+        x_vals = list(range(len(cols)))
+        ticktext = []
+        current_idx = None
 
-        styled = (
-            pivot.style
-            .applymap(cell_color)
-            .format("{:.2f}")
+        for i, c in enumerate(cols):
+            # c might be Timestamp, datetime.date, etc.
+            if hasattr(c, "date"):
+                c_date = c.date()
+                label = c.strftime("%d-%b")
+            elif isinstance(c, date):
+                c_date = c
+                label = c.strftime("%d-%b")
+            else:
+                c_date = None
+                label = str(c)
+
+            ticktext.append(label)
+
+            if c_date == current_week_start:
+                current_idx = i
+
+        # Leave heatmap: green -> red
+        leave_colorscale = [
+            [0.0, "rgb(0,200,0)"],   # 0 days
+            [1.0, "rgb(255,0,0)"],   # max days
+        ]
+
+        fig_leave = go.Figure(
+            data=go.Heatmap(
+                z=z,
+                x=x_vals,
+                y=y,
+                colorscale=leave_colorscale,
+                colorbar=dict(title="Days of Leave"),
+                zmin=0,
+                zmax=MAX_DAYS,
+                hovertemplate=(
+                    "Staff: %{y}<br>"
+                    "Week: %{x}<br>"
+                    "Days leave: %{z:.2f}<extra></extra>"
+                ),
+            )
         )
 
-        styles = [
-            # Staff row header column
-            {
-                "selector": "th.row_heading",
-                "props": [
-                    ("min-width", f"{staff_col_px}px"),
-                    ("max-width", f"{staff_col_px}px"),
-                    ("white-space", "nowrap")
-                    ]
-                },
-                # Week header columns
-                {
-                    "selector": "th.col_heading",
-                    "props": [
-                        ("min-width", f"{week_col_px}px"),
-                        ("max-width", f"{week_col_px}px"),
-                        ("padding", "2px 4px")
-                    ]
-                },
-                # Week value cells
-                {
-                    "selector": "td",
-                    "props": [
-                        ("min-width", f"{week_col_px}px"),
-                        ("max-width", f"{week_col_px}px"),
-                        ("padding", "2px 4px")
-                    ]
-                }
-            ]
+        fig_leave.update_layout(
+            xaxis=dict(
+                tickmode="array",
+                tickvals=x_vals,
+                ticktext=ticktext,
+                tickangle=90,
+            ),
+            yaxis=dict(
+                automargin=True,
+            ),
+            margin=dict(l=160, r=20, t=40, b=120),
+            height=max(350, pivot.shape[0] * 20 + 160),
+        )
 
-        styled = styled.set_table_styles(styles)
+        # Highlight current week column if present
+        if current_idx is not None:
+            fig_leave.add_vrect(
+                x0=current_idx - 0.5,
+                x1=current_idx + 0.5,
+                xref="x",
+                yref="paper",
+                fillcolor="rgba(0,0,0,0.12)",
+                opacity=0.15,
+                line_width=2,
+                line_color="black",
+                layer="below",  # keep heatmap cells visible
+            )
 
-        with st.container():
-            st.dataframe(styled, use_container_width=True, height=len(staff_names)*39)
+        st.plotly_chart(fig_leave, use_container_width=True)
 
-        # --- Leave Heatmap Key ---
+        # Horizontal key at bottom
         st.markdown("**Key (Days of Leave)**")
 
-        max_days = 5
-        steps = 50
-
-        def leave_rgb(v):
-            intensity = min(v / max_days, 1)
-            r = int(255 * intensity)
-            g = int(200 * (1 - intensity))
-            return f"rgb({r},{g},0)"
-
-        gradient = ", ".join([leave_rgb(v) for v in np.linspace(0, max_days, steps)])
+        gradient = ", ".join(
+            [leave_rgb(v) for v in np.linspace(0, MAX_DAYS, KEY_STEPS)]
+        )
 
         st.markdown(
             f"""
-            <div style="display:flex; align-items:center; gap:10px; margin-bottom:25px;">
+            <div style="display:flex; align-items:center; gap:10px; margin-top:10px; margin-bottom:35px;">
                 <div style="
                     background: linear-gradient(to right, {gradient});
                     height: 20px;
@@ -353,14 +392,12 @@ def planner():
                     border: 1px solid #ccc;
                     border-radius: 4px;
                 "></div>
-                <div>0 → 5 days</div>
+                <div>0 → {MAX_DAYS} days</div>
             </div>
             """,
-            unsafe_allow_html=True
+            unsafe_allow_html=True,
         )
 
-
-        st.set_page_config(layout="wide")
         # ------------------------------------------------
         # Weekly On-Site Calendar
         # ------------------------------------------------
@@ -370,92 +407,96 @@ def planner():
 
         pivot = onsite_df.pivot_table(
             index="staff_member",
-            columns="week_number",
+            columns="week_commencing",
             values="on_site_days",
             fill_value=0
         )
 
-        # Manual gradient colouring without matplotlib
-        # def cell_color(val):
-        #     # Scale 0–5 days (feel free to adjust)
-        #     max_days = 5
-        #     intensity = min(val / max_days, 1)
-        #     r = 0
-        #     g = int(200 * (1 - intensity))
-        #     b = int(255 * intensity)
-        #     return f"background-color: rgb({r}, {g}, {b})"
-        
-        def cell_color(val):
-            # Scale 0–5 days (feel free to adjust)
-            max_days = 5
-            intensity = min(val / max_days, 1)
-            r = 0
-            g = int(200 * (1 - intensity))
-            b = int(255 * intensity)
-            return f"background-color: rgb({r}, {g}, {b}); color: rgb({r}, {g}, {b});"
+        z = pivot.to_numpy()
+        y = pivot.index.astype(str).tolist()
+        cols = list(pivot.columns)
 
-        staff_col_px = 140
-        week_col_px = 22   # works for 52 weeks
+        x_vals = list(range(len(cols)))
+        ticktext = []
+        current_idx = None
 
-        styled = (
-            pivot.style
-            .applymap(cell_color)
-            .format("{:.2f}")
+        for i, c in enumerate(cols):
+            if hasattr(c, "date"):
+                c_date = c.date()
+                label = c.strftime("%d-%b")
+            elif isinstance(c, date):
+                c_date = c
+                label = c.strftime("%d-%b")
+            else:
+                c_date = None
+                label = str(c)
+
+            ticktext.append(label)
+
+            if c_date == current_week_start:
+                current_idx = i
+
+        # On-site heatmap: green -> blue
+        onsite_colorscale = [
+            [0.0, "rgb(0,200,0)"],   # 0 days on site
+            [1.0, "rgb(0,0,255)"],   # max days on site
+        ]
+
+        fig_onsite = go.Figure(
+            data=go.Heatmap(
+                z=z,
+                x=x_vals,
+                y=y,
+                colorscale=onsite_colorscale,
+                colorbar=dict(title="Days on Site"),
+                zmin=0,
+                zmax=MAX_DAYS,
+                hovertemplate=(
+                    "Staff: %{y}<br>"
+                    "Week: %{x}<br>"
+                    "Days on site: %{z:.2f}<extra></extra>"
+                ),
+            )
         )
 
-        styles = [
-            # Staff row header column
-            {
-                "selector": "th.row_heading",
-                "props": [
-                    ("min-width", f"{staff_col_px}px"),
-                    ("max-width", f"{staff_col_px}px"),
-                    ("white-space", "nowrap")
-                    ]
-                },
-                # Week header columns
-                {
-                    "selector": "th.col_heading",
-                    "props": [
-                        ("min-width", f"{week_col_px}px"),
-                        ("max-width", f"{week_col_px}px"),
-                        ("padding", "2px 4px")
-                    ]
-                },
-                # Week value cells
-                {
-                    "selector": "td",
-                    "props": [
-                        ("min-width", f"{week_col_px}px"),
-                        ("max-width", f"{week_col_px}px"),
-                        ("padding", "2px 4px")
-                    ]
-                }
-            ]
+        fig_onsite.update_layout(
+            xaxis=dict(
+                tickmode="array",
+                tickvals=x_vals,
+                ticktext=ticktext,
+                tickangle=90,
+            ),
+            yaxis=dict(
+                automargin=True,
+            ),
+            margin=dict(l=160, r=20, t=40, b=120),
+            height=max(350, pivot.shape[0] * 20 + 160),
+        )
 
-        styled = styled.set_table_styles(styles)
+        if current_idx is not None:
+            fig_onsite.add_vrect(
+                x0=current_idx - 0.5,
+                x1=current_idx + 0.5,
+                xref="x",
+                yref="paper",
+                fillcolor="rgba(0,0,0,0.12)",
+                opacity=0.15,
+                line_width=2,
+                line_color="black",
+                layer="below",
+            )
 
-        with st.container():
-            st.dataframe(styled, use_container_width=True, height=len(staff_names)*39)
+        st.plotly_chart(fig_onsite, use_container_width=True)
 
-        # --- On-Site Heatmap Key ---
         st.markdown("**Key (Days On Site)**")
 
-        max_days = 5
-        steps = 50
-
-        def onsite_rgb(v):
-            intensity = min(v / max_days, 1)
-            r = 0
-            g = int(200 * (1 - intensity))
-            b = int(255 * intensity)
-            return f"rgb({r},{g},{b})"
-
-        gradient = ", ".join([onsite_rgb(v) for v in np.linspace(0, max_days, steps)])
+        gradient = ", ".join(
+            [onsite_rgb(v) for v in np.linspace(0, MAX_DAYS, KEY_STEPS)]
+        )
 
         st.markdown(
             f"""
-            <div style="display:flex; align-items:center; gap:10px; margin-bottom:25px;">
+            <div style="display:flex; align-items:center; gap:10px; margin-top:10px; margin-bottom:35px;">
                 <div style="
                     background: linear-gradient(to right, {gradient});
                     height: 20px;
@@ -463,10 +504,10 @@ def planner():
                     border: 1px solid #ccc;
                     border-radius: 4px;
                 "></div>
-                <div>0 → 5 days</div>
+                <div>0 → {MAX_DAYS} days</div>
             </div>
             """,
-            unsafe_allow_html=True
+            unsafe_allow_html=True,
         )
 
         # summary of weekly programme activity
