@@ -288,7 +288,15 @@ def planner():
 
         leave_df = pf.filter_by_access(leave_calendar_df)
 
-        pivot = leave_df.pivot_table(
+        start_date = pd.Timestamp("2025-01-01")
+        end_date   = start_date + pd.DateOffset(years=1)   # 12 months window
+
+        leave_df_12m = leave_df[
+            (leave_df["week_commencing"] >= start_date) &
+            (leave_df["week_commencing"] < end_date)
+        ]
+
+        pivot = leave_df_12m.pivot_table(
             index="staff_member",
             columns="week_commencing",
             values="days_leave",
