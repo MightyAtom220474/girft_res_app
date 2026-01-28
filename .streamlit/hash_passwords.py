@@ -46,5 +46,5 @@ print("Done: all passwords reset (unique salted hashes) and must_change_password
 
 with sqlite3.connect(DB_PATH) as conn:
     cur = conn.cursor()
-    cur.execute("SELECT * FROM staff_list")
+    cur.execute("SELECT * FROM staff_list where staff_member = 'Heath McDonald' ")
     print(cur.fetchone())  

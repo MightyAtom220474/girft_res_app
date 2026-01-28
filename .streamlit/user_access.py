@@ -1,29 +1,12 @@
 import streamlit as st
+import sqlite3
 from werkzeug.security import generate_password_hash, check_password_hash
-import data_store as ds
 
-# Load data
-ds.load_or_refresh_all()
-
-staff_list = st.session_state.staff_list
-programme_list = st.session_state.programme_list
-programme_calendar_df = st.session_state.programme_calendar_df
-leave_calendar_df = st.session_state.leave_calendar_df
-onsite_calendar_df = st.session_state.onsite_calendar_df
-staff_names = st.session_state.staff_list
-programme_names = st.session_state.programme_list
-
-
-# Ensure column exists
-if "must_change_password" not in staff_list.columns:
-    staff_list["must_change_password"] = True
-    staff_list.to_csv("staff_list.csv", index=False)
+DB_PATH = "girft_capacity_planner.db"  # make sure this is the ONE DB used everywhere
 
 def login_page():
-
     st.title("Login")
 
-    
     # ---------------------------
     # NOT LOGGED IN
     # ---------------------------
@@ -33,24 +16,29 @@ def login_page():
         password = st.text_input("Password", type="password", key="login_password")
 
         if st.button("Login", key="login_button"):
-            user_row = staff_list[staff_list["username"] == username]
+            with sqlite3.connect(DB_PATH) as conn:
+                cur = conn.cursor()
+                cur.execute("""
+                    SELECT password, access_level, must_change_password
+                    FROM staff_list
+                    WHERE username = ?
+                """, (username,))
+                row = cur.fetchone()
 
-            if user_row.empty:
+            if not row:
                 st.error("Invalid username or password")
                 return
 
-            stored_hash = user_row.iloc[0]["password"]
+            stored_hash, access_level, must_change = row
 
             if not check_password_hash(stored_hash, password):
                 st.error("Invalid username or password")
                 return
 
-            # Login success
             st.session_state.logged_in = True
             st.session_state.username = username
-            st.session_state.access_level = user_row.iloc[0]["access_level"]
-            st.session_state.must_change_password = user_row.iloc[0]["must_change_password"]
-
+            st.session_state.access_level = access_level
+            st.session_state.must_change_password = bool(must_change)
             st.rerun()
 
     # ---------------------------
@@ -74,20 +62,23 @@ def login_page():
 
             hashed = generate_password_hash(new_password)
 
-            staff_list.loc[
-                staff_list["username"] == st.session_state.username, "password"
-            ] = hashed
+            with sqlite3.connect(DB_PATH) as conn:
+                cur = conn.cursor()
+                cur.execute("""
+                    UPDATE staff_list
+                    SET password = ?,
+                        must_change_password = 0,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE username = ?
+                """, (hashed, st.session_state.username))
+                conn.commit()
 
-            staff_list.loc[
-                staff_list["username"] == st.session_state.username,
-                "must_change_password"
-            ] = False
-
-            staff_list.to_csv("staff_list.csv", index=False)
+                if cur.rowcount != 1:
+                    st.error("Password update failed (user not found).")
+                    return
 
             st.session_state.must_change_password = False
             st.success("Password updated successfully")
-
             st.rerun()
 
     # ---------------------------
@@ -95,6 +86,7 @@ def login_page():
     # ---------------------------
     if st.session_state.get("logged_in") and not st.session_state.get("must_change_password"):
         st.success(f"Logged in as {st.session_state.username}")
+
 
 
 

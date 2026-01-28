@@ -26,7 +26,7 @@ def planner():
     programme_names = st.session_state.programme_list
 
     # set up separate tabs for leave, on-site, and programme
-    tab1, tab2, tab3, tab4, tab5 = st.tabs(["Programme of Work","Scheduled Activity","Annual Leave","On-Site","All Activity"])
+    tab1, tab2, tab3, tab4 = st.tabs(["Programme of Work","Leave Record","Forward Planner","All Activity"]) # ,"Scheduled Activity" - archived this tab for now
 
     with tab1:
         
@@ -138,112 +138,112 @@ def planner():
 
             st.rerun()   # ← force immediate refresh
 
-    with tab2:
-        st.title("📆 Scheduled Activity")
-        st.subheader("⏱ Schedule Repeating Programme Activity for a Team Member")
+    # with tab2:
+    #     st.title("📆 Scheduled Activity")
+    #     st.subheader("⏱ Schedule Repeating Programme Activity for a Team Member")
 
-        # ---------------------------
-        # 1️⃣ Load active staff
-        # ---------------------------
-        staff_names = staff_list.loc[
-            staff_list["archive_flag"] == 0, "staff_member"
-        ].sort_values().tolist()
+    #     # ---------------------------
+    #     # 1️⃣ Load active staff
+    #     # ---------------------------
+    #     staff_names = staff_list.loc[
+    #         staff_list["archive_flag"] == 0, "staff_member"
+    #     ].sort_values().tolist()
 
-        selected_staff = st.selectbox(
-            "Select Programme Team Member",
-            staff_names,
-            index=None,
-            placeholder="Choose a staff member..."
-        )
+    #     selected_staff = st.selectbox(
+    #         "Select Programme Team Member",
+    #         staff_names,
+    #         index=None,
+    #         placeholder="Choose a staff member..."
+    #     )
 
-        # ---------------------------
-        # 2️⃣ Load active programme categories (no archived)
-        # ---------------------------
-        active_programmes = programme_list.loc[
-            programme_list["archive_flag"] == 0
-        ].copy()
+    #     # ---------------------------
+    #     # 2️⃣ Load active programme categories (no archived)
+    #     # ---------------------------
+    #     active_programmes = programme_list.loc[
+    #         programme_list["archive_flag"] == 0
+    #     ].copy()
 
-        programme_categories = sorted(
-            active_programmes["programme_categories"].dropna().tolist()
-        )
+    #     programme_categories = sorted(
+    #         active_programmes["programme_categories"].dropna().tolist()
+    #     )
 
-        selected_programme_category = st.selectbox(
-            "Select Programme Category",
-            programme_categories,
-            index=None,
-            placeholder="Choose a programme category..."
-        )
+    #     selected_programme_category = st.selectbox(
+    #         "Select Programme Category",
+    #         programme_categories,
+    #         index=None,
+    #         placeholder="Choose a programme category..."
+    #     )
 
-        # ---------------------------
-        # 3️⃣ Start week (week commencing)
-        # ---------------------------
-        week_commencing = st.date_input(
-            "Select Start Week (Week Commencing / Monday)",
-            help="This is the first Monday of the schedule.",
-        )
+    #     # ---------------------------
+    #     # 3️⃣ Start week (week commencing)
+    #     # ---------------------------
+    #     week_commencing = st.date_input(
+    #         "Select Start Week (Week Commencing / Monday)",
+    #         help="This is the first Monday of the schedule.",
+    #     )
 
-        if week_commencing.weekday() != 0:
-            st.warning("⚠️ The week commencing date should be a Monday.")
+    #     if week_commencing.weekday() != 0:
+    #         st.warning("⚠️ The week commencing date should be a Monday.")
 
-        # ---------------------------
-        # 4️⃣ Number of weeks & hours per week
-        # ---------------------------
-        num_weeks = st.number_input(
-            "Number of Weeks to Schedule",
-            min_value=1,
-            max_value=104,
-            value=4,
-            step=1,
-            help="How many consecutive weeks to apply this activity for."
-        )
+    #     # ---------------------------
+    #     # 4️⃣ Number of weeks & hours per week
+    #     # ---------------------------
+    #     num_weeks = st.number_input(
+    #         "Number of Weeks to Schedule",
+    #         min_value=1,
+    #         max_value=104,
+    #         value=4,
+    #         step=1,
+    #         help="How many consecutive weeks to apply this activity for."
+    #     )
 
-        # 0 → 37.5 hours in 0.5 steps
-        hour_values = [x * 0.5 for x in range(0, 76)]
+    #     # 0 → 37.5 hours in 0.5 steps
+    #     hour_values = [x * 0.5 for x in range(0, 76)]
 
-        hours_per_week = st.selectbox(
-            "Hours per Week",
-            hour_values,
-            index=hour_values.index(0.0),
-            help="Scheduled hours per week for this programme category."
-        )
+    #     hours_per_week = st.selectbox(
+    #         "Hours per Week",
+    #         hour_values,
+    #         index=hour_values.index(0.0),
+    #         help="Scheduled hours per week for this programme category."
+    #     )
 
-        # ---------------------------
-        # 5️⃣ Save button
-        # ---------------------------
-        if st.button("💾 Schedule Programme Activity"):
-            if not selected_staff:
-                st.error("Please select a staff member.")
-            elif not selected_programme_category:
-                st.error("Please select a programme category.")
-            else:
-                start_week = pd.to_datetime(week_commencing)
+    #     # ---------------------------
+    #     # 5️⃣ Save button
+    #     # ---------------------------
+    #     if st.button("💾 Schedule Programme Activity"):
+    #         if not selected_staff:
+    #             st.error("Please select a staff member.")
+    #         elif not selected_programme_category:
+    #             st.error("Please select a programme category.")
+    #         else:
+    #             start_week = pd.to_datetime(week_commencing)
 
-                # Loop over each week and update programme_activity in SQLite
-                for week_offset in range(int(num_weeks)):
-                    this_week = start_week + pd.Timedelta(weeks=week_offset)
+    #             # Loop over each week and update programme_activity in SQLite
+    #             for week_offset in range(int(num_weeks)):
+    #                 this_week = start_week + pd.Timedelta(weeks=week_offset)
 
-                    # Build the activity_inputs dict expected by pf.save_programme_activity
-                    activity_inputs = {
-                        selected_programme_category: float(hours_per_week)
-                    }
+    #                 # Build the activity_inputs dict expected by pf.save_programme_activity
+    #                 activity_inputs = {
+    #                     selected_programme_category: float(hours_per_week)
+    #                 }
 
-                    pf.save_programme_activity(
-                        selected_staff=selected_staff,
-                        week_commencing=this_week,
-                        activity_inputs=activity_inputs,
-                    )
+    #                 pf.save_programme_activity(
+    #                     selected_staff=selected_staff,
+    #                     week_commencing=this_week,
+    #                     activity_inputs=activity_inputs,
+    #                 )
 
-                st.success(
-                    f"Scheduled {hours_per_week} hours/week of "
-                    f"**{selected_programme_category}** for **{selected_staff}** "
-                    f"over {num_weeks} week(s) starting "
-                    f"week commencing {start_week.date()}."
-                )
+    #             st.success(
+    #                 f"Scheduled {hours_per_week} hours/week of "
+    #                 f"**{selected_programme_category}** for **{selected_staff}** "
+    #                 f"over {num_weeks} week(s) starting "
+    #                 f"week commencing {start_week.date()}."
+    #             )
 
-                st.rerun()
+    #             st.rerun()
 
     
-    with tab3:
+    with tab2:
 
         st.title("📅 Weekly Leave Planner")
         # ------------------------------------------------
@@ -300,9 +300,11 @@ def planner():
 
             st.rerun()   # ← force immediate refresh
 
-    with tab4:
+    with tab3:
 
-        st.title("📅 Weekly On-Site Planner")
+        st.title("📅 Forward Planner")
+
+        st.subheader("Insert some text here about what to record in this section")
 
         # ------------------------------------------------
         # Load staff names (active only)
@@ -316,16 +318,16 @@ def planner():
         # ------------------------------------------------
         # Select Staff Member to Edit
         # ------------------------------------------------
-        st.subheader("✏️ Add or Edit On-Site Days for a Specific Team Member")
+        st.subheader("✏️ Add or Edit Block Booking days for a Specific Team Member")
 
-        selected_staff_os = st.selectbox("Select On-site Team Member", staff_names, index=None)
+        selected_staff_os = st.selectbox("Select Block Booking Team Member", staff_names, index=None)
 
         # ------------------------------------------------
         # Select Week Commencing (Monday)
         # ------------------------------------------------
         week_commencing_os = st.date_input(
             "Select Week Commencing (Monday)",
-            help="Choose the Monday of the week the on-site days apply to"
+            help="Choose the Monday of the week the Block Booking applies to"
         )
 
         # Make sure the date is a Monday
@@ -333,18 +335,18 @@ def planner():
             st.warning("⚠️ The week commencing date must be a Monday.")
 
         # ------------------------------------------------
-        # Days On Site Input (0 - 5 in 0.5 increments)
+        # Days On Site Input (0 - 5 in whole day increments)
         # ------------------------------------------------
         on_site_days = st.selectbox(
-            "Number of On-Site Days",
-            [x * 0.5 for x in range(0, 11)],    # 0 → 5 in half-day steps
-            help="Select whole or half days (max 5)"
+            f"Number of days to be Block Booked out for w/c {week_commencing_os}",
+            [x for x in range(0, 5)],    # 0 → 5 in 1 day steps
+            help="Select number of whole days that week (max 5)"
         )
 
         # ------------------------------------------------
         # Save Button
         # ------------------------------------------------
-        if st.button("💾 Save On-Site Changes"):
+        if st.button("💾 Save Block Booking Changes"):
             pf.save_on_site(
                 staff_member=selected_staff,
                 week_commencing=week_commencing,
@@ -352,15 +354,15 @@ def planner():
             )
 
             st.success(
-                f"On-Site saved for {selected_staff} "
-                f"week commencing {pd.to_datetime(week_commencing).date()}"
+                f"Block Booking saved for {selected_staff} "
+                f"week commencing {pd.to_datetime(week_commencing).date()}, {on_site_days}"
             )
 
             st.rerun()   # ← force immediate refresh
 
-    with tab5:
+    with tab4:
 
-        st.title("📅 Programme Overview")
+        st.title("📅 Activity Overview")
 
         from datetime import date, timedelta
         import numpy as np

@@ -212,70 +212,91 @@ def maintenance():
         # ---------------------------
         # Reset an individual password
         # ---------------------------
-        st.markdown("### Reset an individual password")
+        st.subheader("🔐 Reset an Individual Password")
 
-        if all_staff:
-            staff_to_reset = st.selectbox(
-                "Select staff member",
-                all_staff,
-                index=None,
-                key="pw_reset_staff_select"
-            )
+        with sqlite3.connect(DB_PATH) as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                SELECT staff_member
+                FROM staff_list
+                ORDER BY staff_member
+            """)
+            staff_members = [r[0] for r in cur.fetchall()]
 
-            temp_pw_individual = st.text_input(
-                "Temporary password for this user",
-                value=ds.default_password,   # or "Temporary123!"
-                type="password",
-                key="pw_reset_individual_temp"
-            )
+        staff_to_reset = st.selectbox(
+            "Select staff member",
+            staff_members,
+            index=None,
+            key="reset_pw_staff_member"
+        )
 
-            if st.button("Reset selected user's password", key="pw_reset_individual_btn"):
-                if not staff_to_reset:
-                    st.error("Please select a staff member.")
-                else:
-                    hashed = generate_password_hash(temp_pw_individual)
+        temp_pw = st.text_input(
+            "Temporary password",
+            value="Temporary123!",
+            type="password",
+            key="reset_pw_temp"
+        )
 
-                    with sqlite3.connect(DB_PATH) as conn:
-                        cur = conn.cursor()
+        if st.button("Reset selected user's password", key="reset_pw_btn"):
+            if not staff_to_reset:
+                st.error("Please select a staff member.")
+            else:
+                with sqlite3.connect(DB_PATH) as conn:
+                    cur = conn.cursor()
+
+                    # 1) Look up username for this staff_member
+                    cur.execute("""
+                        SELECT username
+                        FROM staff_list
+                        WHERE staff_member = ?
+                    """, (staff_to_reset,))
+                    row = cur.fetchone()
+
+                    if not row or not row[0]:
+                        st.error(f"No username found for {staff_to_reset}.")
+                    else:
+                        username = row[0]
+                        hashed = generate_password_hash(temp_pw)
+
+                        # 2) Update using username
                         cur.execute("""
                             UPDATE staff_list
                             SET password = ?,
                                 must_change_password = 1,
                                 updated_at = CURRENT_TIMESTAMP
-                            WHERE staff_member = ?
-                        """, (hashed, staff_to_reset))
+                            WHERE username = ?
+                        """, (hashed, username))
+
                         conn.commit()
 
-                    st.success(f"Password reset for {staff_to_reset}. They will be forced to change it on next login.")
-                    ds.load_or_refresh_all()
-                    st.rerun()
-        else:
-            st.info("No staff records found.")
-
-        st.divider()
+                        if cur.rowcount != 1:
+                            st.error("Password update failed (no rows updated). Check username uniqueness.")
+                        else:
+                            st.success(f"Password reset for {staff_to_reset} ({username}). Forced change on next login.")
+                            ds.load_or_refresh_all()
+                            st.rerun() 
 
         # ---------------------------
         # Reset ALL passwords (dangerous)
         # ---------------------------
-        st.markdown("### Reset ALL passwords")
+        st.subheader("⚠️ Reset ALL Passwords")
 
-        st.warning("This will reset **every user's password** and force everyone to change it on next login.")
+        st.warning("This will reset EVERY user's password and force a change on next login.")
 
         temp_pw_all = st.text_input(
             "Temporary password for ALL users",
-            value=ds.default_password,   # or "Temporary123!"
+            value="Temporary123!",
             type="password",
-            key="pw_reset_all_temp"
+            key="reset_all_temp"
         )
 
-        confirm_text = st.text_input(
+        confirm = st.text_input(
             "Type RESET ALL to confirm",
-            value="",
-            key="pw_reset_all_confirm"
+            key="reset_all_confirm"
         )
 
-        if st.button("⚠️ Reset ALL passwords", key="pw_reset_all_btn"):
-            if confirm_text.strip().upper() != "RESET ALL":
+        if st.button("⚠️ Reset ALL Passwords", key="reset_all_btn"):
+            if confirm.strip().upper() != "RESET ALL":
                 st.error("Confirmation not valid. Type RESET ALL to proceed.")
             else:
                 hashed_all = generate_password_hash(temp_pw_all)
@@ -290,9 +311,10 @@ def maintenance():
                     """, (hashed_all,))
                     conn.commit()
 
-                st.success("All passwords have been reset. Everyone will be forced to change their password on next login.")
+                st.success("All passwords reset. Everyone will be forced to change their password on next login.")
                 ds.load_or_refresh_all()
                 st.rerun()
+
 
     with st.expander("🔧 Manage Programme List"):
         st.subheader("Add New Programme Category")
