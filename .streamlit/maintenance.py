@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from planner_functions import update_staff_list, update_programme_list
+from planner_functions import update_staff_list, update_programme_list, generate_password_hash
 import data_store as ds
 import sqlite3
 
@@ -196,6 +196,103 @@ def maintenance():
         else:
             st.info("No archived staff to restore.")
 
+        st.divider()
+        st.subheader("🔐 Password Reset")
+
+        # Pull all staff (active + archived) so you can reset anyone
+        with sqlite3.connect(DB_PATH) as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                SELECT staff_member
+                FROM staff_list
+                ORDER BY staff_member
+            """)
+            all_staff = [r[0] for r in cur.fetchall()]
+
+        # ---------------------------
+        # Reset an individual password
+        # ---------------------------
+        st.markdown("### Reset an individual password")
+
+        if all_staff:
+            staff_to_reset = st.selectbox(
+                "Select staff member",
+                all_staff,
+                index=None,
+                key="pw_reset_staff_select"
+            )
+
+            temp_pw_individual = st.text_input(
+                "Temporary password for this user",
+                value=ds.default_password,   # or "Temporary123!"
+                type="password",
+                key="pw_reset_individual_temp"
+            )
+
+            if st.button("Reset selected user's password", key="pw_reset_individual_btn"):
+                if not staff_to_reset:
+                    st.error("Please select a staff member.")
+                else:
+                    hashed = generate_password_hash(temp_pw_individual)
+
+                    with sqlite3.connect(DB_PATH) as conn:
+                        cur = conn.cursor()
+                        cur.execute("""
+                            UPDATE staff_list
+                            SET password = ?,
+                                must_change_password = 1,
+                                updated_at = CURRENT_TIMESTAMP
+                            WHERE staff_member = ?
+                        """, (hashed, staff_to_reset))
+                        conn.commit()
+
+                    st.success(f"Password reset for {staff_to_reset}. They will be forced to change it on next login.")
+                    ds.load_or_refresh_all()
+                    st.rerun()
+        else:
+            st.info("No staff records found.")
+
+        st.divider()
+
+        # ---------------------------
+        # Reset ALL passwords (dangerous)
+        # ---------------------------
+        st.markdown("### Reset ALL passwords")
+
+        st.warning("This will reset **every user's password** and force everyone to change it on next login.")
+
+        temp_pw_all = st.text_input(
+            "Temporary password for ALL users",
+            value=ds.default_password,   # or "Temporary123!"
+            type="password",
+            key="pw_reset_all_temp"
+        )
+
+        confirm_text = st.text_input(
+            "Type RESET ALL to confirm",
+            value="",
+            key="pw_reset_all_confirm"
+        )
+
+        if st.button("⚠️ Reset ALL passwords", key="pw_reset_all_btn"):
+            if confirm_text.strip().upper() != "RESET ALL":
+                st.error("Confirmation not valid. Type RESET ALL to proceed.")
+            else:
+                hashed_all = generate_password_hash(temp_pw_all)
+
+                with sqlite3.connect(DB_PATH) as conn:
+                    cur = conn.cursor()
+                    cur.execute("""
+                        UPDATE staff_list
+                        SET password = ?,
+                            must_change_password = 1,
+                            updated_at = CURRENT_TIMESTAMP
+                    """, (hashed_all,))
+                    conn.commit()
+
+                st.success("All passwords have been reset. Everyone will be forced to change their password on next login.")
+                ds.load_or_refresh_all()
+                st.rerun()
 
     with st.expander("🔧 Manage Programme List"):
         st.subheader("Add New Programme Category")

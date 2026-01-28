@@ -131,7 +131,7 @@ CREATE TABLE IF NOT EXISTS leave_calendar (
     staff_member TEXT NOT NULL,
     week_commencing TEXT NOT NULL,
     week_number INTEGER NOT NULL,
-    days_leave INTEGER DEFAULT 0,
+    days_leave REAL DEFAULT 0.0,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT,
     PRIMARY KEY (staff_member, week_commencing) 
@@ -260,7 +260,7 @@ CREATE TABLE IF NOT EXISTS on_site_calendar (
     staff_member TEXT NOT NULL,
     week_commencing TEXT NOT NULL,
     week_number INTEGER NOT NULL,
-    on_site_days INTEGER DEFAULT 0,
+    on_site_days REAL DEFAULT 0.0,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT  
 )
