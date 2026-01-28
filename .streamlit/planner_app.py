@@ -391,7 +391,7 @@ def planner():
         # ------------------------------------------------
         # Weekly Leave Calendar
         # ------------------------------------------------
-        st.subheader("📊 Team Leave Calendar View (Weekly Heatmap)")
+        st.subheader("📊 Leave - Heatmap)")
 
         leave_df = pf.filter_by_access(leave_calendar_df)
 
@@ -495,32 +495,32 @@ def planner():
         st.plotly_chart(fig_leave, use_container_width=True)
 
         # Horizontal key at bottom
-        st.markdown("**Key (Days of Leave)**")
+        # st.markdown("**Key (Days of Leave)**")
 
-        gradient = ", ".join(
-            [leave_rgb(v) for v in np.linspace(0, MAX_DAYS, KEY_STEPS)]
-        )
+        # gradient = ", ".join(
+        #     [leave_rgb(v) for v in np.linspace(0, MAX_DAYS, KEY_STEPS)]
+        # )
 
-        st.markdown(
-            f"""
-            <div style="display:flex; align-items:center; gap:10px; margin-top:10px; margin-bottom:35px;">
-                <div style="
-                    background: linear-gradient(to right, {gradient});
-                    height: 20px;
-                    width: 300px;
-                    border: 1px solid #ccc;
-                    border-radius: 4px;
-                "></div>
-                <div>0 → {MAX_DAYS} days</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+        # st.markdown(
+        #     f"""
+        #     <div style="display:flex; align-items:center; gap:10px; margin-top:10px; margin-bottom:35px;">
+        #         <div style="
+        #             background: linear-gradient(to right, {gradient});
+        #             height: 20px;
+        #             width: 300px;
+        #             border: 1px solid #ccc;
+        #             border-radius: 4px;
+        #         "></div>
+        #         <div>0 → {MAX_DAYS} days</div>
+        #     </div>
+        #     """,
+        #     unsafe_allow_html=True,
+        # )
 
         # ------------------------------------------------
         # Weekly On-Site Calendar
         # ------------------------------------------------
-        st.subheader("📊 Team On-Site View (Weekly Heatmap)")
+        st.subheader("📊 Planner - Heatmap")
 
         onsite_df = pf.filter_by_access(onsite_calendar_df)
 
@@ -567,7 +567,7 @@ def planner():
                 x=x_vals,
                 y=y,
                 colorscale=onsite_colorscale,
-                colorbar=dict(title="Days on Site"),
+                colorbar=dict(title="Days Booked Out"),
                 zmin=0,
                 zmax=MAX_DAYS,
                 hovertemplate=(
@@ -612,27 +612,27 @@ def planner():
 
         st.plotly_chart(fig_onsite, use_container_width=True)
 
-        st.markdown("**Key (Days On Site)**")
+        # st.markdown("**Key (Days On Site)**")
 
-        gradient = ", ".join(
-            [onsite_rgb(v) for v in np.linspace(0, MAX_DAYS, KEY_STEPS)]
-        )
+        # gradient = ", ".join(
+        #     [onsite_rgb(v) for v in np.linspace(0, MAX_DAYS, KEY_STEPS)]
+        # )
 
-        st.markdown(
-            f"""
-            <div style="display:flex; align-items:center; gap:10px; margin-top:10px; margin-bottom:35px;">
-                <div style="
-                    background: linear-gradient(to right, {gradient});
-                    height: 20px;
-                    width: 300px;
-                    border: 1px solid #ccc;
-                    border-radius: 4px;
-                "></div>
-                <div>0 → {MAX_DAYS} days</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+        # st.markdown(
+        #     f"""
+        #     <div style="display:flex; align-items:center; gap:10px; margin-top:10px; margin-bottom:35px;">
+        #         <div style="
+        #             background: linear-gradient(to right, {gradient});
+        #             height: 20px;
+        #             width: 300px;
+        #             border: 1px solid #ccc;
+        #             border-radius: 4px;
+        #         "></div>
+        #         <div>0 → {MAX_DAYS} days</div>
+        #     </div>
+        #     """,
+        #     unsafe_allow_html=True,
+        # )
 
         # summary of weekly programme activity
         st.subheader("📊 Weekly Programme Activity Breakdown")
