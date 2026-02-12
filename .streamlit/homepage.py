@@ -13,25 +13,59 @@ def homepage():
 
     #global_page_style('static/css/style.css')
 
-    st.subheader("GIRFT Team Capacity Planner")
+    import streamlit as st
+
+    # Page title
+    st.title("GIRFT Team Capacity Planner")
 
     st.markdown(
-        """
-        ## The tool’s purpose is to allow us to inform the scheduling of new work 
-        # and give us some intelligence on our capacity usage over time and across 
-        programmes. It has a calendar that we can use to see scheduled work by the
-        week, as well as a dashboard showing capacity over time and by programme 
-        and a team leave tracker. 
+    """
+    Welcome to the **GIRFT Team Capacity Planner**.
 
-        What it isn't is a 'bean counting' tool. The tool is not intended to track
-        micro levels of activity and shouldn't be overly onerous in terms of admin. 
-        For example it doesn't track activity at an individual level and lots of
-        categories have been estiamted at a high-level and been added as 
-        “indicative” e.g. 1 hour a day per person for general admin time.
+    This tool helps teams plan work effectively by providing visibility of capacity,
+    scheduled activity, and availability across programmes.
+    """
+    )
 
-        """
-        )
+    st.divider()
 
-    st.write("Head to the other pages below!")
+    # --- What the tool does ---
+    st.subheader("What this tool helps you do")
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.info("📅 **View scheduled work**\n\nSee planned activity by week using the calendar.")
+
+    with col2:
+        st.info("📊 **Monitor capacity**\n\nTrack capacity over time and across programmes.")
+
+    with col3:
+        st.info("🏖️ **Track team leave**\n\nUnderstand availability with the leave tracker.")
+
+    st.divider()
+
+    # --- What the tool is not ---
+    st.subheader("What this tool is not")
+
+    st.markdown(
+    """
+    This is **not** a ‘bean counting’ tool.
+
+    It is not designed to track micro-levels of activity and should not create unnecessary
+    administrative burden.
+
+    - Activity is **not tracked at an individual level**
+    - Many categories are **high-level estimates**
+    - Some values are **indicative**, such as allocating time for general admin
+    (e.g. 1 hour per person per day)
+    """
+    )
+
+    st.divider()
+
+    st.caption("Designed to support planning conversations — not detailed performance tracking.")
+
+
 
     #st.write(ds.programme_calendar_df)

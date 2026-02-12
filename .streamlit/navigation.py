@@ -2,6 +2,8 @@ import streamlit as st
 from user_access import login_page
 from homepage import homepage
 from planner_app import planner
+from record_leave import leave
+from record_block import block
 from dashboard import dashboard
 from maintenance import maintenance
 
@@ -19,13 +21,16 @@ def secure_page(page_func, allowed_levels):
 
 
 def render_navigation():
+    
     with st.sidebar:
         st.title("📋 Navigation")
 
         pages = {
             "Login": "🔑 Login",
             "Homepage": "🏠 Homepage",
-            "Planner": "🗓️ Capacity Planner",
+            "Activity": "🧩 Weekly Activity",
+            "Leave": "✈️ Leave Record",
+            "Planner" : "🗓️ Forward Planner",
             "Dashboard": "📊 Capacity Dashboard",
             "Maintenance": "🛠️ System Maintenance",
         }
@@ -58,7 +63,6 @@ def render_navigation():
                 st.session_state.active_page = "Login"
                 st.rerun()
 
-
     # -------------------------
     # Router
     # -------------------------
@@ -71,10 +75,16 @@ def render_navigation():
         secure_page(homepage, ["admin", "user", "viewer"])()
 
     elif page == "Planner":
+        secure_page(block, ["admin", "user"])()
+
+    elif page == "Activity":
         secure_page(planner, ["admin", "user"])()
 
+    elif page == "Leave":
+        secure_page(leave, ["admin", "user"])()
+
     elif page == "Dashboard":
-        secure_page(dashboard, ["admin", "user", "viewer"])()
+        secure_page(dashboard, ["admin", "viewer"])()
 
     elif page == "Maintenance":
         secure_page(maintenance, ["admin"])()

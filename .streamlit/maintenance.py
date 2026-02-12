@@ -30,9 +30,9 @@ def maintenance():
 
     programme_list_sorted = programme_list.sort_values(by="programme_categories")
 
-    with st.expander("🔧 Manage Staff List"):
+    with st.expander("👥 Manage Staff List"):
         
-        st.subheader("Add New Staff Member")
+        st.subheader("➕ Add New Staff Member")
 
         new_staff = st.text_input("Staff member name (Forename Surname)")
 
@@ -90,7 +90,7 @@ def maintenance():
         # -----------------------------------------------------------------
         # ARCHIVE SECTION
         # -----------------------------------------------------------------
-        st.subheader("Archive Staff Member")
+        st.subheader("🗑️ Archive Staff Member")
 
         # ---------------------------
         # Load active staff from DB
@@ -146,7 +146,7 @@ def maintenance():
         # -----------------------------------------------------------------
         # RESTORE ARCHIVED STAFF
         # -----------------------------------------------------------------
-        st.subheader("Restore Archived Staff Member")
+        st.subheader("♻️ Restore Archived Staff Member")
 
         # ---------------------------
         # Load archived staff from DB
@@ -197,7 +197,7 @@ def maintenance():
             st.info("No archived staff to restore.")
 
         st.divider()
-        st.subheader("🔐 Password Reset")
+        #st.subheader("🔐 Password Reset")
 
         # Pull all staff (active + archived) so you can reset anyone
         with sqlite3.connect(DB_PATH) as conn:
@@ -315,6 +315,64 @@ def maintenance():
                 ds.load_or_refresh_all()
                 st.rerun()
 
+        # -----------------------------------------------------------------
+        # Change User Access level
+        # -----------------------------------------------------------------
+        st.subheader("🔐 Change Staff Member Access Level")
+
+        # Load staff
+        with sqlite3.connect(DB_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT staff_member
+                FROM staff_list
+                WHERE archive_flag = 0
+                ORDER BY staff_member
+            """)
+            available_staff = [row[0] for row in cursor.fetchall()]
+
+        if available_staff:
+
+            staff_to_change = st.selectbox(
+                "Select staff member to update access for",
+                available_staff,
+                index=None
+            )
+
+            st.markdown("""
+            #### Access levels are:
+
+            - **Admin** – Access to all parts of the app including maintenance  
+            - **User** – Access to input and view own data  
+            - **Viewer** – Access to view the dashboard
+            """)
+
+            user_access_level = st.selectbox(
+                "User Access Level",
+                options=["admin", "user", "viewer"],
+                key="user_access_level"
+            )
+
+            if st.button("Change Access Level for Selected Staff"):
+
+                with sqlite3.connect(DB_PATH) as conn:
+                    cursor = conn.cursor()
+                    cursor.execute("""
+                        UPDATE staff_list
+                        SET access_level = ?
+                        WHERE staff_member = ?
+                    """, (user_access_level, staff_to_change))
+
+                    conn.commit()
+
+                st.success(f"{staff_to_change} access level changed successfully.")
+                ds.load_or_refresh_all()
+                st.rerun()
+
+        else:
+            st.info("No active staff to change access level for.")
+
+
 
     with st.expander("🔧 Manage Programme List"):
         st.subheader("Add New Programme Category")
@@ -362,7 +420,7 @@ def maintenance():
         # Archive existing programmes
         # ----------------------------
 
-        st.subheader("Archive Programme Category")
+        st.subheader("🗑️ Archive Programme Category")
 
         with sqlite3.connect(DB_PATH) as conn:
             cursor = conn.cursor()
@@ -406,7 +464,7 @@ def maintenance():
         # Archive existing programmes
         # ----------------------------
 
-        st.subheader("Restore Programme Category")
+        st.subheader("♻️ Restore Programme Category")
 
         with sqlite3.connect(DB_PATH) as conn:
             cursor = conn.cursor()

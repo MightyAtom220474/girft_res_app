@@ -178,6 +178,11 @@ programme_columns = [
     "Test",
     "UEC MH Priority Sites",
     "UEC Men-SAT"
+    # "General Admin",
+    # "MHIST Team Meetings",
+    # "NHSE Gov and Prof",
+    # "Training and Personal Development"
+
 ]
 
 # Load CSV
@@ -300,6 +305,42 @@ for table in tables:
 
 conn.close()
 
+cursor.execute("""
+DELETE FROM programme_activity WHERE staff_member = 'Dr David Somerfield';
+""")
+conn.commit()
+
+with sqlite3.connect(DB_PATH) as conn:
+    df = pd.read_sql("SELECT staff_member, hours_pw FROM staff_list", conn)
+
+df
+
+DB_PATH = "girft_capacity_planner.db"
+
+#conn = sqlite3.connect(DB_PATH)
+# conn.execute("PRAGMA wal_checkpoint(FULL);")
+# conn.close()
+
+delete_list = (
+    'Dr David Somerfield','Dr Holan Liang','Dr Neeraj Berry','Dr Sridevi Kalidindi',
+    'Heath McDonald test','Helen Embleton','Prof. Johnny Downs','Suzannah Davies',
+    'Stephen Duncan',
+)
+
+placeholders = ",".join(["?"] * len(delete_list))
+
+sql = f"""
+DELETE FROM programme_activity
+WHERE staff_member IN ({placeholders})
+"""
+conn.close()
+with sqlite3.connect(DB_PATH, timeout=30) as conn:
+    conn.execute("PRAGMA journal_mode=WAL;")
+    conn.execute("PRAGMA busy_timeout=30000;")  # optional extra
+    cur = conn.cursor()
+    cur.execute(sql, delete_list)
+    conn.commit()
+    print("Rows deleted:", cur.rowcount)
 
 
 

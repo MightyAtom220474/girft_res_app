@@ -1,17 +1,33 @@
 import streamlit as st
 import sqlite3
+import time
+import pandas as pd
+import numpy as np
 from werkzeug.security import generate_password_hash, check_password_hash
 
 DB_PATH = "girft_capacity_planner.db"  # make sure this is the ONE DB used everywhere
 
+login_prompt = ("Username is your .net email account, all lowercase!\n"
+                " On first login you will be prompted to set your own password")
+
+def stream_data():
+    for ch in login_prompt:
+        yield ch
+        time.sleep(0.02)
+        
 def login_page():
+
     st.title("Login")
+
+    # if not st.session_state.get("logged_in", False):
+    #     st.write_stream(stream_data())
 
     # ---------------------------
     # NOT LOGGED IN
     # ---------------------------
     if not st.session_state.get("logged_in", False):
 
+        st.write(login_prompt)
         username = st.text_input("Username", key="login_username")
         password = st.text_input("Password", type="password", key="login_password")
 
@@ -86,7 +102,3 @@ def login_page():
     # ---------------------------
     if st.session_state.get("logged_in") and not st.session_state.get("must_change_password"):
         st.success(f"Logged in as {st.session_state.username}")
-
-
-
-
