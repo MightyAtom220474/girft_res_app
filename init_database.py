@@ -12,7 +12,7 @@ DB_PATH = "girft_capacity_planner.db"
 PC_CSV_PATH = "programme_categories.csv"
 SL_CSV_PATH = "staff_list.csv"
 LC_CSV_PATH = "annual_leave_calendar.csv"
-PR_CSV_PATH = "programme_calendar.csv"
+PR_CSV_PATH = "legacy_activity_weekly_normalised.csv"
 OS_CSV_PATH = "on_site_calendar.csv"
 
 # Connect to SQLite
@@ -122,26 +122,26 @@ else:
 
 ##### Planner Calendar #####
 
-programme_columns = [
-    "Action Cards and other resource development",
-    "Coaching (not linked to Intensive Support)",
-    "Community CAMHS",
-    "Core Fidelity and CRHT work",
-    "Foundations For Better MH Services",
-    "Further Faster",
-    "General Admin Tasks",
-    "Inpatient Men-SAT",
-    "MHED Policy and Clinical Collaboration",
-    "Mental Health Rehabilitation",
-    "Miscellaneous Consultation, Adv & Support",
-    "NHFT",
-    "NHS Confed",
-    "Neurodivergent Services",
-    "St. Andrews",
-    "Test",
-    "UEC MH Priority Sites",
-    "UEC Men-SAT"
-]
+# programme_columns = [
+#     "Action Cards and other resource development",
+#     "Coaching (not linked to Intensive Support)",
+#     "Community CAMHS",
+#     "Core Fidelity and CRHT work",
+#     "Foundations For Better MH Services",
+#     "Further Faster",
+#     "General Admin Tasks",
+#     "Inpatient Men-SAT",
+#     "MHED Policy and Clinical Collaboration",
+#     "Mental Health Rehabilitation",
+#     "Miscellaneous Consultation, Adv & Support",
+#     "NHFT",
+#     "NHS Confed",
+#     "Neurodivergent Services",
+#     "St. Andrews",
+#     "Test",
+#     "UEC MH Priority Sites",
+#     "UEC Men-SAT"
+# ]
 
 # SQLite
 conn = sqlite3.connect(DB_PATH)
@@ -150,6 +150,7 @@ cursor = conn.cursor()
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS programme_activity (
     staff_member TEXT NOT NULL,
+    week_commencing TEXT NOT NULL,
     week_number INTEGER NOT NULL,
     programme_category TEXT NOT NULL,
     activity_value REAL NOT NULL
@@ -161,20 +162,20 @@ conn.commit()
 if os.path.exists(PR_CSV_PATH):
     print("CSV found – importing programme_activity data")
 
-    df = pd.read_csv(PR_CSV_PATH)
+    prog_df = pd.read_csv(PR_CSV_PATH)
 
-    long_df = df.melt(
-        id_vars=["staff_member", "week_number"],
-        value_vars=programme_columns,
-        var_name="programme_category",
-        value_name="activity_value"
-    )
+    # long_df = df.melt(
+    #     id_vars=["staff_member", "week_number"],
+    #     value_vars=programme_columns,
+    #     var_name="programme_category",
+    #     value_name="activity_value"
+    # )
 
     # Keep only meaningful rows
-    long_df = long_df[long_df["activity_value"].fillna(0) > 0]
+    #long_df = long_df[long_df["activity_value"].fillna(0) > 0]
 
     # Replace table contents
-    long_df.to_sql(
+    prog_df.to_sql(
         "programme_activity",
         conn,
         if_exists="replace",

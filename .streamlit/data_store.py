@@ -385,11 +385,29 @@ def load_or_refresh_all():
 # DB_PATH = "girft_capacity_planner.db"
 
 # with sqlite3.connect(DB_PATH) as conn:
+#     cursor = conn.cursor()
+#     cursor.execute("""
+#         SELECT DISTINCT staff_member
+#         FROM leave_calendar
+#         ORDER BY staff_member
+#     """)
+#     available_staff = [row[0] for row in cursor.fetchall()]
+
+# print(available_staff)
+
+# with sqlite3.connect(DB_PATH) as conn:
 #     cur = conn.cursor()
-#     # Delete all existing legacy rows
-#     cur.execute("DELETE FROM programme_activity WHERE staff_member = 'Legacy Data'")
+
+#     if available_staff:
+#         placeholders = ",".join("?" for _ in available_staff)
+#         query = f"""
+#         DELETE FROM programme_activity
+#         WHERE staff_member NOT IN ({placeholders})
+#         """
+#         cur.execute(query, available_staff)
+#     else:
+#         cur.execute("DELETE FROM programme_activity")
+
 #     conn.commit()
 
-
-    
 

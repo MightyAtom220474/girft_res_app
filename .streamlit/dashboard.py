@@ -12,7 +12,9 @@ steps = 50
 
 def dashboard():
 
-    st.title("📊 Capacity Dashboard")
+    st.title("📊 Mental Health GIRFT - cdCapacity Dashboard")
+
+    st.divider()
 
     # Ensure everything is loaded
     if "staff_prog_monthly_df" not in st.session_state:
@@ -30,9 +32,7 @@ def dashboard():
         errors="coerce"
     )
 
-    # st.write(programme_activity_df["activity_value"].dtype)
-    # st.write(programme_activity_df["activity_value"])
-    #st.write(staff_prog_monthly_df)
+    #st.write(programme_activity_df)
     
     # Aggregate
     agg = (
@@ -66,6 +66,8 @@ def dashboard():
     # Default: last 12 months in the data (or fewer if not available)
     #dfm = dfm.tail(12).copy()
     dfm["month_label"] = dfm["month"].dt.strftime("%b-%Y")
+
+    st.subheader("👥 Staff Utilisation")
 
     fig = go.Figure()
 
@@ -170,10 +172,14 @@ def dashboard():
     # Weekly Programme Activity Stacked Area Chart
     # ------------------------------------------------
 
+    st.divider()
+
+    st.subheader("🧩 Programme Activity")
+    
     fig2 = go.Figure()
 
     for col in pivot.columns:
-        fig.add_trace(
+        fig2.add_trace(
             go.Scatter(
                 x=pivot.index,
                 y=pivot[col],
@@ -184,7 +190,6 @@ def dashboard():
         )
 
     fig2.update_layout(
-        title="Programme Activity by Week",
         xaxis_title="Week Commencing",
         yaxis_title="Total Activity (Hours)",
         hovermode="x unified",
@@ -196,6 +201,9 @@ def dashboard():
     # ------------------------------------------------
     # Weekly Leave Calendar Heatmap (keep weekly)
     # ------------------------------------------------
+    
+    st.divider()
+    
     st.subheader("✈️ Leave - Heatmap")
 
     MAX_DAYS = 5
@@ -291,6 +299,9 @@ def dashboard():
     # ------------------------------------------------
     # Weekly On-Site Calendar
     # ------------------------------------------------
+    
+    st.divider()
+    
     st.subheader("🗓️ Planner - Heatmap")
 
     onsite_df = pf.filter_by_access(onsite_calendar_df)

@@ -159,45 +159,45 @@ else:
 
 ##### Planner Calendar #####
 # List of programme activity columns in your CSV
-programme_columns = [
-    "Action Cards and other resource development",
-    "Coaching (not linked to Intensive Support)",
-    "Community CAMHS",
-    "Core Fidelity and CRHT work",
-    "Foundations For Better MH Services",
-    "Further Faster",
-    "General Admin Tasks",
-    "Inpatient Men-SAT",
-    "MHED Policy and Clinical Collaboration",
-    "Mental Health Rehabilitation",
-    "Miscellaneous Consultation, Adv & Support",
-    "NHFT",
-    "NHS Confed",
-    "Neurodivergent Services",
-    "St. Andrews",
-    "Test",
-    "UEC MH Priority Sites",
-    "UEC Men-SAT"
+# programme_columns = [
+#     "Action Cards and other resource development",
+#     "Coaching (not linked to Intensive Support)",
+#     "Community CAMHS",
+#     "Core Fidelity and CRHT work",
+#     "Foundations For Better MH Services",
+#     "Further Faster",
+#     "General Admin Tasks",
+#     "Inpatient Men-SAT",
+#     "MHED Policy and Clinical Collaboration",
+#     "Mental Health Rehabilitation",
+#     "Miscellaneous Consultation, Adv & Support",
+#     "NHFT",
+#     "NHS Confed",
+#     "Neurodivergent Services",
+#     "St. Andrews",
+#     "Test",
+#     "UEC MH Priority Sites",
+#     "UEC Men-SAT"
     # "General Admin",
     # "MHIST Team Meetings",
     # "NHSE Gov and Prof",
     # "Training and Personal Development"
 
-]
+# ]
 
-# Load CSV
-df = pd.read_csv(PR_CSV_PATH)
+# # Load CSV
+# df = pd.read_csv(PR_CSV_PATH)
 
-# Normalize: wide → long
-long_df = df.melt(
-    id_vars=["staff_member", "week_commencing", "week_number"],  # keep these as is
-    value_vars=programme_columns,  # melt these into rows
-    var_name="programme_category",
-    value_name="activity_value"
-)
+# # Normalize: wide → long
+# long_df = df.melt(
+#     id_vars=["staff_member", "week_commencing", "week_number"],  # keep these as is
+#     value_vars=programme_columns,  # melt these into rows
+#     var_name="programme_category",
+#     value_name="activity_value"
+# )
 
-# Keep only rows with meaningful activity
-#long_df = long_df[long_df["activity_value"].fillna(0) > 0]
+# # Keep only rows with meaningful activity
+# #long_df = long_df[long_df["activity_value"].fillna(0) > 0]
 
 # SQLite
 conn = sqlite3.connect(DB_PATH)
@@ -218,20 +218,20 @@ CREATE TABLE IF NOT EXISTS programme_activity (
 
 conn.commit()
 
-if os.path.exists(PR_CSV_PATH):
+# if os.path.exists(PR_CSV_PATH):
 
-    # load normalised data into table
-    long_df.to_sql(
-        "programme_activity",
-        conn,
-        if_exists="append",
-        index=False
-    )
+#     # load normalised data into table
+#     long_df.to_sql(
+#         "programme_activity",
+#         conn,
+#         if_exists="append",
+#         index=False
+#     )
 
-    #conn.close()
+#     #conn.close()
 
-else:
-    print("CSV not found – programme_activity table created only")
+# else:
+#     print("CSV not found – programme_activity table created only")
 
 ##### load in legacy data if supplied #####
 
@@ -249,6 +249,8 @@ if os.path.exists(LD_CSV_PATH):
 
     # If you want them stored as pure dates in SQLite:
     legacy_df["week_commencing"] = legacy_df["week_commencing"].dt.date
+
+    print("CSV for legacy data found – loading data into table")
 
     legacy_df.to_sql(
         "programme_activity",
@@ -330,7 +332,7 @@ delete_list = (
 placeholders = ",".join(["?"] * len(delete_list))
 
 sql = f"""
-DELETE FROM programme_activity
+DELETE FROM on_site_calendar
 WHERE staff_member IN ({placeholders})
 """
 conn.close()
@@ -341,6 +343,34 @@ with sqlite3.connect(DB_PATH, timeout=30) as conn:
     cur.execute(sql, delete_list)
     conn.commit()
     print("Rows deleted:", cur.rowcount)
+
+DB_PATH = "girft_capacity_planner.db"
+
+with sqlite3.connect(DB_PATH) as conn:
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT DISTINCT staff_member
+        FROM leave_calendar
+        ORDER BY staff_member
+    """)
+    available_staff = [row[0] for row in cursor.fetchall()]
+
+print(available_staff)
+
+with sqlite3.connect(DB_PATH) as conn:
+    cur = conn.cursor()
+
+    if available_staff:
+        placeholders = ",".join("?" for _ in available_staff)
+        query = f"""
+        DELETE FROM on_site_calendar
+        WHERE staff_member NOT IN ({placeholders})
+        """
+        cur.execute(query, available_staff)
+    else:
+        cur.execute("DELETE FROM programme_activity")
+
+    conn.commit()
 
 
 
