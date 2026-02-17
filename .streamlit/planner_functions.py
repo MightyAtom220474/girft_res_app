@@ -270,7 +270,7 @@ def save_annual_leave(staff_member, week_commencing, days_leave):
         conn.commit()
         #conn.close()
 
-def save_on_site(staff_member, week_commencing, on_site_days):
+def save_on_site(staff_member, programme_category, week_commencing, on_site_days):
     week_commencing = pd.to_datetime(week_commencing)
     week_number = int(week_commencing.isocalendar().week)
 
@@ -280,12 +280,13 @@ def save_on_site(staff_member, week_commencing, on_site_days):
         cursor.execute("""
             INSERT INTO on_site_calendar (
                 staff_member,
+                programme_category,
                 week_commencing,
                 week_number,
                 on_site_days,
                 updated_at
             )
-            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+            VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
             ON CONFLICT(staff_member, week_commencing)
             DO UPDATE SET
                 on_site_days = excluded.on_site_days,
@@ -293,6 +294,7 @@ def save_on_site(staff_member, week_commencing, on_site_days):
                 updated_at = CURRENT_TIMESTAMP
         """, (
             staff_member,
+            programme_category,
             week_commencing.date(),
             week_number,
             on_site_days
