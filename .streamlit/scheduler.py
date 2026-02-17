@@ -12,7 +12,10 @@ def scheduler():
     staff_names = st.session_state.staff_list
     programme_list = st.session_state.programme_list
     
+    st.image("https://gettingitrightfirsttime.co.uk/wp-content/uploads/2022/06/cropped-GIRFT-Logo-300-RGB-Large.jpg", width=300)
+    
     st.title("📆 Scheduled Activity")
+
     st.subheader("⏱ Schedule Repeating Programme Activity for a Team Member")
 
     # ---------------------------

@@ -32,7 +32,10 @@ def planner():
     # # set up separate tabs for leave, on-site, and programme
     # tab1, tab2, tab3 = st.tabs(["Weekly Activity","Leave Record","Forward Planner"])
 
+    st.image("https://gettingitrightfirsttime.co.uk/wp-content/uploads/2022/06/cropped-GIRFT-Logo-300-RGB-Large.jpg", width=300)
+    
     st.title("📅 Activity Recording")
+
     st.subheader("✏️ Add or Edit Weekly Programme Activity for a Specific Team Member")
 
     # ---------------------------

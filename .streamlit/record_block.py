@@ -21,6 +21,8 @@ def block():
     staff_list = st.session_state.staff_list
     staff_names = st.session_state.staff_list
 
+    st.image("https://gettingitrightfirsttime.co.uk/wp-content/uploads/2022/06/cropped-GIRFT-Logo-300-RGB-Large.jpg", width=300)
+
     st.title("📅 Forward Planner")
 
     st.write("Please book out here any days where you are likely to be"

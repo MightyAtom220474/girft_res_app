@@ -1,11 +1,11 @@
-import os
+#import os
 import pandas as pd
 import numpy as np
 import pandas as pd
-from datetime import date
-import planner_functions as pf  # Your existing helper functions
+#from datetime import date
+#import planner_functions as pf  # Your existing helper functions
 import sqlite3
-import streamlit as st
+#import streamlit as st
 
 # --------------------------
 # Global dataframes
@@ -379,35 +379,43 @@ def load_or_refresh_all():
     st.session_state.staff_prog_monthly_df = combined_monthly
 
 
+DB_PATH = "girft_capacity_planner.db"
 
-# import sqlite3
+with sqlite3.connect(DB_PATH) as conn:
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT DISTINCT staff_member
+        FROM leave_calendar
+        ORDER BY staff_member
+    """)
+    available_staff = [row[0] for row in cursor.fetchall()]
 
-# DB_PATH = "girft_capacity_planner.db"
+print(available_staff)
 
-# with sqlite3.connect(DB_PATH) as conn:
-#     cursor = conn.cursor()
-#     cursor.execute("""
-#         SELECT DISTINCT staff_member
-#         FROM leave_calendar
-#         ORDER BY staff_member
-#     """)
-#     available_staff = [row[0] for row in cursor.fetchall()]
+with sqlite3.connect(DB_PATH) as conn:
+    cur = conn.cursor()
 
-# print(available_staff)
+    if available_staff:
+        placeholders = ",".join("?" for _ in available_staff)
+        query = f"""
+        DELETE FROM on_site_calendar
+        WHERE staff_member NOT IN ({placeholders})
+        """
+        cur.execute(query, available_staff)
+    else:
+        cur.execute("DELETE FROM programme_activity")
 
-# with sqlite3.connect(DB_PATH) as conn:
-#     cur = conn.cursor()
+    conn.commit()
 
-#     if available_staff:
-#         placeholders = ",".join("?" for _ in available_staff)
-#         query = f"""
-#         DELETE FROM programme_activity
-#         WHERE staff_member NOT IN ({placeholders})
-#         """
-#         cur.execute(query, available_staff)
-#     else:
-#         cur.execute("DELETE FROM programme_activity")
+DB_PATH = "girft_capacity_planner.db"
 
-#     conn.commit()
+with sqlite3.connect(DB_PATH) as conn:
+    cursor = conn.cursor()
+    cursor.execute("""
+        UPDATE programme_activity
+        SET programme_category = 'Core Fidelity and CRHT Work'
+        WHERE programme_category = 'Core Fidelity and CRHT work'
+
+    """)
 
 

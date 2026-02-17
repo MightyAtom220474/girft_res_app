@@ -1,6 +1,9 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
+import plotly.express as px
+import plotly.colors as pc
+#import numpy as np
 # bring in data from data store
 import data_store as ds
 #import numpy as np
@@ -12,7 +15,9 @@ steps = 50
 
 def dashboard():
 
-    st.title("📊 Mental Health GIRFT - cdCapacity Dashboard")
+    st.image("https://gettingitrightfirsttime.co.uk/wp-content/uploads/2022/06/cropped-GIRFT-Logo-300-RGB-Large.jpg", width=300)
+
+    st.title("📊 Mental Health GIRFT - Capacity Dashboard")
 
     st.divider()
 
@@ -32,23 +37,23 @@ def dashboard():
         errors="coerce"
     )
 
+    # Month from the Monday date
+    programme_activity_df["month"] = programme_activity_df["week_commencing"].dt.to_period("M").dt.to_timestamp()
+
     #st.write(programme_activity_df)
     
-    # Aggregate
-    agg = (
-        programme_activity_df
-        .groupby(["week_commencing", "programme_category"], as_index=False)
-        ["activity_value"]
-        .sum()
-    )
-
-    pivot = agg.pivot(
-        index="week_commencing",
-        columns="programme_category",
-        values="activity_value"
-    ).fillna(0)
-
-    pivot = pivot.sort_index()
+    pivot = (
+            programme_activity_df
+            .pivot_table(
+                index="month",
+                columns="programme_category",
+                values="activity_value",
+                aggfunc="sum",
+                fill_value=0
+            )
+            .sort_index()
+            .reset_index()
+            )
 
     # ---------------------------
     # Monthly Capacity / Utilisation Chart
@@ -90,7 +95,7 @@ def dashboard():
             y=dfm["total_contr_hours"],
             name="Total Capacity (Hours)",
             mode="lines",
-            line=dict(color="green"),
+            line=dict(color="limegreen"),
             yaxis="y1"
         )
     )
@@ -103,7 +108,7 @@ def dashboard():
             name="Utilisation Rate (%)",
             yaxis="y2",
             mode="lines",
-            line=dict(color="darkblue", dash="dash", width=2)
+            line=dict(color="blue", dash="dash", width=2)
         )
     )
 
@@ -115,7 +120,7 @@ def dashboard():
             name="Utilisation Hours",
             yaxis="y1",
             opacity=0.8,
-            marker_color="#003f7f"
+            marker_color="dodgerblue" #"003f7f"
         )
     )
 
@@ -175,28 +180,43 @@ def dashboard():
     st.divider()
 
     st.subheader("🧩 Programme Activity")
-    
-    fig2 = go.Figure()
 
-    for col in pivot.columns:
+    category_cols = [col for col in pivot.columns if col != "month"]
+    num_categories = len(category_cols)
+    colorscale = px.colors.sequential.Viridis
+    # Evenly sample colors from scale
+    color_sequence = pc.sample_colorscale(
+        colorscale,
+        [i / max(1, (num_categories - 1)) for i in range(num_categories)]
+    )
+    # Helper to convert 'rgb(r,g,b)' → 'rgba(r,g,b,a)'
+    def rgb_to_rgba(rgb_str, alpha=0.6):
+        rgb_values = rgb_str.strip("rgb()").split(",")
+        return f"rgba({rgb_values[0]},{rgb_values[1]},{rgb_values[2]},{alpha})"
+    fig2 = go.Figure()
+    for i, col in enumerate(category_cols):
+        rgb_color = color_sequence[i]
+        rgba_color = rgb_to_rgba(rgb_color, alpha=0.6)
         fig2.add_trace(
             go.Scatter(
-                x=pivot.index,
+                x=pivot["month"],
                 y=pivot[col],
                 mode="lines",
-                stackgroup="one",      # 👈 this makes it stacked
-                name=col
+                stackgroup="one",
+                name=col,
+                line=dict(color=rgb_color, width=2),
+                fillcolor=rgba_color  # now valid RGBA string
             )
         )
-
     fig2.update_layout(
-        xaxis_title="Week Commencing",
+        xaxis_title="Month",
         yaxis_title="Total Activity (Hours)",
         hovermode="x unified",
-        height=600
+        height=600,
+        template="plotly_white"
     )
+    st.plotly_chart(fig2, use_container_width=True)     
 
-    st.plotly_chart(fig2, use_container_width=True)
 
     # ------------------------------------------------
     # Weekly Leave Calendar Heatmap (keep weekly)
@@ -240,8 +260,14 @@ def dashboard():
     current_idx = None
 
     for i, c in enumerate(cols):
-        c_date = c.date() if hasattr(c, "date") else None
-        ticktext.append(c.strftime("%d-%b") if hasattr(c, "strftime") else str(c))
+        if hasattr(c, "date"):
+            c_date = c.date()
+            ticktext.append(c.strftime("%d-%b-%y"))  # 👈 include year
+            if c_date == current_week_start:
+                current_idx = i
+        else:
+            ticktext.append(str(c))
+
         if c_date == current_week_start:
             current_idx = i
 
@@ -260,10 +286,10 @@ def dashboard():
             zmin=0,
             zmax=MAX_DAYS,
             hovertemplate=(
-                "Staff: %{y}<br>"
-                "Week: %{x}<br>"
-                "Days Leave: %{z:.1f}<extra></extra>"
-            ),
+                    "Staff: %{y}<br>"
+                    "Week Commencing: %{customdata}<br>"
+                    "Days Leave: %{z:.1f}<extra></extra>"
+                ),
         )
     )
 
@@ -280,19 +306,19 @@ def dashboard():
         showlegend=False
     )
 
-    # # Highlight current week column if present
-    # if current_idx is not None:
-    #     fig_leave.add_vrect(
-    #         x0=current_idx - 0.5,
-    #         x1=current_idx + 0.5,
-    #         xref="x",
-    #         yref="paper",
-    #         fillcolor="rgba(0,0,0,0.12)",
-    #         opacity=0.15,
-    #         line_width=2,
-    #         line_color="black",
-    #         layer="below",
-    #     )
+    # Highlight current week column if present
+    if current_idx is not None:
+        fig_leave.add_vrect(
+            x0=current_idx - 0.5,
+            x1=current_idx + 0.5,
+            xref="x",
+            yref="paper",
+            fillcolor="rgba(0,0,0,0.12)",
+            opacity=0.15,
+            line_width=2,
+            line_color="black",
+            layer="below",
+        )
 
     st.plotly_chart(fig_leave, use_container_width=True)
 
@@ -324,15 +350,11 @@ def dashboard():
     for i, c in enumerate(cols):
         if hasattr(c, "date"):
             c_date = c.date()
-            label = c.strftime("%d-%b")
-        elif isinstance(c, date):
-            c_date = c
-            label = c.strftime("%d-%b")
+            ticktext.append(c.strftime("%d-%b-%y"))  # 👈 include year
+            if c_date == current_week_start:
+                current_idx = i
         else:
-            c_date = None
-            label = str(c)
-
-        ticktext.append(label)
+            ticktext.append(str(c))
 
         if c_date == current_week_start:
             current_idx = i
@@ -353,10 +375,11 @@ def dashboard():
             zmin=0,
             zmax=MAX_DAYS,
             hovertemplate=(
-                "Staff: %{y}<br>"
-                "Week: %{x}<br>"
-                "Days on site: %{z:.1f}<extra></extra>"
-            ),
+                                "Staff: %{y}<br>"
+                                "Week Commencing: %{customdata}<br>"
+                                "Days On-Site: %{z:.1f}<extra></extra>"
+                            ),
+customdata=[[c.strftime("%d-%b-%y") for c in cols]] * len(y),
         )
     )
 
@@ -390,6 +413,5 @@ def dashboard():
         )
 
     fig_onsite.update_layout(showlegend=False)
-
 
     st.plotly_chart(fig_onsite, use_container_width=True)

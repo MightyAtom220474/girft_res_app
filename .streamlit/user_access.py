@@ -17,6 +17,8 @@ def stream_data():
         
 def login_page():
 
+    st.image("https://gettingitrightfirsttime.co.uk/wp-content/uploads/2022/06/cropped-GIRFT-Logo-300-RGB-Large.jpg", width=300)
+
     st.title("Login")
 
     # if not st.session_state.get("logged_in", False):

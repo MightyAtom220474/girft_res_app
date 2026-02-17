@@ -6,14 +6,13 @@ def homepage():
 
     ds.load_or_refresh_all()
 
-    st.logo("https://lancsvp.org.uk/wp-content/uploads/2021/08/nhs-logo-300x189.png")
+    st.image("https://gettingitrightfirsttime.co.uk/wp-content/uploads/2022/06/cropped-GIRFT-Logo-300-RGB-Large.jpg", width=300)
 
     # with open("style.css") as css:
     #     st.markdown(f'<style>{css.read()}</style>', unsafe_allow_html=True)
 
     #global_page_style('static/css/style.css')
 
-    import streamlit as st
 
     # Page title
     st.title("GIRFT Team Capacity Planner")
