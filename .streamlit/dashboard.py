@@ -9,15 +9,21 @@ import data_store as ds
 #import numpy as np
 import planner_functions as pf
 from datetime import date, timedelta
+from dateutil.relativedelta import relativedelta  # convenient for month offsets
 
 max_days = 5
 steps = 50
 
 def dashboard():
 
-    st.image("https://gettingitrightfirsttime.co.uk/wp-content/uploads/2022/06/cropped-GIRFT-Logo-300-RGB-Large.jpg", width=300)
+    st.set_page_config(layout="wide")
 
-    st.title("📊 Mental Health GIRFT - Capacity Dashboard")
+    col1, col2 = st.columns([3.8, 1.2])
+    with col1:
+        st.header("📊 Capacity Dashboard")
+    with col2:
+        st.image("https://gettingitrightfirsttime.co.uk/wp-content/uploads/2022/06/cropped-GIRFT-Logo-300-RGB-Large.jpg", width=300)
+        st.write("Email: info@gettingitrightfirsttime.co.uk")
 
     st.divider()
 
@@ -42,18 +48,30 @@ def dashboard():
 
     #st.write(programme_activity_df)
     
+    # Rename for clarity
+    programme_list_df = st.session_state.programme_list
+    # Join programme_activity_df with lookup on the correct column name
+    merged_df = programme_activity_df.merge(
+        programme_list_df[["programme_categories", "programme_group"]],
+        how="left",
+        left_on="programme_category",      # your activity df column
+        right_on="programme_categories"    # lookup df column
+        )
+    # get rid of programme_category column
+    merged_df.drop(columns="programme_category", inplace=True)
+    # Replace programme_category with programme_group for the pivot
     pivot = (
-            programme_activity_df
-            .pivot_table(
-                index="month",
-                columns="programme_category",
-                values="activity_value",
-                aggfunc="sum",
-                fill_value=0
-            )
-            .sort_index()
-            .reset_index()
-            )
+        merged_df
+        .pivot_table(
+            index="month",
+            columns="programme_group",     # <-- now using group instead of category
+            values="activity_value",
+            aggfunc="sum",
+            fill_value=0
+        )
+        .sort_index()
+        .reset_index()
+    )
 
     # ---------------------------
     # Monthly Capacity / Utilisation Chart
@@ -174,7 +192,7 @@ def dashboard():
     st.plotly_chart(fig, use_container_width=True)
 
     # ------------------------------------------------
-    # Weekly Programme Activity Stacked Area Chart
+    # Monthly Programme Activity Stacked Area Chart
     # ------------------------------------------------
 
     st.divider()
@@ -217,201 +235,121 @@ def dashboard():
     )
     st.plotly_chart(fig2, use_container_width=True)     
 
+    # ------------------------------------------------
+    # Weekly Leave, Booked-Out and Combined Heatmaps
+    # ------------------------------------------------
 
-    # ------------------------------------------------
-    # Weekly Leave Calendar Heatmap (keep weekly)
-    # ------------------------------------------------
+    ##### Code to test different heatmap colors #####
     
-    st.divider()
-    
-    st.subheader("✈️ Leave - Heatmap")
+    st.subheader("🎨 Heatmap Color Options")
+    color_options = {
+        "1️⃣ Traffic Light (Green → Yellow → Red)": [
+            [0.0, "rgb(0, 200, 0)"], [0.5, "rgb(255, 255, 0)"], [1.0, "rgb(255, 0, 0)"]
+        ],
+        "2️⃣ Blue → Yellow → Orange": [
+            [0.0, "rgb(0, 120, 255)"], [0.5, "rgb(255, 255, 150)"], [1.0, "rgb(255, 140, 0)"]
+        ],
+        "3️⃣ Light → Dark Blue": [
+            [0.0, "rgb(230, 245, 255)"], [1.0, "rgb(0, 70, 140)"]
+        ],
+        "4️⃣ Viridis (Plotly Built‑in)": "Viridis",
+        "5️⃣ Grey → Amber → Purple": [
+            [0.0, "rgb(220, 220, 220)"], [0.5, "rgb(255, 180, 50)"], [1.0, "rgb(120, 0, 120)"]
+        ]
+    }
+    # Allow the user to pick one
+    selected_name = st.radio("Select a colorscale to preview:", list(color_options.keys()))
+    # Show preview bar
+    st.plotly_chart(
+        pf.preview_colorscale(color_options[selected_name], title=selected_name),
+        use_container_width=True
+    )
+
+    ##########
 
     MAX_DAYS = 5
-
-    # Figure out current week start (assume Monday)
     today = date.today()
     current_week_start = today - timedelta(days=today.weekday())
-
+    # Radio Button selector
+    view_option = st.radio(
+        "Select View:",
+        ["✈️ Leave Heatmap", "🗓️ Planner Heatmap", "🔀 Combined Heatmap"],
+        horizontal=True
+    )
+    # Filter data to show 6 months back 6 months forward
+    # Define 6 months backward and forward window
+    today = date.today()
+    window_start = pd.Timestamp(today - relativedelta(months=6))
+    window_end = pd.Timestamp(today + relativedelta(months=6))
+    # ------------------------------------------------
+    # Load and filter data
+    # ------------------------------------------------
     leave_df = pf.filter_by_access(leave_calendar_df).copy()
+    onsite_df = pf.filter_by_access(onsite_calendar_df).copy()
     leave_df["week_commencing"] = pd.to_datetime(leave_df["week_commencing"], errors="coerce")
-
-    # Match roughly same span as the monthly chart: from first month shown to after last month
-    start_date = dfm["month"].min()
-    end_date = (dfm["month"].max() + pd.offsets.MonthEnd(0) + pd.Timedelta(days=1))
-
-    leave_df_span = leave_df[
-        (leave_df["week_commencing"] >= start_date) &
-        (leave_df["week_commencing"] < end_date)
-    ].copy()
-
-    pivot = leave_df_span.pivot_table(
-        index="staff_member",
-        columns="week_commencing",
-        values="days_leave",
-        fill_value=0
-    )
-
-    z = pivot.to_numpy()
-    y = pivot.index.astype(str).tolist()
-    cols = list(pivot.columns)
-
-    x_vals = list(range(len(cols)))
-    ticktext = []
-    current_idx = None
-
-    for i, c in enumerate(cols):
-        if hasattr(c, "date"):
-            c_date = c.date()
-            ticktext.append(c.strftime("%d-%b-%y"))  # 👈 include year
-            if c_date == current_week_start:
-                current_idx = i
-        else:
-            ticktext.append(str(c))
-
-        if c_date == current_week_start:
-            current_idx = i
-
-    leave_colorscale = [
-        [0.0, "rgb(0,200,0)"],   # 0 days
-        [1.0, "rgb(255,0,0)"],   # max days
+    onsite_df["week_commencing"] = pd.to_datetime(onsite_df["week_commencing"], errors="coerce")
+    # Apply 12‑month rolling (6 months back, 6 months ahead)
+    leave_df = leave_df[
+        (leave_df["week_commencing"] >= window_start) &
+        (leave_df["week_commencing"] <= window_end)
     ]
-
-    fig_leave = go.Figure(
-        data=go.Heatmap(
-            z=z,
-            x=x_vals,
-            y=y,
-            colorscale=leave_colorscale,
-            colorbar=dict(title="Days of Leave"),
-            zmin=0,
-            zmax=MAX_DAYS,
-            hovertemplate=(
-                    "Staff: %{y}<br>"
-                    "Week Commencing: %{customdata}<br>"
-                    "Days Leave: %{z:.1f}<extra></extra>"
-                ),
-        )
-    )
-
-    fig_leave.update_layout(
-        xaxis=dict(
-            tickmode="array",
-            tickvals=x_vals,
-            ticktext=ticktext,
-            tickangle=90,
-        ),
-        yaxis=dict(automargin=True),
-        margin=dict(l=160, r=20, t=40, b=120),
-        height=max(350, pivot.shape[0] * 20 + 160),
-        showlegend=False
-    )
-
-    # Highlight current week column if present
-    if current_idx is not None:
-        fig_leave.add_vrect(
-            x0=current_idx - 0.5,
-            x1=current_idx + 0.5,
-            xref="x",
-            yref="paper",
-            fillcolor="rgba(0,0,0,0.12)",
-            opacity=0.15,
-            line_width=2,
-            line_color="black",
-            layer="below",
-        )
-
-    st.plotly_chart(fig_leave, use_container_width=True)
-
-    # ------------------------------------------------
-    # Weekly On-Site Calendar
-    # ------------------------------------------------
-    
-    st.divider()
-    
-    st.subheader("🗓️ Planner - Heatmap")
-
-    onsite_df = pf.filter_by_access(onsite_calendar_df)
-
-    pivot = onsite_df.pivot_table(
-        index="staff_member",
-        columns="week_commencing",
-        values="on_site_days",
-        fill_value=0
-    )
-
-    z = pivot.to_numpy()
-    y = pivot.index.astype(str).tolist()
-    cols = list(pivot.columns)
-
-    x_vals = list(range(len(cols)))
-    ticktext = []
-    current_idx = None
-
-    for i, c in enumerate(cols):
-        if hasattr(c, "date"):
-            c_date = c.date()
-            ticktext.append(c.strftime("%d-%b-%y"))  # 👈 include year
-            if c_date == current_week_start:
-                current_idx = i
-        else:
-            ticktext.append(str(c))
-
-        if c_date == current_week_start:
-            current_idx = i
-
-    # On-site heatmap: green -> blue
-    onsite_colorscale = [
-        [0.0, "rgb(0,200,0)"],   # 0 days on site
-        [1.0, "rgb(0,0,255)"],   # max days on site
+    onsite_df = onsite_df[
+        (onsite_df["week_commencing"] >= window_start) &
+        (onsite_df["week_commencing"] <= window_end)
     ]
+    # ------------------------------------------------
+    # Build combined dataset after filtering
+    # ------------------------------------------------
+    combined_df = (
+        leave_df[["staff_member", "week_commencing", "days_leave"]]
+        .merge(
+            onsite_df[["staff_member", "week_commencing", "on_site_days"]],
+            on=["staff_member", "week_commencing"],
+            how="outer"
+        )
+        .fillna(0)
+    )
+    combined_df["total_days"] = combined_df["days_leave"] + combined_df["on_site_days"]
 
-    fig_onsite = go.Figure(
-        data=go.Heatmap(
-            z=z,
-            x=x_vals,
-            y=y,
-            colorscale=onsite_colorscale,
-            colorbar=dict(title="Days Booked Out"),
-            zmin=0,
+    st.subheader("👥 Staff Availability - Heatmap")
+
+    # View selector logic
+    if view_option == "✈️ Leave Heatmap":
+        st.subheader("✈️ Leave")
+        leave_colors = [[0.0, "rgb(0,200,0)"], [1.0, "rgb(255,0,0)"]]
+        fig = pf.create_heatmap(
+            leave_df,
+            value_col="days_leave",
+            title="Leave",
+            colorscale=leave_colors,
+            colorbar_title="Days of Leave",
             zmax=MAX_DAYS,
-            hovertemplate=(
-                                "Staff: %{y}<br>"
-                                "Week Commencing: %{customdata}<br>"
-                                "Days On-Site: %{z:.1f}<extra></extra>"
-                            ),
-customdata=[[c.strftime("%d-%b-%y") for c in cols]] * len(y),
+            current_week_start=current_week_start
         )
-    )
-
-    fig_onsite.update_layout(
-        xaxis=dict(
-            tickmode="array",
-            tickvals=x_vals,
-            ticktext=ticktext,
-            tickangle=90,
-        ),
-        yaxis=dict(
-            automargin=True,
-        ),
-        margin=dict(l=160, r=20, t=40, b=120),
-        height=max(350, pivot.shape[0] * 20 + 160),
-        showlegend=False
-
-    )
-
-    if current_idx is not None:
-        fig_onsite.add_vrect(
-            x0=current_idx - 0.5,
-            x1=current_idx + 0.5,
-            xref="x",
-            yref="paper",
-            fillcolor="rgba(0,0,0,0.12)",
-            opacity=0.15,
-            line_width=2,
-            line_color="black",
-            layer="below",
+        st.plotly_chart(fig, use_container_width=True)
+    elif view_option == "🗓️ Planner Heatmap":
+        st.subheader("🗓️ Planner")
+        planner_colors = [[0.0, "rgb(0,200,0)"], [1.0, "rgb(0,0,255)"]]
+        fig = pf.create_heatmap(
+            onsite_df,
+            value_col="on_site_days",
+            title="Planner",
+            colorscale=planner_colors,
+            colorbar_title="Days Booked Out",
+            zmax=MAX_DAYS,
+            current_week_start=current_week_start
         )
-
-    fig_onsite.update_layout(showlegend=False)
-
-    st.plotly_chart(fig_onsite, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True)
+    else:
+        st.subheader("🔀 Combined")
+        combined_colors = [[0.0, "rgb(150,255,150)"], [1.0, "rgb(255,100,0)"]]
+        fig = pf.create_heatmap(
+            combined_df,
+            value_col="total_days",
+            title="Combined",
+            colorscale=color_options[selected_name],
+            colorbar_title="Total Days (Leave + Planner)",
+            zmax=MAX_DAYS,
+            current_week_start=current_week_start
+        )
+        st.plotly_chart(fig, use_container_width=True)

@@ -12,11 +12,16 @@ def scheduler():
     staff_names = st.session_state.staff_list
     programme_list = st.session_state.programme_list
     
-    st.image("https://gettingitrightfirsttime.co.uk/wp-content/uploads/2022/06/cropped-GIRFT-Logo-300-RGB-Large.jpg", width=300)
-    
-    st.title("📆 Scheduled Activity")
+    st.set_page_config(layout="wide")
 
-    st.subheader("⏱ Schedule Repeating Programme Activity for a Team Member")
+    col1, col2 = st.columns([3, 2])
+    with col1:
+        st.title("📆 Scheduled Activity")
+    with col2:
+        st.image("https://gettingitrightfirsttime.co.uk/wp-content/uploads/2022/06/cropped-GIRFT-Logo-300-RGB-Large.jpg", width=300)
+        st.write("Email: info@gettingitrightfirsttime.co.uk")
+
+    st.subheader("⏱ Schedule Recurring Programme Activity for a Team Member")
 
     # ---------------------------
     # 1️⃣ Load active staff

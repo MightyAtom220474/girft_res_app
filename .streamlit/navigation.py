@@ -21,8 +21,9 @@ def secure_page(page_func, allowed_levels):
 
 
 def render_navigation():
-    
     with st.sidebar:
+        st.image("https://gettingitrightfirsttime.co.uk/wp-content/uploads/2022/06/NHS-England-Logo.png", width=150)
+
         st.title("📋 Navigation")
 
         pages = {
@@ -30,36 +31,25 @@ def render_navigation():
             "Homepage": "🏠 Homepage",
             "Activity": "🧩 Weekly Activity",
             "Leave": "✈️ Leave Record",
-            "Planner" : "🗓️ Forward Planner",
+            "Planner": "🗓️ Forward Planner",
             "Dashboard": "📊 Capacity Dashboard",
             "Maintenance": "🛠️ System Maintenance",
         }
 
-        if "active_page" not in st.session_state:
-            st.session_state.active_page = "Login"
-
+        # ✅ Use key, not index
         selected = st.radio(
             "Go to",
             list(pages.keys()),
             format_func=lambda x: pages[x],
-            index=list(pages.keys()).index(st.session_state.active_page),
+            key="active_page",
         )
 
-        st.session_state.active_page = selected
-
-        # -------------------------
-        # Push logout to bottom
-        # -------------------------
+        # Logout section
         st.markdown("<br>" * 8, unsafe_allow_html=True)
-
         if st.session_state.get("logged_in"):
             st.divider()
-
             if st.button("🚪 Logout", use_container_width=True):
-                st.session_state.logged_in = False
-                st.session_state.username = None
-                st.session_state.access_level = None
-                st.session_state.must_change_password = False
+                st.session_state.clear()  # clears all keys safely
                 st.session_state.active_page = "Login"
                 st.rerun()
 
@@ -70,24 +60,19 @@ def render_navigation():
 
     if page == "Login":
         login_page()
-
     elif page == "Homepage":
         secure_page(homepage, ["admin", "user", "viewer"])()
-
     elif page == "Planner":
         secure_page(block, ["admin", "user"])()
-
     elif page == "Activity":
         secure_page(planner, ["admin", "user"])()
-
     elif page == "Leave":
         secure_page(leave, ["admin", "user"])()
-
     elif page == "Dashboard":
         secure_page(dashboard, ["admin", "viewer"])()
-
     elif page == "Maintenance":
         secure_page(maintenance, ["admin"])()
+
 
 
 

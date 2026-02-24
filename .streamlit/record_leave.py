@@ -4,8 +4,6 @@ import planner_functions as pf
 import data_store as ds
 from datetime import date, timedelta
 
-st.set_page_config(layout="wide")
-
 max_days = 5
 steps = 50
 # Calculate this week's Monday
@@ -21,9 +19,14 @@ def leave():
     staff_list = st.session_state.staff_list
     staff_names = st.session_state.staff_list
 
-    st.image("https://gettingitrightfirsttime.co.uk/wp-content/uploads/2022/06/cropped-GIRFT-Logo-300-RGB-Large.jpg", width=300)
+    st.set_page_config(layout="wide")
 
-    st.title("📅 Leave Record")
+    col1, col2 = st.columns([3.8, 1.2])
+    with col1:
+        st.header("✈️ Leave Record")
+    with col2:
+        st.image("https://gettingitrightfirsttime.co.uk/wp-content/uploads/2022/06/cropped-GIRFT-Logo-300-RGB-Large.jpg", width=300)
+        st.write("Email: info@gettingitrightfirsttime.co.uk")
     
     # ------------------------------------------------
     # Select staff to edit
@@ -39,7 +42,17 @@ def leave():
         .tolist()
     )
 
-    selected_staff = st.selectbox("Select Leave Team Member", staff_names, index=None)
+    # Find the staff_member corresponding to the logged-in username
+    logged_in_user = st.session_state.get("username", None)
+    default_index = 0  # fallback index
+    if logged_in_user:
+        row = staff_list.loc[staff_list["username"] == logged_in_user]
+        if not row.empty:
+            staff_name = row["staff_member"].iloc[0]
+            if staff_name in staff_names:
+                default_index = staff_names.index(staff_name)
+
+    selected_staff = st.selectbox("Select Leave Team Member", staff_names, index=default_index)
 
     # ------------------------------------------------
     # Pick Week Commencing (Monday only)

@@ -52,6 +52,7 @@ def parse_week_commencing(df, col="week_commencing"):
         parsed_second = pd.to_datetime(
             s[mask],
             format="%d/%m/%Y",
+            dayfirst=True,
             errors="coerce"
         )
         parsed.loc[mask] = parsed_second
@@ -107,7 +108,7 @@ def load_or_refresh_all():
         parsed = pd.to_datetime(s, errors="coerce")  # ISO + already-datetime
         mask = parsed.isna() & s.notna()
         if mask.any():
-            parsed_second = pd.to_datetime(s[mask], format="%d/%m/%Y", errors="coerce")
+            parsed_second = pd.to_datetime(s[mask], format="%d/%m/%Y", errors="coerce",dayfirst=True,)
             parsed.loc[mask] = parsed_second
 
         df[col] = parsed.dt.normalize()
@@ -389,8 +390,6 @@ with sqlite3.connect(DB_PATH) as conn:
         ORDER BY staff_member
     """)
     available_staff = [row[0] for row in cursor.fetchall()]
-
-print(available_staff)
 
 with sqlite3.connect(DB_PATH) as conn:
     cur = conn.cursor()

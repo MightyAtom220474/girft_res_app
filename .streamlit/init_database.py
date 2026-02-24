@@ -162,12 +162,13 @@ else:
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS on_site_calendar (
     staff_member TEXT NOT NULL,
+    programme_category TEXT NULL,
     week_commencing TEXT NOT NULL,
     week_number INTEGER NOT NULL,
     on_site_days REAL DEFAULT 0.0,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT,
-    UNIQUE(staff_member, week_commencing)
+    UNIQUE(staff_member, programme_category, week_commencing)
 )
 """)
 conn.commit()
@@ -177,10 +178,11 @@ if os.path.exists(OS_CSV_PATH):
     for _, row in df.iterrows():
         cursor.execute("""
         INSERT OR REPLACE INTO on_site_calendar (
-            staff_member, week_commencing, week_number, on_site_days, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?)
+            staff_member, programme_category, week_commencing, week_number, on_site_days, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
         """, (
             row.get("staff_member"),
+            row.get("programme_category"),
             row.get("week_commencing"),
             row.get("week_number"),
             row.get("on_site_days", 0.0),

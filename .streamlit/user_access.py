@@ -17,12 +17,14 @@ def stream_data():
         
 def login_page():
 
-    st.image("https://gettingitrightfirsttime.co.uk/wp-content/uploads/2022/06/cropped-GIRFT-Logo-300-RGB-Large.jpg", width=300)
+    st.set_page_config(layout="wide")
 
-    st.title("Login")
-
-    # if not st.session_state.get("logged_in", False):
-    #     st.write_stream(stream_data())
+    col1, col2 = st.columns([3.8, 1.2])
+    with col1:
+        st.header("🔑 User Login")
+    with col2:
+        st.image("https://gettingitrightfirsttime.co.uk/wp-content/uploads/2022/06/cropped-GIRFT-Logo-300-RGB-Large.jpg", width=300)
+        st.write("Email: info@gettingitrightfirsttime.co.uk")
 
     # ---------------------------
     # NOT LOGGED IN

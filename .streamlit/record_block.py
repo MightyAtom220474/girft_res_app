@@ -17,17 +17,25 @@ def block():
 
     if "staff_list" not in st.session_state:
         ds.load_or_refresh_all()
-        
+    
     staff_list = st.session_state.staff_list
     staff_names = st.session_state.staff_list
+    programme_names = st.session_state.programme_names
 
-    st.image("https://gettingitrightfirsttime.co.uk/wp-content/uploads/2022/06/cropped-GIRFT-Logo-300-RGB-Large.jpg", width=300)
+    st.set_page_config(layout="wide")
 
-    st.title("📅 Forward Planner")
+    col1, col2 = st.columns([3.8, 1.2])
+    with col1:
+        st.header("🗓️ Forward Planner")
+    with col2:
+        st.image("https://gettingitrightfirsttime.co.uk/wp-content/uploads/2022/06/cropped-GIRFT-Logo-300-RGB-Large.jpg", width=300)
+        st.write("Email: info@gettingitrightfirsttime.co.uk")
+
+    st.divider()
 
     st.write("Please book out here any days where you are likely to be"
                 " unavailable for other work due to full-day commitments. "
-                "This could include: team away days; Further Faster visits"
+                "This could include: Team Away Days; Further Faster visits"
                 "; Men-SAT summits or Maturity Tool deployments;"
                 " conferences; formal training or learning; or any other "
                 "on-site activity (e.g. Provider Improvement Programme "
@@ -41,13 +49,33 @@ def block():
         .sort_values()
         .tolist()
     )
+    
+    # Add custom entries manually so can book out for other reasons
+    custom_programmes = ["Team Away Day", "Team Meeting"]
+    # Merge them and remove duplicates (if any)
+    programme_names = sorted(list(set(programme_names + custom_programmes)))
 
+    # Find the staff_member corresponding to the logged-in username
+    logged_in_user = st.session_state.get("username", None)
+    default_index = 0  # fallback index
+    if logged_in_user:
+        row = staff_list.loc[staff_list["username"] == logged_in_user]
+        if not row.empty:
+            staff_name = row["staff_member"].iloc[0]
+            if staff_name in staff_names:
+                default_index = staff_names.index(staff_name)
+    
     # ------------------------------------------------
     # Select Staff Member to Edit
     # ------------------------------------------------
     st.subheader("✏️ Add or Edit Block Booking days for a Specific Team Member")
 
-    selected_staff_os = st.selectbox("Select Block Booking Team Member", staff_names, index=None)
+    selected_staff_os = st.selectbox(
+        "Select Block Booking Team Member",
+        staff_names,
+        index=default_index)
+
+    selected_prog_os = st.selectbox("Select Work Programme or GIRFT Team Event", programme_names, index=None)
 
     # ------------------------------------------------
     # Select Week Commencing (Monday)
@@ -77,12 +105,13 @@ def block():
     if st.button("💾 Save Block Booking Changes"):
         pf.save_on_site(
             staff_member=selected_staff_os,
+            programme_category=selected_prog_os,
             week_commencing=week_commencing_os,
             on_site_days=on_site_days
         )
 
         st.success(
-            f"Block Booking saved for {selected_staff_os} "
+            f"Block Booking saved for {selected_staff_os} and programme {selected_prog_os} "
             f"week commencing {pd.to_datetime(week_commencing_os).date()}, {on_site_days}"
         )
 

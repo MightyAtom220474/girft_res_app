@@ -18,9 +18,16 @@ def maintenance():
     staff_names = st.session_state.staff_list
     programme_names = st.session_state.programme_list
 
-    st.image("https://gettingitrightfirsttime.co.uk/wp-content/uploads/2022/06/cropped-GIRFT-Logo-300-RGB-Large.jpg", width=300)
+    st.set_page_config(layout="wide")
+    
+    col1, col2 = st.columns([3.8, 1.2])
+    with col1:
+        st.header("🛠️ System Maintenance")
+    with col2:
+        st.image("https://gettingitrightfirsttime.co.uk/wp-content/uploads/2022/06/cropped-GIRFT-Logo-300-RGB-Large.jpg", width=300)
+        st.write("Email: info@gettingitrightfirsttime.co.uk")
 
-    st.title("System Maintenance")
+    st.divider()
 
     st.subheader("Add or Remove Staff")
 

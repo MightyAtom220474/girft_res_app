@@ -1,9 +1,10 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 import sqlite3
-import os
+#import os
 from datetime import date, timedelta
-import data_store as ds
+# import data_store as ds
 from werkzeug.security import generate_password_hash
 #import matplotlib.pyplot as plt
 import plotly.graph_objects as go
@@ -302,3 +303,104 @@ def save_on_site(staff_member, programme_category, week_commencing, on_site_days
 
         conn.commit()
         #conn.close()
+
+# ------------------------------------------------
+# Helper function to create heatmaps
+# ------------------------------------------------
+def create_heatmap(
+    df,
+    value_col,
+    title,
+    colorscale,
+    colorbar_title,
+    zmax,
+    current_week_start=None
+    ):
+    """Build a standardized Plotly heatmap used in dashboard pages."""
+    MAX_DAYS = zmax
+    if current_week_start is None:
+        today = date.today()
+        current_week_start = today - timedelta(days=today.weekday())
+    df = df.copy()
+    df["week_commencing"] = pd.to_datetime(df["week_commencing"], errors="coerce")
+    pivot = df.pivot_table(
+        index="staff_member",
+        columns="week_commencing",
+        values=value_col,
+        fill_value=0
+    )
+    z = pivot.to_numpy()
+    y = pivot.index.astype(str).tolist()
+    cols = list(pivot.columns)
+    x_vals = list(range(len(cols)))
+    ticktext = []
+    current_idx = None
+    for i, c in enumerate(cols):
+        if hasattr(c, "date"):
+            c_date = c.date()
+            ticktext.append(c.strftime("%d-%b-%y"))
+            if c_date == current_week_start:
+                current_idx = i
+        else:
+            ticktext.append(str(c))
+    fig = go.Figure(
+        data=go.Heatmap(
+            z=z,
+            x=x_vals,
+            y=y,
+            colorscale=colorscale,
+            zmin=0,
+            zmax=MAX_DAYS,
+            colorbar=dict(title=colorbar_title),
+            customdata=[[c.strftime("%d-%b-%y") for c in cols]] * len(y),
+            hovertemplate=(
+                "Staff: %{y}<br>"
+                "Week Commencing: %{customdata}<br>"
+                f"{colorbar_title}: " + "%{z:.1f}<extra></extra>"
+            ),
+        )
+    )
+    fig.update_layout(
+        xaxis=dict(
+            tickmode="array",
+            tickvals=x_vals,
+            ticktext=ticktext,
+            tickangle=90,
+        ),
+        yaxis=dict(automargin=True),
+        margin=dict(l=160, r=20, t=40, b=120),
+        height=max(350, pivot.shape[0] * 20 + 160),
+        showlegend=False,
+    )
+    if current_idx is not None:
+        fig.add_vrect(
+            x0=current_idx - 0.5,
+            x1=current_idx + 0.5,
+            xref="x",
+            yref="paper",
+            fillcolor="rgba(0,0,0,0.12)",
+            opacity=0.15,
+            line_width=2,
+            line_color="black",
+            layer="below",
+        )
+    return fig
+
+def preview_colorscale(colorscale, title="Color Preview", n=100):
+    """Show a horizontal bar preview of a given colorscale."""
+    z = np.linspace(0, 1, n).reshape(1, -1)
+    fig = go.Figure(
+        data=go.Heatmap(
+            z=z,
+            colorscale=colorscale,
+            showscale=False
+        )
+    )
+    fig.update_layout(
+        title={"text": title, "x": 0.5},
+        xaxis=dict(showticklabels=False),
+        yaxis=dict(showticklabels=False),
+        height=100,
+        margin=dict(l=20, r=20, t=40, b=20),
+    )
+    return fig
