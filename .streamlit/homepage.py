@@ -23,34 +23,36 @@ def homepage():
     #global_page_style('static/css/style.css')
 
 
-    # Page title
-    
+
+    st.subheader("Welcome to the **GIRFT Team Capacity Planner**.")
 
     st.markdown(
     """
-    Welcome to the **GIRFT Team Capacity Planner**.
-
-    This tool helps teams plan work effectively by providing visibility of capacity,
-    scheduled activity, and availability across programmes.
+     This tool replaces the previous Excel based capacity planner for recording
+     leave and programme activity. The tool helps the team to schedule new work
+     and supports workforce planning by providing visibility of capacity and
+     activity across programmes and the wider team.
     """
     )
 
     st.divider()
 
-    # --- What the tool does ---
     st.subheader("What this tool helps you do")
 
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
 
     with col1:
-        st.info("📅 **View scheduled work**\n\nSee planned activity by week using the calendar.")
+        st.success("🧩**Weekly Activity**\n\nThis is where you can record your hours worked per week per programme.\n\n")
 
     with col2:
-        st.info("📊 **Monitor capacity**\n\nTrack capacity over time and across programmes.")
+        st.info("✈️ **Leave Record**\n\nThis where you can record leave.\n\n\n\n")
 
     with col3:
-        st.info("🏖️ **Track team leave**\n\nUnderstand availability with the leave tracker.")
+        st.warning("📅 **Forward Planner**\n\nThis is where you can block out whole days for any on-site or other full-day commitment activities when you are unavailable e.g. Men-SAT, Further Faster, study etc.")
 
+    with col4:
+        st.error("📊**Capacity Dashboard**\n\nThis is where you can find the team capacity dashboard showing team demand and capacity, programme activity and team availability heatmaps.")
+    
     st.divider()
 
     # --- What the tool is not ---
@@ -58,22 +60,10 @@ def homepage():
 
     st.markdown(
     """
-    This is **not** a ‘bean counting’ tool.
-
-    It is not designed to track micro-levels of activity and should not create unnecessary
-    administrative burden.
-
-    - Activity is **not tracked at an individual level**
-    - Many categories are **high-level estimates**
-    - Some values are **indicative**, such as allocating time for general admin
-    (e.g. 1 hour per person per day)
+    This is **NOT** intended as a ‘bean counting’ tool. It is **NOT** designed to track
+     micro-levels of activity (e.g. x person attended y meeting on Wednesday)
+     and has been designed to minimise the administrative burden associated 
+     with inputting activity. The tool is designed to support planning
+     conversations — **NOT** for performance monitoring purposes.
     """
     )
-
-    st.divider()
-
-    st.caption("Designed to support planning conversations — not detailed performance tracking.")
-
-
-
-    #st.write(ds.programme_calendar_df)
