@@ -1,0 +1,17 @@
+{
+    "workbench.startupEditor": "none",
+    "explorer.confirmDragAndDrop": false,
+    "git.confirmSync": false,
+    "python.defaultInterpreterPath": "c:\\Users\\mcdonaldh\\AppData\\Local\\anaconda3",
+    "editor.rulers": [
+        80
+    ],
+    "workbench.colorTheme": "Noctis",
+    "explorer.confirmDelete": false,
+    "terminal.integrated.defaultProfile.windows": "Command Prompt",
+    "gitlens.outputLevel": "error",
+    "git.mergeEditor": true,
+    "settingsSync.ignoredSettings": [],
+    "terminal.integrated.enablePersistentSessions": false,
+    "claudeCode.preferredLocation": "panel"
+}
