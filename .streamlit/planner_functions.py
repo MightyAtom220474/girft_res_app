@@ -274,10 +274,8 @@ def save_annual_leave(staff_member, week_commencing, days_leave):
 def save_on_site(staff_member, programme_category, week_commencing, on_site_days):
     week_commencing = pd.to_datetime(week_commencing)
     week_number = int(week_commencing.isocalendar().week)
-
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
-
         cursor.execute("""
             INSERT INTO on_site_calendar (
                 staff_member,
@@ -288,7 +286,7 @@ def save_on_site(staff_member, programme_category, week_commencing, on_site_days
                 updated_at
             )
             VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-            ON CONFLICT(staff_member, week_commencing)
+            ON CONFLICT(staff_member, programme_category, week_commencing)
             DO UPDATE SET
                 on_site_days = excluded.on_site_days,
                 week_number = excluded.week_number,
@@ -300,9 +298,7 @@ def save_on_site(staff_member, programme_category, week_commencing, on_site_days
             week_number,
             on_site_days
         ))
-
         conn.commit()
-        #conn.close()
 
 # ------------------------------------------------
 # Helper function to create heatmaps
