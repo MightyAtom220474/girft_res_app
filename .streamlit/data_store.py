@@ -140,7 +140,20 @@ def load_or_refresh_all():
         )
 
         st.session_state.onsite_calendar_df = pd.read_sql(
-            "SELECT * FROM on_site_calendar",
+            """SELECT 
+                    
+                    staff_member,
+                    week_commencing,
+                    week_number,
+                    SUM(on_site_days) AS on_site_days
+
+                FROM on_site_calendar
+
+                GROUP BY 
+                    staff_member,
+                    week_commencing,
+                    week_number
+            """,
             conn
         )
 
