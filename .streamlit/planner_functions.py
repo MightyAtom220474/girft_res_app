@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import sqlite3
+import re
 #import os
 from datetime import date, timedelta
 # import data_store as ds
@@ -313,29 +314,24 @@ def create_52week_heatmap(
     colorscale="YlGnBu",
     colorbar_title="Value",
     zmax=None,
-    highlight_current_week=True  # NEW: optional highlighting
+    highlight_current_week=True  # toggle highlight
     ):
     """
-    Generates a 52-week heatmap for all staff, filling missing weeks with 0.
-    Can optionally highlight the current week.
+    Generates a 52-week heatmap for all staff with optional current week highlight
+    and hover text disabled.
     """
+
     df = df.copy()
 
-    # -----------------------------
     # Convert week_col to datetime.date
-    # -----------------------------
     df[week_col] = pd.to_datetime(df[week_col], errors='coerce').dt.date
 
-    # -----------------------------
     # Generate 52 Mondays (26 back, 26 forward)
-    # -----------------------------
     today = date.today()
     start_monday = today - timedelta(weeks=26, days=today.weekday())
     week_commencings = [start_monday + timedelta(weeks=i) for i in range(52)]
 
-    # -----------------------------
     # Full staff × week grid
-    # -----------------------------
     staff_members = df[staff_col].unique()
     full_grid = pd.MultiIndex.from_product(
         [staff_members, week_commencings],
@@ -344,9 +340,7 @@ def create_52week_heatmap(
     full_grid = full_grid.sort_values([staff_col, week_col]).reset_index(drop=True)
     full_grid['week_number'] = full_grid.groupby(staff_col).cumcount() + 1
 
-    # -----------------------------
     # Merge with existing data
-    # -----------------------------
     df_full = full_grid.merge(
         df[[staff_col, week_col, value_col]],
         on=[staff_col, week_col],
@@ -354,15 +348,11 @@ def create_52week_heatmap(
     )
     df_full[value_col] = df_full[value_col].fillna(0).astype(int)
 
-    # -----------------------------
     # Determine zmax
-    # -----------------------------
     if zmax is None:
         zmax = df_full[value_col].max()
 
-    # -----------------------------
     # Pivot for heatmap
-    # -----------------------------
     pivot = df_full.pivot_table(
         index=staff_col,
         columns=week_col,
@@ -375,23 +365,18 @@ def create_52week_heatmap(
     cols = list(pivot.columns)
     x_vals = list(range(len(cols)))
 
-    # -----------------------------
     # Tick labels and current week index
-    # -----------------------------
     ticktext = []
     current_idx = None
     current_week_start = today - timedelta(days=today.weekday())
 
     for i, c in enumerate(cols):
-        # Ensure datetime.date
         c_date = pd.to_datetime(c).date() if isinstance(c, str) else c
         ticktext.append(c_date.strftime("%d-%b-%y"))
         if highlight_current_week and c_date == current_week_start:
             current_idx = i
 
-    # -----------------------------
-    # Build heatmap
-    # -----------------------------
+    # Build heatmap with hover disabled
     fig = go.Figure(
         data=go.Heatmap(
             z=z,
@@ -401,12 +386,8 @@ def create_52week_heatmap(
             zmin=0,
             zmax=zmax,
             colorbar=dict(title=colorbar_title),
-            customdata=[[c.strftime("%d-%b-%y") for c in cols]] * len(y),
-            hovertemplate=(
-                "Staff: %{y}<br>"
-                "Week Commencing: %{customdata}<br>"
-                f"{colorbar_title}: %{z}<extra></extra>"
-            ),
+            hoverinfo='skip',       # disables hover
+            hovertemplate=None       # ensures hover template is ignored
         )
     )
 
@@ -424,9 +405,7 @@ def create_52week_heatmap(
         showlegend=False,
     )
 
-    # -----------------------------
-    # Highlight current week safely
-    # -----------------------------
+    # Highlight current week column fully behind heatmap
     if highlight_current_week and current_idx is not None:
         fig.update_layout(
             shapes=[
@@ -434,14 +413,14 @@ def create_52week_heatmap(
                     type="rect",
                     x0=current_idx - 0.5,
                     x1=current_idx + 0.5,
-                    y0=-0.5,                   # start before first staff
-                    y1=len(y)-0.5,             # end after last staff
+                    y0=-0.5,           
+                    y1=len(y)-0.5,     
                     xref="x",
-                    yref="y",                  # now in data coordinates
-                    fillcolor="black",
-                    opacity=0.3,
-                    line_width=5,              # optional: no border
-                    layer="above",
+                    yref="y",          
+                    fillcolor="black",    
+                    opacity=0.3,           
+                    line_width=5,        
+                    layer="above",      
                 )
             ]
         )
@@ -545,3 +524,24 @@ def preview_colorscale(colorscale, title="Color Preview", n=100):
         margin=dict(l=20, r=20, t=40, b=20),
     )
     return fig
+
+def clean_programme(text):
+    if pd.isna(text):
+        return text
+
+    # Step 1: Replace standalone "and" with "&" (case-insensitive)
+    text = re.sub(r'\band\b', '&', text, flags=re.IGNORECASE)
+
+    # Step 2: Split text into words
+    words = text.split()
+
+    cleaned_words = []
+    for w in words:
+        # If word is all uppercase (acronym), keep it as is
+        if w.isupper():
+            cleaned_words.append(w)
+        else:
+            # Otherwise capitalize first letter
+            cleaned_words.append(w.capitalize())
+
+    return ' '.join(cleaned_words)

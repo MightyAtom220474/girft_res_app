@@ -46,8 +46,6 @@ def dashboard():
     programme_activity_df = st.session_state.programme_calendar_df
     staff_prog_monthly_df = st.session_state.staff_prog_monthly_df
 
-    #st.write(leave_calendar_df)
-
     # Ensure dates are proper datetime
     programme_activity_df["week_commencing"] = pd.to_datetime(
         programme_activity_df["week_commencing"],
@@ -71,6 +69,10 @@ def dashboard():
         )
     # get rid of programme_category column
     merged_df.drop(columns="programme_category", inplace=True)
+
+    # clean up programme groups
+    merged_df['programme_group'] = merged_df['programme_group'].apply(pf.clean_programme)
+
     # Replace programme_category with programme_group for the pivot
     pivot = (
         merged_df
@@ -335,7 +337,7 @@ def dashboard():
         fig = pf.create_52week_heatmap(
             leave_df,
             value_col="days_leave",
-            title="Leave",
+            title=None,
             colorscale=color_options[selected_name],
             colorbar_title="Days of Leave",
             zmax=MAX_DAYS,
@@ -348,7 +350,7 @@ def dashboard():
         fig = pf.create_52week_heatmap(
             onsite_df,
             value_col="on_site_days",
-            title="Planner",
+            title=None,
             colorscale=color_options[selected_name],
             colorbar_title="Days Booked Out",
             zmax=MAX_DAYS,
@@ -362,7 +364,7 @@ def dashboard():
         fig = pf.create_52week_heatmap(
             combined_df,
             value_col="total_days",
-            title="Combined",
+            title=None,
             colorscale=color_options[selected_name],
             colorbar_title="Total Days (Leave + Planner)",
             zmax=MAX_DAYS,
