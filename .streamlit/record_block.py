@@ -97,7 +97,7 @@ def block():
     # ------------------------------------------------
     on_site_days = st.selectbox(
         f"Number of days to be Block Booked out for w/c {week_commencing_os}",
-        [x for x in range(1, 6)],    # 1 → 5 in 1 day steps
+        [x for x in range(0, 6)],    # 0 → 5 in 1 day steps
         help="Select number of whole days that week (max 5)"
     )
 
