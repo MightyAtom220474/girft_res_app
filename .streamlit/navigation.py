@@ -48,7 +48,7 @@ def render_navigation():
         st.markdown("<br>" * 8, unsafe_allow_html=True)
         if st.session_state.get("logged_in"):
             st.divider()
-            if st.button("🚪 Logout", use_container_width=True):
+            if st.button("🚪 Logout", width='stretch'):
                 st.session_state.clear()  # clears all keys safely
                 st.session_state.active_page = "Login"
                 st.rerun()

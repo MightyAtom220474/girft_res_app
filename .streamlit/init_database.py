@@ -100,6 +100,15 @@ conn.commit()
 
 if os.path.exists(LC_CSV_PATH):
     df = pd.read_csv(LC_CSV_PATH)
+    df.columns = df.columns.str.strip()
+
+    # Convert to ISO date
+    df["week_commencing"] = pd.to_datetime(
+        df["week_commencing"],
+        dayfirst=True,
+        errors="coerce"
+    ).dt.date
+
     for _, row in df.iterrows():
         cursor.execute("""
         INSERT OR REPLACE INTO leave_calendar (
@@ -175,6 +184,15 @@ conn.commit()
 
 if os.path.exists(OS_CSV_PATH):
     df = pd.read_csv(OS_CSV_PATH)
+    df.columns = df.columns.str.strip()
+
+    # ✅ Convert to ISO date
+    df["week_commencing"] = pd.to_datetime(
+        df["week_commencing"],
+        dayfirst=True,
+        errors="coerce"
+    ).dt.date
+
     for _, row in df.iterrows():
         cursor.execute("""
         INSERT OR REPLACE INTO on_site_calendar (
@@ -230,18 +248,18 @@ print("Database setup complete – tables are ready for CSV load and runtime use
 # DROP TABLE IF EXISTS staff_list; 
 # """)
 # conn.commit()               
-# cursor.execute("""
-# DROP TABLE IF EXISTS programme_activity; 
-# """)
-# conn.commit()
-# cursor.execute("""
-# DROP TABLE IF EXISTS leave_calendar;
-# """)
-# conn.commit()
-# cursor.execute("""
-# DROP TABLE IF EXISTS on_site_calendar;
-# """)
-# conn.commit()
+cursor.execute("""
+DROP TABLE IF EXISTS programme_activity; 
+""")
+conn.commit()
+cursor.execute("""
+DROP TABLE IF EXISTS leave_calendar;
+""")
+conn.commit()
+cursor.execute("""
+DROP TABLE IF EXISTS on_site_calendar;
+""")
+conn.commit()
 
 # ##### Programme Categories #####
 

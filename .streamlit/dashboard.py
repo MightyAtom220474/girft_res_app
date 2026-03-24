@@ -46,7 +46,7 @@ def dashboard():
     programme_activity_df = st.session_state.programme_calendar_df
     staff_prog_monthly_df = st.session_state.staff_prog_monthly_df
 
-    st.write(leave_calendar_df)
+    #st.write(leave_calendar_df)
 
     # Ensure dates are proper datetime
     programme_activity_df["week_commencing"] = pd.to_datetime(
@@ -201,7 +201,7 @@ def dashboard():
     )
 
 
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
 
     # ------------------------------------------------
     # Monthly Programme Activity Stacked Area Chart
@@ -245,7 +245,7 @@ def dashboard():
         height=600,
         template="plotly_white"
     )
-    st.plotly_chart(fig2, use_container_width=True)     
+    st.plotly_chart(fig2, width='stretch')     
 
     # ------------------------------------------------
     # Weekly Leave, Booked-Out and Combined Heatmaps
@@ -274,7 +274,7 @@ def dashboard():
     # Show preview bar
     st.plotly_chart(
         pf.preview_colorscale(color_options[selected_name], title=selected_name),
-        use_container_width=True
+        width='stretch'
     )
 
     ##########
@@ -297,7 +297,7 @@ def dashboard():
     # Load and filter data
     # ------------------------------------------------
     leave_df = pf.filter_by_access(leave_calendar_df).copy()
-    st.write(leave_df)
+    
     onsite_df = pf.filter_by_access(onsite_calendar_df).copy()
     leave_df["week_commencing"] = pd.to_datetime(leave_df["week_commencing"], errors="coerce")
     onsite_df["week_commencing"] = pd.to_datetime(onsite_df["week_commencing"], errors="coerce")
@@ -306,11 +306,12 @@ def dashboard():
         (leave_df["week_commencing"] >= window_start) &
         (leave_df["week_commencing"] <= window_end)
     ]
-    st.write(leave_df)
+    #st.write(leave_df)
     onsite_df = onsite_df[
         (onsite_df["week_commencing"] >= window_start) &
         (onsite_df["week_commencing"] <= window_end)
     ]
+
     # ------------------------------------------------
     # Build combined dataset after filtering
     # ------------------------------------------------
@@ -331,39 +332,40 @@ def dashboard():
     if view_option == "✈️ Leave Heatmap":
         st.subheader("✈️ Leave")
         leave_colors = [[0.0, "rgb(0,200,0)"], [1.0, "rgb(255,0,0)"]]
-        fig = pf.create_heatmap(
+        fig = pf.create_52week_heatmap(
             leave_df,
             value_col="days_leave",
             title="Leave",
-            colorscale=leave_colors,
+            colorscale=color_options[selected_name],
             colorbar_title="Days of Leave",
             zmax=MAX_DAYS,
-            current_week_start=current_week_start
+            highlight_current_week=True
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')
     elif view_option == "🗓️ Planner Heatmap":
         st.subheader("🗓️ Planner")
         planner_colors = [[0.0, "rgb(0,200,0)"], [1.0, "rgb(0,0,255)"]]
-        fig = pf.create_heatmap(
+        fig = pf.create_52week_heatmap(
             onsite_df,
             value_col="on_site_days",
             title="Planner",
-            colorscale=planner_colors,
+            colorscale=color_options[selected_name],
             colorbar_title="Days Booked Out",
             zmax=MAX_DAYS,
-            current_week_start=current_week_start
+            highlight_current_week=True
+            
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')
     else:
         st.subheader("🔀 Combined")
         combined_colors = [[0.0, "rgb(150,255,150)"], [1.0, "rgb(255,100,0)"]]
-        fig = pf.create_heatmap(
+        fig = pf.create_52week_heatmap(
             combined_df,
             value_col="total_days",
             title="Combined",
             colorscale=color_options[selected_name],
             colorbar_title="Total Days (Leave + Planner)",
             zmax=MAX_DAYS,
-            current_week_start=current_week_start
+            highlight_current_week=True
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')

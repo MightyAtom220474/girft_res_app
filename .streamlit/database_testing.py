@@ -1,7 +1,7 @@
 import sqlite3, pandas as pd
 from data_store import DB_PATH
 with sqlite3.connect(DB_PATH) as conn:
-    df = pd.read_sql("SELECT staff_member, week_commencing, days_leave FROM leave_calendar WHERE staff_member LIKE '%Conn%' ORDER BY week_commencing DESC", conn)
+    df = pd.read_sql("SELECT staff_member, week_commencing, on_site_days FROM on_site_calendar WHERE staff_member LIKE '%Conn%' ORDER BY week_commencing DESC", conn)
     print(df.head(50))
 
 # import datetime

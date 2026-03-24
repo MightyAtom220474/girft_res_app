@@ -303,6 +303,151 @@ def save_on_site(staff_member, programme_category, week_commencing, on_site_days
 # ------------------------------------------------
 # Helper function to create heatmaps
 # ------------------------------------------------
+
+def create_52week_heatmap(
+    df,
+    staff_col='staff_member',
+    week_col='week_commencing',
+    value_col='value',
+    title="Staff Weekly Heatmap",
+    colorscale="YlGnBu",
+    colorbar_title="Value",
+    zmax=None,
+    highlight_current_week=True  # NEW: optional highlighting
+    ):
+    """
+    Generates a 52-week heatmap for all staff, filling missing weeks with 0.
+    Can optionally highlight the current week.
+    """
+    df = df.copy()
+
+    # -----------------------------
+    # Convert week_col to datetime.date
+    # -----------------------------
+    df[week_col] = pd.to_datetime(df[week_col], errors='coerce').dt.date
+
+    # -----------------------------
+    # Generate 52 Mondays (26 back, 26 forward)
+    # -----------------------------
+    today = date.today()
+    start_monday = today - timedelta(weeks=26, days=today.weekday())
+    week_commencings = [start_monday + timedelta(weeks=i) for i in range(52)]
+
+    # -----------------------------
+    # Full staff × week grid
+    # -----------------------------
+    staff_members = df[staff_col].unique()
+    full_grid = pd.MultiIndex.from_product(
+        [staff_members, week_commencings],
+        names=[staff_col, week_col]
+    ).to_frame(index=False)
+    full_grid = full_grid.sort_values([staff_col, week_col]).reset_index(drop=True)
+    full_grid['week_number'] = full_grid.groupby(staff_col).cumcount() + 1
+
+    # -----------------------------
+    # Merge with existing data
+    # -----------------------------
+    df_full = full_grid.merge(
+        df[[staff_col, week_col, value_col]],
+        on=[staff_col, week_col],
+        how='left'
+    )
+    df_full[value_col] = df_full[value_col].fillna(0).astype(int)
+
+    # -----------------------------
+    # Determine zmax
+    # -----------------------------
+    if zmax is None:
+        zmax = df_full[value_col].max()
+
+    # -----------------------------
+    # Pivot for heatmap
+    # -----------------------------
+    pivot = df_full.pivot_table(
+        index=staff_col,
+        columns=week_col,
+        values=value_col,
+        fill_value=0
+    )
+
+    z = pivot.to_numpy()
+    y = pivot.index.astype(str).tolist()
+    cols = list(pivot.columns)
+    x_vals = list(range(len(cols)))
+
+    # -----------------------------
+    # Tick labels and current week index
+    # -----------------------------
+    ticktext = []
+    current_idx = None
+    current_week_start = today - timedelta(days=today.weekday())
+
+    for i, c in enumerate(cols):
+        # Ensure datetime.date
+        c_date = pd.to_datetime(c).date() if isinstance(c, str) else c
+        ticktext.append(c_date.strftime("%d-%b-%y"))
+        if highlight_current_week and c_date == current_week_start:
+            current_idx = i
+
+    # -----------------------------
+    # Build heatmap
+    # -----------------------------
+    fig = go.Figure(
+        data=go.Heatmap(
+            z=z,
+            x=x_vals,
+            y=y,
+            colorscale=colorscale,
+            zmin=0,
+            zmax=zmax,
+            colorbar=dict(title=colorbar_title),
+            customdata=[[c.strftime("%d-%b-%y") for c in cols]] * len(y),
+            hovertemplate=(
+                "Staff: %{y}<br>"
+                "Week Commencing: %{customdata}<br>"
+                f"{colorbar_title}: %{z}<extra></extra>"
+            ),
+        )
+    )
+
+    fig.update_layout(
+        title=title,
+        xaxis=dict(
+            tickmode="array",
+            tickvals=x_vals,
+            ticktext=ticktext,
+            tickangle=90,
+        ),
+        yaxis=dict(automargin=True),
+        margin=dict(l=160, r=20, t=40, b=120),
+        height=max(350, pivot.shape[0] * 20 + 160),
+        showlegend=False,
+    )
+
+    # -----------------------------
+    # Highlight current week safely
+    # -----------------------------
+    if highlight_current_week and current_idx is not None:
+        fig.update_layout(
+            shapes=[
+                dict(
+                    type="rect",
+                    x0=current_idx - 0.5,
+                    x1=current_idx + 0.5,
+                    y0=-0.5,                   # start before first staff
+                    y1=len(y)-0.5,             # end after last staff
+                    xref="x",
+                    yref="y",                  # now in data coordinates
+                    fillcolor="black",
+                    opacity=0.3,
+                    line_width=5,              # optional: no border
+                    layer="above",
+                )
+            ]
+        )
+
+    return fig
+
 def create_heatmap(
     df,
     value_col,
@@ -318,7 +463,7 @@ def create_heatmap(
         today = date.today()
         current_week_start = today - timedelta(days=today.weekday())
     df = df.copy()
-    df["week_commencing"] = pd.to_datetime(df["week_commencing"], errors="coerce")
+    df["week_commencing"] = pd.to_datetime(df["week_commencing"], errors="coerce").dt.date
     pivot = df.pivot_table(
         index="staff_member",
         columns="week_commencing",
@@ -384,7 +529,7 @@ def create_heatmap(
 
 def preview_colorscale(colorscale, title="Color Preview", n=100):
     """Show a horizontal bar preview of a given colorscale."""
-    z = np.linspace(0, 1, n).reshape(1, -1)
+    z = np.tile(np.linspace(0, 1, n), (10, 1))
     fig = go.Figure(
         data=go.Heatmap(
             z=z,
