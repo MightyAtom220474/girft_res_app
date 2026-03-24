@@ -1,11 +1,16 @@
 #import os
 import pandas as pd
 import numpy as np
-import pandas as pd
+from datetime import date
+from dateutil.relativedelta import relativedelta
 #from datetime import date
 #import planner_functions as pf  # Your existing helper functions
 import sqlite3
-#import streamlit as st
+import streamlit as st
+
+import os
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(BASE_DIR, "girft_capacity_planner.db")
 
 # --------------------------
 # Global dataframes
@@ -60,6 +65,42 @@ def parse_week_commencing(df, col="week_commencing"):
     df[col] = parsed.dt.normalize()  # strip time to midnight
     return df
 
+def refresh_leave_calendar():
+    with sqlite3.connect(DB_PATH) as conn:
+        st.session_state.leave_calendar_df = pd.read_sql("SELECT * FROM leave_calendar", conn)
+    st.session_state.leave_calendar_df["week_commencing"] = pd.to_datetime(
+        st.session_state.leave_calendar_df["week_commencing"], errors="coerce"
+    )
+def refresh_onsite_calendar():
+    with sqlite3.connect(DB_PATH) as conn:
+        st.session_state.onsite_calendar_df = pd.read_sql("""
+            SELECT staff_member, week_commencing, week_number, SUM(on_site_days) AS on_site_days
+            FROM on_site_calendar
+            GROUP BY staff_member, week_commencing, week_number
+        """, conn)
+    st.session_state.onsite_calendar_df["week_commencing"] = pd.to_datetime(
+        st.session_state.onsite_calendar_df["week_commencing"], errors="coerce"
+    )
+def refresh_programme_activity():
+    with sqlite3.connect(DB_PATH) as conn:
+        st.session_state.programme_calendar_df = pd.read_sql("SELECT * FROM programme_activity", conn)
+    st.session_state.programme_calendar_df["week_commencing"] = pd.to_datetime(
+        st.session_state.programme_calendar_df["week_commencing"], errors="coerce"
+    )
+
+def handle_trigger_reload():
+    trigger = st.session_state.get("trigger_reload")
+    if trigger == "leave":
+        refresh_leave_calendar()
+    elif trigger == "onsite":
+        refresh_onsite_calendar()
+    elif trigger == "programme":
+        refresh_programme_activity()
+    elif trigger == "all":
+        load_or_refresh_all()
+    if trigger:
+        del st.session_state["trigger_reload"]
+
 def load_or_refresh_all():
     """
     Loads all dataframes from SQLite and performs all downstream merges
@@ -86,9 +127,7 @@ def load_or_refresh_all():
     # ---------------------------
     # Resolve DB path safely
     # ---------------------------
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    DB_PATH = os.path.join(BASE_DIR, "girft_capacity_planner.db")
-
+    
     # ---------------------------
     # Helpers
     # ---------------------------
@@ -135,7 +174,20 @@ def load_or_refresh_all():
         )
 
         st.session_state.leave_calendar_df = pd.read_sql(
-            "SELECT * FROM leave_calendar",
+            """SELECT 
+                    
+                    staff_member,
+                    week_commencing,
+                    week_number,
+                    SUM(days_leave) AS days_leave
+
+                FROM leave_calendar
+
+                GROUP BY 
+                    staff_member,
+                    week_commencing,
+                    week_number
+            """,
             conn
         )
 
@@ -357,12 +409,15 @@ def load_or_refresh_all():
         .sort_values("month")
     )
 
-    # Example user-selected start date
-    user_input_date = "01-02-2026"
-    start_month = pd.to_datetime(user_input_date, dayfirst=True).to_period("M").to_timestamp()
-
-    # Filter out months before start
-    monthly = monthly.loc[monthly["month"] >= start_month].sort_values("month")
+    # Compute a rolling 12‑month window: 6 months back and 6 months ahead
+    today = date.today()
+    window_start = pd.Timestamp(today - relativedelta(months=6)).to_period("M").to_timestamp()
+    window_end = pd.Timestamp(today + relativedelta(months=6)).to_period("M").to_timestamp()
+    # Keep only months within this window
+    monthly = monthly.loc[
+        (monthly["month"] >= window_start) &
+        (monthly["month"] <= window_end)
+    ].sort_values("month")
 
     # Load and prepare legacy file
     legacy_monthly = pd.read_csv("legacy_capacity_monthly.csv")
@@ -392,9 +447,6 @@ def load_or_refresh_all():
     combined_monthly["util_target"] = target_util_rate
     st.session_state.staff_prog_monthly_df = combined_monthly
 
-
-DB_PATH = "girft_capacity_planner.db"
-
 with sqlite3.connect(DB_PATH) as conn:
     cursor = conn.cursor()
     cursor.execute("""
@@ -418,8 +470,6 @@ with sqlite3.connect(DB_PATH) as conn:
         cur.execute("DELETE FROM programme_activity")
 
     conn.commit()
-
-DB_PATH = "girft_capacity_planner.db"
 
 with sqlite3.connect(DB_PATH) as conn:
     cursor = conn.cursor()

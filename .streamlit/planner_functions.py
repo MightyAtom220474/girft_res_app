@@ -9,12 +9,12 @@ from werkzeug.security import generate_password_hash
 #import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 #import numpy as np
+from data_store import DB_PATH
 
 num_weeks = 52
 year = 2025   # you can make this a user input if you want
 decimals = 1 # number of decimal places
 
-DB_PATH = "girft_capacity_planner.db"
 
 def make_activity_chart(activity_calendar_df, programme_names):
     import plotly.graph_objects as go

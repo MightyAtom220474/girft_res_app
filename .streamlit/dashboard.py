@@ -6,6 +6,14 @@ import plotly.colors as pc
 #import numpy as np
 # bring in data from data store
 import data_store as ds
+
+# Check if another page signaled a data refresh
+ds.handle_trigger_reload()
+
+# Normal initial load (first run)
+if "staff_prog_monthly_df" not in st.session_state:
+    ds.load_or_refresh_all()
+    
 #import numpy as np
 import planner_functions as pf
 from datetime import date, timedelta
@@ -27,7 +35,9 @@ def dashboard():
 
     st.divider()
 
-    # Ensure everything is loaded
+    # Handle any cross‑page reload triggers first
+    ds.handle_trigger_reload()
+    # Ensure everything is loaded (initial only)
     if "staff_prog_monthly_df" not in st.session_state:
         ds.load_or_refresh_all()
 
@@ -35,6 +45,8 @@ def dashboard():
     onsite_calendar_df = st.session_state.onsite_calendar_df
     programme_activity_df = st.session_state.programme_calendar_df
     staff_prog_monthly_df = st.session_state.staff_prog_monthly_df
+
+    st.write(leave_calendar_df)
 
     # Ensure dates are proper datetime
     programme_activity_df["week_commencing"] = pd.to_datetime(
@@ -285,6 +297,7 @@ def dashboard():
     # Load and filter data
     # ------------------------------------------------
     leave_df = pf.filter_by_access(leave_calendar_df).copy()
+    st.write(leave_df)
     onsite_df = pf.filter_by_access(onsite_calendar_df).copy()
     leave_df["week_commencing"] = pd.to_datetime(leave_df["week_commencing"], errors="coerce")
     onsite_df["week_commencing"] = pd.to_datetime(onsite_df["week_commencing"], errors="coerce")
@@ -293,6 +306,7 @@ def dashboard():
         (leave_df["week_commencing"] >= window_start) &
         (leave_df["week_commencing"] <= window_end)
     ]
+    st.write(leave_df)
     onsite_df = onsite_df[
         (onsite_df["week_commencing"] >= window_start) &
         (onsite_df["week_commencing"] <= window_end)

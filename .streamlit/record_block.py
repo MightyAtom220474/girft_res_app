@@ -2,7 +2,9 @@ import streamlit as st
 import pandas as pd
 import planner_functions as pf
 import data_store as ds
+ds.handle_trigger_reload() # force reloading of any saved data
 from datetime import date, timedelta
+import time
 
 st.set_page_config(layout="wide")
 
@@ -33,14 +35,6 @@ def block():
 
     st.divider()
 
-    st.write("Please book out here any days where you are likely to be"
-                " unavailable for other work due to full-day commitments. "
-                "This could include: Team Away Days; Further Faster visits"
-                "; Men-SAT summits or Maturity Tool deployments;"
-                " conferences; formal training or learning; or any other "
-                "on-site activity (e.g. Provider Improvement Programme "
-                "on-site work).")
-
     # ------------------------------------------------
     # Load staff names (active only)
     # ------------------------------------------------
@@ -70,6 +64,14 @@ def block():
     # ------------------------------------------------
     st.subheader("✏️ Add or Edit Block Booking days for a Specific Team Member")
 
+    with st.expander("Click to See User Guidance"):
+        st.markdown("""Please book here any days where you are likely to be 
+                    unavailable for other work due to full-day commitments. 
+                    This could include: Team Away Days; Further Faster visits; 
+                    Men-SAT summits or Maturity Tool deployments; 
+                    conferences; formal training; or any other on-site activity
+                     (e.g. Provider Improvement Programme on-site work).""")
+
     selected_staff_os = st.selectbox(
         "Select Block Booking Team Member",
         staff_names,
@@ -95,7 +97,7 @@ def block():
     # ------------------------------------------------
     on_site_days = st.selectbox(
         f"Number of days to be Block Booked out for w/c {week_commencing_os}",
-        [x for x in range(0, 5)],    # 0 → 5 in 1 day steps
+        [x for x in range(1, 6)],    # 1 → 5 in 1 day steps
         help="Select number of whole days that week (max 5)"
     )
 
@@ -109,10 +111,15 @@ def block():
             week_commencing=week_commencing_os,
             on_site_days=on_site_days
         )
-
-        st.success(
+        # Create a placeholder for the success message
+        success_box = st.empty()
+        success_box.success(
             f"Block Booking saved for {selected_staff_os} and programme {selected_prog_os} "
             f"week commencing {pd.to_datetime(week_commencing_os).date()}, {on_site_days}"
         )
+        # Keep it visible for 3 seconds
+        time.sleep(3)
+        success_box.empty()
+        st.session_state["trigger_reload"] = "onsite"
 
         st.rerun()   # ← force immediate refresh

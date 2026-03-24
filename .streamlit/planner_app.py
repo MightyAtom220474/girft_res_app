@@ -4,9 +4,11 @@ import pandas as pd
 #import os
 import planner_functions as pf
 import data_store as ds
+ds.handle_trigger_reload() # force reloading of any saved data
 #import numpy as np
 #import plotly.graph_objects as go
 from datetime import date, timedelta
+import time
 
 max_days = 5
 steps = 50
@@ -39,6 +41,25 @@ def planner():
     st.divider()
 
     st.subheader("✏️ Add or Edit Weekly Programme Activity for a Specific Team Member")
+
+    with st.expander("Click to See User Guidance"):
+        st.markdown("""Please provide a high-level estimate* here of the number
+                     of hours you have worked each week against the list of 
+                    programmes listed. You do not need to record non-programme 
+                    activity (e.g. admin, team meetings, or learning and
+                     development), as this has been calculated separately as
+                     non-deployable time for each team member. Your contracted
+                     and deployable hours are shown in the green boxes below for
+                     reference. If you believe you have worked more than your
+                     total deployable hours, please record this. It is
+                     important that we can understand whether the team is 
+                    working beyond its capacity to support effective time 
+                    and resource management.
+
+                    *this should be a quick mental estimate and take no more
+                     than a few minutes. If you need to use a calculator or
+                     Excel you are going into too much detail.""")
+        
 
     # ---------------------------
     # 1️⃣ Load active staff
@@ -168,10 +189,15 @@ def planner():
             week_commencing=week_commencing,
             activity_inputs=activity_inputs
         )
-
-        st.success(
+        # Create a placeholder container
+        success_box = st.empty()
+        success_box.success(
             f"Programme activity saved for {selected_staff} "
             f"week commencing {pd.to_datetime(week_commencing).date()}"
         )
+        # Keep the message visible for 3 seconds
+        time.sleep(3)
+        success_box.empty()
+        st.session_state["trigger_reload"] = "programme"
 
         st.rerun()   # ← force immediate refresh
