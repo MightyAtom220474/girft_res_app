@@ -545,3 +545,125 @@ def clean_programme(text):
             cleaned_words.append(w.capitalize())
 
     return ' '.join(cleaned_words)
+
+def get_inactive_staff_with_reasons(
+    staff_list,
+    programme_calendar_df,
+    leave_calendar_df
+    ):
+    # -----------------------------
+    # Previous week (Monday)
+    # -----------------------------
+    today = date.today()
+    current_week_start = today - timedelta(days=today.weekday())
+    previous_week_start = current_week_start - timedelta(weeks=1)
+
+    # -----------------------------
+    # Standardise dates
+    # -----------------------------
+    programme_calendar_df = programme_calendar_df.copy()
+    leave_calendar_df = leave_calendar_df.copy()
+
+    programme_calendar_df['week_commencing'] = pd.to_datetime(
+        programme_calendar_df['week_commencing']
+    ).dt.date
+
+    leave_calendar_df['week_commencing'] = pd.to_datetime(
+        leave_calendar_df['week_commencing']
+    ).dt.date
+
+    # -----------------------------
+    # Active staff only
+    # -----------------------------
+    df = staff_list.loc[
+        staff_list['archive_flag'] == 0,
+        ['staff_member']
+    ].copy()
+
+    # -----------------------------
+    # Activity last week (>0 only)
+    # -----------------------------
+    active_last_week = programme_calendar_df.loc[
+        (programme_calendar_df['week_commencing'] == previous_week_start) &
+        (programme_calendar_df['activity_value'].fillna(0) > 0),
+        'staff_member'
+    ].unique()
+
+    df['no_activity_last_week'] = ~df['staff_member'].isin(active_last_week)
+
+    # -----------------------------
+    # Leave last week
+    # -----------------------------
+    leave_last_week = leave_calendar_df.loc[
+        leave_calendar_df['week_commencing'] == previous_week_start
+    ]
+
+    leave_summary = (
+        leave_last_week
+        .assign(value=lambda x: x['days_leave'].fillna(0))
+        .groupby('staff_member')['days_leave']
+        .sum()
+        .reset_index()
+        #.rename(columns={'value': 'days_leave'})
+        )
+
+    df = df.merge(leave_summary, on='staff_member', how='left')
+    df['days_leave'] = df['days_leave'].fillna(0)
+
+    df['full_week_leave'] = df['days_leave'] >= 5
+
+    # -----------------------------
+    # Reason logic
+    # -----------------------------
+    def get_reason(row):
+        if row['no_activity_last_week'] and not row['full_week_leave']:
+            return "No activity recorded"
+        elif row['full_week_leave']:
+            return "On leave (5+ days)"
+        else:
+            return "OK"
+
+    df['reason'] = df.apply(get_reason, axis=1)
+
+    # -----------------------------
+    # Final follow-up flag
+    # -----------------------------
+    df['needs_follow_up'] = (
+        df['no_activity_last_week'] &
+        (~df['full_week_leave'])
+    )
+
+    return df.sort_values(['needs_follow_up', 'staff_member'], ascending=[False, True]).reset_index(drop=True)
+
+def render_followup_warning(df_flags):
+    # Filter staff needing follow-up
+    follow_up_df = df_flags[df_flags['needs_follow_up']]
+
+    if follow_up_df.empty:
+        st.success("✅ All staff have recorded activity for last week")
+        return
+
+    # -----------------------------
+    # Warning header
+    # -----------------------------
+    st.error(f"🚨 {len(follow_up_df)} staff member(s) need to record activity for last week")
+
+    # -----------------------------
+    # Clean list display
+    # -----------------------------
+    names = ", ".join(follow_up_df['staff_member'].tolist())
+    st.markdown(f"**Staff to follow up:** {names}")
+
+    # -----------------------------
+    # Expandable detail view
+    # -----------------------------
+    with st.expander("View details"):
+        display_df = follow_up_df[
+            ['staff_member', 'days_leave', 'reason']
+        ].rename(columns={
+            'staff_member': 'Staff Member',
+            'days_leave': 'Leave Days',
+            'reason': 'Status'
+        })
+
+        st.dataframe(display_df, use_container_width=True)

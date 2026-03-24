@@ -3,6 +3,7 @@ import pandas as pd
 from planner_functions import update_staff_list, update_programme_list, generate_password_hash
 import data_store as ds
 import sqlite3
+import planner_functions as pf
 
 DB_PATH = "girft_capacity_planner.db"
 
@@ -511,7 +512,19 @@ def maintenance():
                 # Optional: refresh cached data
                 ds.load_or_refresh_all()
 
-                st.rerun()   # ← force immediate refresh    
+                st.rerun()   # ← force immediate refresh  
+
+    with st.expander("🚨 Data Entry Checklist"):
+        
+        st.subheader("Status for Previous Week") 
+
+        df_flags = pf.get_inactive_staff_with_reasons(
+        staff_list,
+        programme_calendar_df,
+        leave_calendar_df
+        )
+
+        pf.render_followup_warning(df_flags) 
 
 
 
