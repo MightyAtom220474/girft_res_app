@@ -69,7 +69,7 @@ def render_navigation():
     elif page == "Leave":
         secure_page(leave, ["admin", "user"])()
     elif page == "Dashboard":
-        secure_page(dashboard, ["admin", "viewer"])()
+        secure_page(dashboard, ["admin", "user", "viewer"])()
     elif page == "Maintenance":
         secure_page(maintenance, ["admin"])()
 
