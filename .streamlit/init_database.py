@@ -8,10 +8,10 @@
 import sqlite3
 import pandas as pd
 import os
+import data_store as ds
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-DB_PATH = os.path.join(BASE_DIR, "girft_capacity_planner.db")
+BASE_DIR = ds.BASE_DIR
+DB_PATH = ds.DB_PATH
 PC_CSV_PATH = os.path.join(BASE_DIR, "programme_categories.csv")
 SL_CSV_PATH = os.path.join(BASE_DIR, "staff_list.csv")
 LC_CSV_PATH = os.path.join(BASE_DIR, "legacy_leave_weekly_normalised.csv")
@@ -249,9 +249,24 @@ print("Database setup complete – tables are ready for CSV load and runtime use
 # """)
 # conn.commit()               
 cursor.execute("""
-DROP TABLE IF EXISTS programme_activity; 
+UPDATE staff_list
+               SET username = 'andrew.polychronakis@nhs.net'
+               WHERE username = 'andrew.polychronakis@nhs.net '; 
 """)
 conn.commit()
+
+with sqlite3.connect(DB_PATH) as conn:
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT username
+        FROM staff_list
+        ORDER BY staff_member
+    """)
+    all_staff = [row[0] for row in cursor.fetchall()]
+
+print(all_staff)
+
+
 cursor.execute("""
 DROP TABLE IF EXISTS leave_calendar;
 """)
