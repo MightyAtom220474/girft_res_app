@@ -24,7 +24,7 @@ def login_page():
         st.header("🔑 User Login")
     with col2:
         st.image("https://gettingitrightfirsttime.co.uk/wp-content/uploads/2022/06/cropped-GIRFT-Logo-300-RGB-Large.jpg", width=300)
-        st.write("Email: info@gettingitrightfirsttime.co.uk")
+        #st.write("Email: info@gettingitrightfirsttime.co.uk")
 
     # ---------------------------
     # NOT LOGGED IN
@@ -39,7 +39,7 @@ def login_page():
             with sqlite3.connect(DB_PATH) as conn:
                 cur = conn.cursor()
                 cur.execute("""
-                    SELECT password, access_level, must_change_password
+                    SELECT password, access_level, must_change_password, staff_member
                     FROM staff_list
                     WHERE username = ?
                 """, (username,))
@@ -49,16 +49,22 @@ def login_page():
                 st.error("Invalid username or password")
                 return
 
-            stored_hash, access_level, must_change = row
+            # 👇 UPDATED: now includes staff_member
+            stored_hash, access_level, must_change, staff_member = row
 
             if not check_password_hash(stored_hash, password):
                 st.error("Invalid username or password")
                 return
 
+            # ---------------------------
+            # STORE SESSION STATE
+            # ---------------------------
             st.session_state.logged_in = True
             st.session_state.username = username
+            st.session_state.staff_member = staff_member   # ✅ NEW LINE
             st.session_state.access_level = access_level
             st.session_state.must_change_password = bool(must_change)
+
             st.rerun()
 
     # ---------------------------

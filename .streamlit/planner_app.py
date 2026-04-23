@@ -18,15 +18,19 @@ current_monday = today - timedelta(days=today.weekday() + 7)
 
 def planner():
     
-    if "staff_list" not in st.session_state:
-        ds.load_or_refresh_all()    
+    if (
+        "programme_list" not in st.session_state
+        or st.session_state.get("trigger_reload") == "programme"
+        ):
+        ds.load_or_refresh_all()
+        st.session_state["trigger_reload"] = None  
         
     staff_list = st.session_state.staff_list
     programme_list = st.session_state.programme_list
     programme_calendar_df = st.session_state.programme_calendar_df
     #leave_calendar_df = st.session_state.leave_calendar_df
     #onsite_calendar_df = st.session_state.onsite_calendar_df
-    staff_names = st.session_state.staff_list
+    #staff_names = st.session_state.staff_list
     #programme_names = st.session_state.programme_list
 
     st.set_page_config(layout="wide")
@@ -36,7 +40,7 @@ def planner():
         st.header("📅 Activity Recording")
     with col2:
         st.image("https://gettingitrightfirsttime.co.uk/wp-content/uploads/2022/06/cropped-GIRFT-Logo-300-RGB-Large.jpg", width=300)
-        st.write("Email: info@gettingitrightfirsttime.co.uk")
+        #st.write("Email: info@gettingitrightfirsttime.co.uk")
 
     st.divider()
 
@@ -155,15 +159,16 @@ def planner():
     st.write(f"### Editing Programme Activity for: **{selected_staff}**")
     st.write(f"#### Week Commencing: **{week_commencing}**")
 
-    mask = (
-        (programme_calendar_df["staff_member"] == selected_staff) &
-        (programme_calendar_df["week_commencing"] == pd.to_datetime(week_commencing))
-    )
+    # mask = (
+    #     (programme_calendar_df["staff_member"] == selected_staff) &
+    #     (programme_calendar_df["week_commencing"] == pd.to_datetime(week_commencing))
+    # )
 
-    if mask.any():
-        staff_row = programme_calendar_df.loc[mask].iloc[0]
-    else:
-        staff_row = pd.Series({col: 0.0 for col in programme_categories_filtered})
+    staff_activities_lookup = (
+        programme_calendar_df.loc[mask]
+        .set_index("programme_category")["activity_value"]
+        .to_dict()
+    )
 
     # 0 → 37.5 in 0.5 steps
     hour_values = [x * 0.5 for x in range(0, 76)]
@@ -171,13 +176,14 @@ def planner():
     activity_inputs = {}
 
     for col in programme_categories_filtered:
-        default_value = float(staff_row[col]) if col in staff_row else 0.0
+        default_value = float(staff_activities_lookup.get(col, 0.0))
         pretty_name = col.replace("_", " ").title()
 
         activity_inputs[col] = st.selectbox(
             pretty_name,
             hour_values,
-            index=hour_values.index(default_value) if default_value in hour_values else 0
+            index=hour_values.index(default_value) if default_value in hour_values else 0,
+            key=f"{selected_staff}_{week_commencing}_{col}"
         )
 
     # ---------------------------

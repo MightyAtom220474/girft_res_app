@@ -40,7 +40,7 @@ def leave():
         st.header("✈️ Leave Record")
     with col2:
         st.image("https://gettingitrightfirsttime.co.uk/wp-content/uploads/2022/06/cropped-GIRFT-Logo-300-RGB-Large.jpg", width=300)
-        st.write("Email: info@gettingitrightfirsttime.co.uk")
+        #st.write("Email: info@gettingitrightfirsttime.co.uk")
     
     st.divider()
     

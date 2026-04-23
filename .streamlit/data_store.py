@@ -372,6 +372,22 @@ def load_or_refresh_all():
         .reset_index(drop=True)
     )
 
+    weekly_by_staff = (
+        staff_week
+        .groupby(["staff_member","week_commencing"], as_index=False)
+        .agg(
+            total_leave_hours=("total_leave_hours", "sum"),
+            total_contr_hours=("total_contr_hours", "sum"),
+            total_avail_hours=("total_avail_hours", "sum"),
+            total_prog_hours=("total_prog_hours", "sum"),
+            total_non_deploy_hours=("total_non_deploy_hours", "sum"),
+            total_util_hours=("total_util_hours", "sum"),
+            staff_count=("staff_member", "nunique"),
+        )
+        .sort_values("week_commencing")
+        .reset_index(drop=True)
+    )
+
     # ✅ Util rate = (non-deploy + programme) / avail * 100
     weekly["util_rate"] = 0.0
     nonzero = weekly["total_avail_hours"] > 0
@@ -391,8 +407,11 @@ def load_or_refresh_all():
     # ---------------------------
     monthly = weekly.copy()
 
+    monthly_by_staff = weekly_by_staff.copy()
     # Month from the Monday date
     monthly["month"] = monthly["week_commencing"].dt.to_period("M").dt.to_timestamp()
+
+    monthly_by_staff["month"] = weekly_by_staff["week_commencing"].dt.to_period("M").dt.to_timestamp()
 
     monthly = (
         monthly
@@ -408,6 +427,23 @@ def load_or_refresh_all():
         )
         .sort_values("month")
     )
+
+    monthly_by_staff = (
+        monthly_by_staff
+        .groupby(["staff_member","month"], as_index=False)
+        .agg(
+            total_leave_hours=("total_leave_hours", "sum"),
+            total_contr_hours=("total_contr_hours", "sum"),
+            total_avail_hours=("total_avail_hours", "sum"),
+            total_prog_hours=("total_prog_hours", "sum"),
+            total_non_deploy_hours=("total_non_deploy_hours", "sum"),
+            total_util_hours=("total_util_hours", "sum"),
+            staff_count=("staff_count", "mean"),  # average staff in month
+        )
+        .sort_values("month")
+    )
+
+    st.session_state.staff_detail_monthly_df = monthly_by_staff
 
     # Compute a rolling 12‑month window: 6 months back and 6 months ahead
     today = date.today()

@@ -15,9 +15,9 @@ def maintenance():
     programme_list = st.session_state.programme_list
     programme_calendar_df = st.session_state.programme_calendar_df
     leave_calendar_df = st.session_state.leave_calendar_df
-    onsite_calendar_df = st.session_state.onsite_calendar_df
-    staff_names = st.session_state.staff_list
-    programme_names = st.session_state.programme_list
+    # onsite_calendar_df = st.session_state.onsite_calendar_df
+    # staff_names = st.session_state.staff_list
+    # programme_names = st.session_state.programme_list
 
     st.set_page_config(layout="wide")
     
@@ -26,7 +26,7 @@ def maintenance():
         st.header("🛠️ System Maintenance")
     with col2:
         st.image("https://gettingitrightfirsttime.co.uk/wp-content/uploads/2022/06/cropped-GIRFT-Logo-300-RGB-Large.jpg", width=300)
-        st.write("Email: info@gettingitrightfirsttime.co.uk")
+        #st.write("Email: info@gettingitrightfirsttime.co.uk")
 
     st.divider()
 
@@ -397,122 +397,305 @@ def maintenance():
             ["Deployable", "Non-Deployable"]
         )
 
-        programme_group_options = sorted([
-            "CYP",
-            "Inpatient and Rehab",
-            "Intensive Support",
-            "Crisis, Urgent and Emergency Care",
-            "Universal Offer",
-            "General"
-        ])
-
-        programme_group = st.selectbox(
-            "Programme Group",
-            programme_group_options
+        # ----------------------------
+        # Dynamic Programme Groups
+        # ----------------------------
+        programme_group_options = sorted(
+            programme_list.loc[
+                programme_list["archive_flag"] == 0, "programme_group"
+            ]
+            .dropna()
+            .unique()
+            .tolist()
         )
 
-        # --- ADD PROGRAMME ---
+        programme_group_options_with_new = programme_group_options + ["➕ Add new group"]
 
+        selected_group = st.selectbox(
+            "Programme Group",
+            programme_group_options_with_new
+        )
+
+        # Allow new group entry
+        if selected_group == "➕ Add new group":
+            programme_group = st.text_input("Enter new Programme Group")
+        else:
+            programme_group = selected_group
+
+        # ----------------------------
+        # ADD PROGRAMME BUTTON
+        # ----------------------------
         if st.button("➕ Add Programme"):
+
+            # ----------------------------
+            # Clean inputs
+            # ----------------------------
+            new_programme = new_programme.strip()
+            programme_group = programme_group.strip().title() if programme_group else ""
+
+            # ----------------------------
+            # Validate inputs
+            # ----------------------------
+            if not new_programme:
+                st.error("Please enter a programme category.")
+                return
+
+            if not programme_group:
+                st.error("Please select or enter a programme group.")
+                return
+
+            # ----------------------------
+            # 🚫 Prevent duplicate programmes
+            # ----------------------------
+            existing_programmes = programme_list["programme_categories"].str.strip().str.lower()
+
+            if new_programme.lower() in existing_programmes.values:
+                st.error("This programme category already exists.")
+                return
+
+            # ----------------------------
+            # ⚠️ Handle duplicate groups safely
+            # ----------------------------
+            existing_groups = programme_list["programme_group"].str.strip().str.lower()
+
+            if programme_group.lower() in existing_groups.values:
+                if selected_group == "➕ Add new group":
+                    st.warning("This programme group already exists — using existing group.")
+
+            # ----------------------------
+            # Save to database
+            # ----------------------------
             update_programme_list(
                 new_programme=new_programme,
                 programme_type=programme_type,
                 programme_group=programme_group
             )
 
-            programme_list = programme_list.sort_values(by="programme_categories")
+            # Refresh data
+            ds.load_or_refresh_all()
 
             st.success(f"{new_programme} added successfully.")
-
-            st.rerun()   # ← force immediate refresh
+            st.rerun()
 
         # ----------------------------
         # Archive existing programmes
         # ----------------------------
-
         st.subheader("🗑️ Archive Programme Category")
 
         with sqlite3.connect(DB_PATH) as conn:
             cursor = conn.cursor()
-            cursor.execute(
-                    """
-                    SELECT programme_categories
-                    FROM programme_categories
-                    WHERE archive_flag = 0
-                    ORDER BY programme_categories
-                    """
-                )
-            
+            cursor.execute("""
+                SELECT programme_categories
+                FROM programme_categories
+                WHERE archive_flag = 0
+                ORDER BY programme_categories
+            """)
             active_programmes = [row[0] for row in cursor.fetchall()]
 
-            programme_to_archive = st.selectbox(
-                "Select programme to archive",
-                active_programmes, index=None
-            )
+        programme_to_archive = st.selectbox(
+            "Select programme to archive",
+            active_programmes,
+            index=None
+        )
 
-        with sqlite3.connect(DB_PATH) as conn:
-            cursor = conn.cursor()
-            if st.button("Archive Selected Programme"):
-                cursor.execute(
-                    """
+        if st.button("Archive Selected Programme"):
+            with sqlite3.connect(DB_PATH) as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
                     UPDATE programme_categories
                     SET archive_flag = 1
                     WHERE programme_categories = ?
-                    """,
-                    (programme_to_archive,)
-                )
+                """, (programme_to_archive,))
                 conn.commit()
 
-                st.success(f"{programme_to_archive} archived successfully.")
-
-                # Optional: refresh cached data
-                ds.load_or_refresh_all()
-
-                st.rerun()   # ← force immediate refresh
+            st.success(f"{programme_to_archive} archived successfully.")
+            ds.load_or_refresh_all()
+            st.rerun()
 
         # ----------------------------
-        # Archive existing programmes
+        # Restore archived programmes
         # ----------------------------
-
         st.subheader("♻️ Restore Programme Category")
 
         with sqlite3.connect(DB_PATH) as conn:
             cursor = conn.cursor()
-            cursor.execute(
-                    """
-                    SELECT programme_categories
-                    FROM programme_categories
-                    WHERE archive_flag = 1
-                    ORDER BY programme_categories
-                    """
-                )
-            
+            cursor.execute("""
+                SELECT programme_categories
+                FROM programme_categories
+                WHERE archive_flag = 1
+                ORDER BY programme_categories
+            """)
             archived_programmes = [row[0] for row in cursor.fetchall()]
 
-            programme_to_restore = st.selectbox(
-                "Select programme to restore",
-                archived_programmes, index=None
-            )
+        programme_to_restore = st.selectbox(
+            "Select programme to restore",
+            archived_programmes,
+            index=None
+        )
 
-        with sqlite3.connect(DB_PATH) as conn:
-            cursor = conn.cursor()
-            if st.button("Restore Selected Programme"):
-                cursor.execute(
-                    """
+        if st.button("Restore Selected Programme"):
+            with sqlite3.connect(DB_PATH) as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
                     UPDATE programme_categories
                     SET archive_flag = 0
                     WHERE programme_categories = ?
-                    """,
-                    (programme_to_restore,)
-                )
+                """, (programme_to_restore,))
                 conn.commit()
 
-                st.success(f"{programme_to_restore} restored successfully.")
+            st.success(f"{programme_to_restore} restored successfully.")
+            ds.load_or_refresh_all()
+            st.rerun()
 
-                # Optional: refresh cached data
+        # ============================================================
+        # 🔄 FIX PROGRAMME GROUP (PRIMARY ACTION)
+        # ============================================================
+        st.subheader("🔄 Fix Programme Group")
+
+        with sqlite3.connect(DB_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT programme_categories, programme_group
+                FROM programme_categories
+                WHERE archive_flag = 0
+                ORDER BY programme_categories
+            """)
+            programme_data = cursor.fetchall()
+
+        programme_names = [row[0] for row in programme_data]
+
+        programme_to_update = st.selectbox(
+            "Select programme to update",
+            programme_names,
+            index=None,
+            key="fix_programme_select"
+        )
+
+        # Get current group (for display)
+        current_group = None
+        if programme_to_update:
+            for row in programme_data:
+                if row[0] == programme_to_update:
+                    current_group = row[1]
+                    break
+
+            st.info(f"Current group: **{current_group}**")
+
+        # Existing groups
+        existing_groups = sorted(
+            list(set([row[1] for row in programme_data if row[1] is not None]))
+        )
+
+        group_options = existing_groups + ["➕ Add new group"]
+
+        selected_group = st.selectbox(
+            "Select new programme group",
+            group_options,
+            index=None,
+            key="fix_programme_group_select"
+        )
+
+        if selected_group == "➕ Add new group":
+            new_group_input = st.text_input("Enter new programme group", key="fix_new_group")
+            new_group = new_group_input.strip().title() if new_group_input else None
+        else:
+            new_group = selected_group
+
+        if st.button("Update Programme Group", key="update_programme_group_btn"):
+
+            if not programme_to_update:
+                st.error("Please select a programme.")
+            
+            elif not new_group:
+                st.error("Please select or enter a programme group.")
+            
+            elif new_group == current_group:
+                st.warning("Programme is already in this group.")
+            
+            else:
+                with sqlite3.connect(DB_PATH) as conn:
+                    cursor = conn.cursor()
+                    cursor.execute("""
+                        UPDATE programme_categories
+                        SET programme_group = ?
+                        WHERE programme_categories = ?
+                    """, (new_group, programme_to_update))
+
+                    conn.commit()
+
+                st.success(f"{programme_to_update} moved to '{new_group}'.")
                 ds.load_or_refresh_all()
+                st.rerun()
 
-                st.rerun()   # ← force immediate refresh  
+
+        # ============================================================
+        # ❌ DELETE PROGRAMME CATEGORY (SAFE)
+        # ============================================================
+        st.subheader("❌ Delete Programme Category")
+
+        st.warning(
+            "This permanently deletes a programme category. "
+            "It is only allowed if NO activity has been recorded against it."
+        )
+
+        with sqlite3.connect(DB_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT programme_categories
+                FROM programme_categories
+                ORDER BY programme_categories
+            """)
+            all_programmes = [row[0] for row in cursor.fetchall()]
+
+        programme_to_delete = st.selectbox(
+            "Select programme to delete",
+            all_programmes,
+            index=None,
+            key="delete_programme_select"
+        )
+
+        confirm_delete = st.text_input(
+            "Type DELETE to confirm",
+            key="delete_programme_confirm"
+        )
+
+        if st.button("❌ Delete Programme", key="delete_programme_btn"):
+
+            if confirm_delete.strip().upper() != "DELETE":
+                st.error("Please type DELETE to confirm.")
+            
+            elif not programme_to_delete:
+                st.error("Please select a programme.")
+            
+            else:
+                with sqlite3.connect(DB_PATH) as conn:
+                    cursor = conn.cursor()
+
+                    # Check if programme is used
+                    cursor.execute("""
+                        SELECT COUNT(*)
+                        FROM programme_activity
+                        WHERE programme_category = ?
+                    """, (programme_to_delete,))
+                    
+                    usage_count = cursor.fetchone()[0]
+
+                    if usage_count > 0:
+                        st.error(
+                            f"Cannot delete '{programme_to_delete}' — "
+                            f"it is used in programme activity ({usage_count} records)."
+                        )
+                    else:
+                        cursor.execute("""
+                            DELETE FROM programme_categories
+                            WHERE programme_categories = ?
+                        """, (programme_to_delete,))
+                        
+                        conn.commit()
+
+                        st.success(f"{programme_to_delete} deleted successfully.")
+                        ds.load_or_refresh_all()
+                        st.rerun()
 
     with st.expander("🚨 Data Entry Checklist"):
         

@@ -534,10 +534,10 @@ conn.commit()
 
 # conn.close()
 
-# cursor.execute("""
-# DELETE FROM programme_activity WHERE staff_member = 'Dr David Somerfield';
-# """)
-# conn.commit()
+cursor.execute("""
+DELETE FROM programme_activity WHERE programme_category = 'Community Mental Health';
+""")
+conn.commit()
 
 # with sqlite3.connect(DB_PATH) as conn:
 #     df = pd.read_sql("SELECT staff_member, hours_pw FROM staff_list", conn)
