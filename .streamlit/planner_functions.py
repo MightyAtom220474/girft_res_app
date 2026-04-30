@@ -667,3 +667,38 @@ def render_followup_warning(df_flags):
         })
 
         st.dataframe(display_df, use_container_width=True)
+
+def get_default_programme_map(staff_df):
+    return dict(
+        zip(
+            staff_df["staff_member"],
+            staff_df.get("default_programme", [None] * len(staff_df))
+        )
+    )
+
+def get_deployable_hours_map(staff_df):
+    df = staff_df.copy()
+
+    df["hours_pw"] = df["hours_pw"].fillna(37.5)
+    df["deploy_ratio"] = df["deploy_ratio"].fillna(1.0)
+
+    df["deployable_hours"] = df["hours_pw"] * df["deploy_ratio"]
+
+    return dict(zip(df["staff_member"], df["deployable_hours"]))
+
+def calculate_default_hours_for_staff(staff_df, staff_member, pct=0.8):
+    """
+    Looks up staff member and calculates default hours.
+    """
+
+    row = staff_df.loc[staff_df["staff_member"] == staff_member]
+
+    if row.empty:
+        return 0.0
+
+    hours_pw = float(row.iloc[0].get("hours_pw", 37.5) or 37.5)
+    deploy_ratio = float(row.iloc[0].get("deploy_ratio", 1.0) or 1.0)
+
+    deployable_hours = hours_pw * deploy_ratio
+
+    return round(deployable_hours * pct, 1)

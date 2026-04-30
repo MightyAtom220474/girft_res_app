@@ -3,90 +3,39 @@ import pandas as pd
 import numpy as np
 from datetime import date
 from dateutil.relativedelta import relativedelta
-#from datetime import date
-#import planner_functions as pf  # Your existing helper functions
 import sqlite3
 import streamlit as st
-
 import os
+from werkzeug.security import generate_password_hash
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "girft_capacity_planner.db")
 
 # --------------------------
-# Global dataframes
+# Global settings
 # --------------------------
-staff_list = None
-programme_list = None
-programme_categories = None
-programme_calendar_df = None
-leave_calendar_df = None
-onsite_calendar_df = None
-staff_leave_merged_df = None
-staff_prog_merged_df = None
-staff_prog_combined_df = None
-staff_prog_pivot_df = None
-staff_leave_df = None
-programme_names = None
-
 target_util_rate = 85
-default_password = 'Temporary123!'
+default_password = generate_password_hash("Temporary123!")
 
-# fix week_commencing dates due to legacy imports
+# --------------------------
+# Helpers
+# --------------------------
 def parse_week_commencing(df, col="week_commencing"):
-    """
-    Robustly parse a mixed-format week_commencing column into datetime:
-    - Handles existing datetimes
-    - Handles ISO strings (YYYY-MM-DD)
-    - Handles UK dd/mm/yyyy strings
-    - Leaves truly bad/blank values as NaT
-    """
     if col not in df.columns:
         return df
 
-    s = df[col]
-
-    # Normalise obvious junk to NaN
-    s = s.replace(["", " ", "None", None], np.nan)
-
-    # First pass: let pandas infer (handles datetimes + ISO strings)
+    s = df[col].replace(["", " ", "None", None], np.nan)
     parsed = pd.to_datetime(s, errors="coerce")
 
-    # Second pass: for anything still NaT but not blank, try dd/mm/yyyy explicitly
     mask = parsed.isna() & s.notna()
     if mask.any():
-        parsed_second = pd.to_datetime(
-            s[mask],
-            format="%d/%m/%Y",
-            dayfirst=True,
-            errors="coerce"
+        parsed.loc[mask] = pd.to_datetime(
+            s[mask], format="%d/%m/%Y", dayfirst=True, errors="coerce"
         )
-        parsed.loc[mask] = parsed_second
 
-    df[col] = parsed.dt.normalize()  # strip time to midnight
+    df[col] = parsed.dt.normalize()
     return df
 
-def refresh_leave_calendar():
-    with sqlite3.connect(DB_PATH) as conn:
-        st.session_state.leave_calendar_df = pd.read_sql("SELECT * FROM leave_calendar", conn)
-    st.session_state.leave_calendar_df["week_commencing"] = pd.to_datetime(
-        st.session_state.leave_calendar_df["week_commencing"], errors="coerce"
-    )
-def refresh_onsite_calendar():
-    with sqlite3.connect(DB_PATH) as conn:
-        st.session_state.onsite_calendar_df = pd.read_sql("""
-            SELECT staff_member, week_commencing, week_number, SUM(on_site_days) AS on_site_days
-            FROM on_site_calendar
-            GROUP BY staff_member, week_commencing, week_number
-        """, conn)
-    st.session_state.onsite_calendar_df["week_commencing"] = pd.to_datetime(
-        st.session_state.onsite_calendar_df["week_commencing"], errors="coerce"
-    )
-def refresh_programme_activity():
-    with sqlite3.connect(DB_PATH) as conn:
-        st.session_state.programme_calendar_df = pd.read_sql("SELECT * FROM programme_activity", conn)
-    st.session_state.programme_calendar_df["week_commencing"] = pd.to_datetime(
-        st.session_state.programme_calendar_df["week_commencing"], errors="coerce"
-    )
 
 def handle_trigger_reload():
     trigger = st.session_state.get("trigger_reload")
@@ -98,263 +47,168 @@ def handle_trigger_reload():
         refresh_programme_activity()
     elif trigger == "all":
         load_or_refresh_all()
+
     if trigger:
         del st.session_state["trigger_reload"]
 
-def load_or_refresh_all():
-    """
-    Loads all dataframes from SQLite and performs all downstream merges
-    and calculated fields—stored safely in st.session_state.
 
-    Key outputs in st.session_state:
-      - staff_list
-      - programme_list
-      - programme_calendar_df          (normalised: staff/week/programme_category/activity_value)
-      - leave_calendar_df
-      - onsite_calendar_df
-      - staff_names
-      - programme_names
-      - staff_week_capacity_df         (staff-week level with deploy_ratio applied)
-      - staff_prog_pivot_df            (weekly totals incl. total_non_deploy_hours, util_rate)
-    """
-
-    import os
-    import sqlite3
-    import pandas as pd
-    import numpy as np
-    import streamlit as st
-
-    # ---------------------------
-    # Resolve DB path safely
-    # ---------------------------
-    
-    # ---------------------------
-    # Helpers
-    # ---------------------------
-    def parse_week_commencing(df: pd.DataFrame, col: str = "week_commencing") -> pd.DataFrame:
-        """
-        Robustly parse mixed-format week_commencing into datetime:
-        - Handles existing datetimes
-        - Handles ISO strings (YYYY-MM-DD)
-        - Handles UK dd/mm/yyyy strings
-        - Leaves truly bad/blank values as NaT
-        """
-        if df is None or col not in df.columns:
-            return df
-
-        s = df[col].replace(["", " ", "None", None], np.nan)
-
-        parsed = pd.to_datetime(s, errors="coerce")  # ISO + already-datetime
-        mask = parsed.isna() & s.notna()
-        if mask.any():
-            parsed_second = pd.to_datetime(s[mask], format="%d/%m/%Y", errors="coerce",dayfirst=True,)
-            parsed.loc[mask] = parsed_second
-
-        df[col] = parsed.dt.normalize()
-        return df
-
-    # ---------------------------
-    # 1️⃣ Load base tables
-    # ---------------------------
+def refresh_leave_calendar():
     with sqlite3.connect(DB_PATH) as conn:
-        st.session_state.staff_list = pd.read_sql(
-            "SELECT * FROM staff_list WHERE archive_flag = 0",
-            conn
-        )
+        st.session_state.leave_calendar_df = pd.read_sql("SELECT * FROM leave_calendar", conn)
+    st.session_state.leave_calendar_df = parse_week_commencing(st.session_state.leave_calendar_df)
 
-        st.session_state.programme_list = pd.read_sql(
-            "SELECT * FROM programme_categories WHERE archive_flag = 0",
-            conn
-        )
 
-        # Normalised programme activity
-        st.session_state.programme_calendar_df = pd.read_sql(
-            "SELECT * FROM programme_activity",
-            conn
-        )
+def refresh_onsite_calendar():
+    with sqlite3.connect(DB_PATH) as conn:
+        st.session_state.onsite_calendar_df = pd.read_sql("""
+            SELECT staff_member, week_commencing, week_number, SUM(on_site_days) AS on_site_days
+            FROM on_site_calendar
+            GROUP BY staff_member, week_commencing, week_number
+        """, conn)
+    st.session_state.onsite_calendar_df = parse_week_commencing(st.session_state.onsite_calendar_df)
 
-        st.session_state.leave_calendar_df = pd.read_sql(
-            """SELECT 
-                    
-                    staff_member,
-                    week_commencing,
-                    week_number,
-                    SUM(days_leave) AS days_leave
 
-                FROM leave_calendar
+def refresh_programme_activity():
+    with sqlite3.connect(DB_PATH) as conn:
+        st.session_state.programme_calendar_df = pd.read_sql("SELECT * FROM programme_activity", conn)
+    st.session_state.programme_calendar_df = parse_week_commencing(st.session_state.programme_calendar_df)
 
-                GROUP BY 
-                    staff_member,
-                    week_commencing,
-                    week_number
-            """,
-            conn
-        )
+# --------------------------
+# MAIN LOAD FUNCTION
+# --------------------------
+def load_or_refresh_all():
 
-        st.session_state.onsite_calendar_df = pd.read_sql(
-            """SELECT 
-                    
-                    staff_member,
-                    week_commencing,
-                    week_number,
-                    SUM(on_site_days) AS on_site_days
+    with sqlite3.connect(DB_PATH) as conn:
 
-                FROM on_site_calendar
+        # ---------------------------
+        # Load tables
+        # ---------------------------
+        staff_list = pd.read_sql("SELECT * FROM staff_list WHERE archive_flag = 0", conn)
+        programme_list = pd.read_sql("SELECT * FROM programme_categories WHERE archive_flag = 0", conn)
+        programme_calendar_df = pd.read_sql("SELECT * FROM programme_activity", conn)
 
-                GROUP BY 
-                    staff_member,
-                    week_commencing,
-                    week_number
-            """,
-            conn
-        )
+        leave_calendar_df = pd.read_sql("""
+            SELECT staff_member, week_commencing, week_number,
+                   SUM(days_leave) AS days_leave
+            FROM leave_calendar
+            GROUP BY staff_member, week_commencing, week_number
+        """, conn)
+
+        onsite_calendar_df = pd.read_sql("""
+            SELECT staff_member, week_commencing, week_number,
+                   SUM(on_site_days) AS on_site_days
+            FROM on_site_calendar
+            GROUP BY staff_member, week_commencing, week_number
+        """, conn)
 
     # ---------------------------
-    # 2️⃣ Parse dates
+    # ✅ Ensure default_programme exists
     # ---------------------------
-    st.session_state.programme_calendar_df = parse_week_commencing(
-        st.session_state.programme_calendar_df, "week_commencing"
-    )
-    st.session_state.leave_calendar_df = parse_week_commencing(
-        st.session_state.leave_calendar_df, "week_commencing"
-    )
-    st.session_state.onsite_calendar_df = parse_week_commencing(
-        st.session_state.onsite_calendar_df, "week_commencing"
-    )
+    if "default_programme" not in staff_list.columns:
+        staff_list["default_programme"] = None
 
-    # Ensure week_number exists and is consistent (derive from week_commencing if needed)
-    for name in ["programme_calendar_df", "leave_calendar_df", "onsite_calendar_df"]:
-        df = st.session_state[name]
-        if df is None or df.empty:
-            continue
-
-        if "week_commencing" in df.columns:
-            # (redundant after parse_week_commencing, but keeps things robust)
-            df["week_commencing"] = pd.to_datetime(df["week_commencing"], errors="coerce")
-
-            if "week_number" not in df.columns or df["week_number"].isna().any():
-                df["week_number"] = df["week_commencing"].dt.isocalendar().week.astype("Int64")
-
-        st.session_state[name] = df
-
-    # ---------------------------
-    # 3️⃣ Lookup lists
-    # ---------------------------
-    st.session_state.staff_names = sorted(
-        st.session_state.staff_list["staff_member"].dropna().unique().tolist()
-    )
-
-    # Your programme list column is "programme_categories" (per your schema)
-    st.session_state.programme_names = sorted(
-        st.session_state.programme_list["programme_categories"].dropna().unique().tolist()
+    staff_list["default_programme"] = (
+        staff_list["default_programme"]
+        .astype(str)
+        .str.strip()
+        .replace({"": None, "nan": None})
     )
 
     # ---------------------------
-    # 4️⃣ Programme totals (ADAPTED for normalised data)
-    #    Compute staff-week totals directly (no wide columns / no merge back onto long df needed)
+    # ✅ Validate against programme list
     # ---------------------------
-    prog_df = st.session_state.programme_calendar_df.copy()
+    valid_programmes = set(
+        programme_list["programme_categories"]
+        .dropna()
+        .astype(str)
+        .str.strip()
+    )
 
-    # Guard: if programme activity table is empty, create an empty staff-week frame
-    if prog_df is None or prog_df.empty:
-        prog_staff_week = pd.DataFrame(columns=["staff_member", "week_commencing", "total_prog_hours"])
-    else:
-        # Only keep the columns we need (in case DB has extras)
-        needed = ["staff_member", "week_commencing", "activity_value"]
-        for c in needed:
-            if c not in prog_df.columns:
-                prog_df[c] = np.nan
-
-        prog_staff_week = (
-            prog_df
-            .groupby(["staff_member", "week_commencing"], as_index=False)
-            .agg(total_prog_hours=("activity_value", "sum"))
-        )
+    staff_list["default_programme"] = staff_list["default_programme"].apply(
+        lambda x: x if x in valid_programmes else None
+    )
 
     # ---------------------------
-    # 5️⃣ Leave totals at staff-week level
+    # Parse dates
     # ---------------------------
-    leave_df = st.session_state.leave_calendar_df.copy()
-
-    if leave_df is None or leave_df.empty:
-        leave_staff_week = pd.DataFrame(columns=["staff_member", "week_commencing", "total_leave_hours"])
-    else:
-        if "days_leave" not in leave_df.columns:
-            leave_df["days_leave"] = 0
-
-        leave_df["leave_hours"] = leave_df["days_leave"].fillna(0) * 7.5
-
-        leave_staff_week = (
-            leave_df
-            .groupby(["staff_member", "week_commencing"], as_index=False)
-            .agg(total_leave_hours=("leave_hours", "sum"))
-        )
+    programme_calendar_df = parse_week_commencing(programme_calendar_df)
+    leave_calendar_df = parse_week_commencing(leave_calendar_df)
+    onsite_calendar_df = parse_week_commencing(onsite_calendar_df)
 
     # ---------------------------
-    # 6️⃣ Build staff-week capacity table (deploy_ratio applied BEFORE pivot)
+    # Store base tables
     # ---------------------------
-    staff_base = st.session_state.staff_list[["staff_member", "hours_pw", "deploy_ratio"]].copy()
+    st.session_state.staff_list = staff_list
+    st.session_state.programme_list = programme_list
+    st.session_state.programme_calendar_df = programme_calendar_df
+    st.session_state.leave_calendar_df = leave_calendar_df
+    st.session_state.onsite_calendar_df = onsite_calendar_df
 
-    # Combine programme + leave at staff-week level
+    # ---------------------------
+    # Lookup lists
+    # ---------------------------
+    st.session_state.staff_names = sorted(staff_list["staff_member"].dropna().unique())
+    st.session_state.programme_names = sorted(programme_list["programme_categories"].dropna().unique())
+
+    # ---------------------------
+    # Programme totals
+    # ---------------------------
+    prog_staff_week = (
+        programme_calendar_df
+        .groupby(["staff_member", "week_commencing"], as_index=False)
+        .agg(total_prog_hours=("activity_value", "sum"))
+    )
+
+    # ---------------------------
+    # Leave totals
+    # ---------------------------
+    leave_calendar_df["leave_hours"] = leave_calendar_df["days_leave"].fillna(0) * 7.5
+
+    leave_staff_week = (
+        leave_calendar_df
+        .groupby(["staff_member", "week_commencing"], as_index=False)
+        .agg(total_leave_hours=("leave_hours", "sum"))
+    )
+
+    # ---------------------------
+    # Staff capacity
+    # ---------------------------
+    staff_base = staff_list[["staff_member", "hours_pw", "deploy_ratio"]].copy()
+
     staff_week = prog_staff_week.merge(
         leave_staff_week,
         on=["staff_member", "week_commencing"],
         how="outer"
-    )
-
-    # Join staff attributes
-    staff_week = staff_week.merge(
+    ).merge(
         staff_base,
         on="staff_member",
         how="left"
     )
 
-    # Fill nulls safely
-    staff_week["total_prog_hours"] = staff_week["total_prog_hours"].fillna(0.0)
-    staff_week["total_leave_hours"] = staff_week["total_leave_hours"].fillna(0.0)
+    staff_week = staff_week.fillna({
+        "total_prog_hours": 0,
+        "total_leave_hours": 0,
+        "deploy_ratio": 1.0,
+        "hours_pw": 37.5
+    })
 
-    # If deploy_ratio missing, assume fully deployable (1.0)
-    staff_week["deploy_ratio"] = staff_week["deploy_ratio"].fillna(1.0).astype(float)
-
-    # If hours_pw missing, fallback to 37.5
-    staff_week["hours_pw"] = staff_week["hours_pw"].fillna(37.5).astype(float)
-
-    # Contracted hours per staff-week
     staff_week["total_contr_hours"] = staff_week["hours_pw"]
-
-    # Available hours after leave (no negatives)
     staff_week["total_avail_hours"] = (
         staff_week["total_contr_hours"] - staff_week["total_leave_hours"]
     ).clip(lower=0)
 
-    # ✅ Non-deployable hours
     staff_week["total_non_deploy_hours"] = (
         staff_week["total_avail_hours"] * (1 - staff_week["deploy_ratio"])
     )
 
-    # ✅ Utilised hours = programme + non-deployable
     staff_week["total_util_hours"] = (
         staff_week["total_prog_hours"] + staff_week["total_non_deploy_hours"]
     )
 
-    # Store staff-week for debugging/other pages if you want it
     st.session_state.staff_week_capacity_df = staff_week
 
-    # ⭐ Neutralise specific staff capacity contribution
-    excluded_staff = ["Lizell Smit", "Andy Polychronakis","Heath McDonald"
-                      ,"Legacy Data","Gareth Price","Stephen Duncan"
-                      ,"Helen Embleton"]
-
-    mask = staff_week["staff_member"].isin(excluded_staff)
-
-    staff_week.loc[mask, [
-        "total_leave_hours",
-        "total_contr_hours",
-        "total_avail_hours"
-    ]] = 0.0
-
     # ---------------------------
-    # 7️⃣ Weekly pivot (sum across staff)
+    # Weekly summary
     # ---------------------------
     weekly = (
         staff_week
@@ -366,154 +220,18 @@ def load_or_refresh_all():
             total_prog_hours=("total_prog_hours", "sum"),
             total_non_deploy_hours=("total_non_deploy_hours", "sum"),
             total_util_hours=("total_util_hours", "sum"),
-            staff_count=("staff_member", "nunique"),
         )
         .sort_values("week_commencing")
-        .reset_index(drop=True)
     )
 
-    weekly_by_staff = (
-        staff_week
-        .groupby(["staff_member","week_commencing"], as_index=False)
-        .agg(
-            total_leave_hours=("total_leave_hours", "sum"),
-            total_contr_hours=("total_contr_hours", "sum"),
-            total_avail_hours=("total_avail_hours", "sum"),
-            total_prog_hours=("total_prog_hours", "sum"),
-            total_non_deploy_hours=("total_non_deploy_hours", "sum"),
-            total_util_hours=("total_util_hours", "sum"),
-            staff_count=("staff_member", "nunique"),
-        )
-        .sort_values("week_commencing")
-        .reset_index(drop=True)
-    )
-
-    # ✅ Util rate = (non-deploy + programme) / avail * 100
-    weekly["util_rate"] = 0.0
-    nonzero = weekly["total_avail_hours"] > 0
-    weekly.loc[nonzero, "util_rate"] = (
-        (weekly.loc[nonzero, "total_non_deploy_hours"] + weekly.loc[nonzero, "total_prog_hours"])
-        / weekly.loc[nonzero, "total_avail_hours"]
+    weekly["util_rate"] = (
+        (weekly["total_non_deploy_hours"] + weekly["total_prog_hours"])
+        / weekly["total_avail_hours"]
         * 100
-    )
+    ).fillna(0)
 
     weekly["util_target"] = target_util_rate
 
-    # Final store
     st.session_state.staff_prog_pivot_df = weekly
-
-    # ---------------------------
-    # 8️⃣ Monthly summary (month taken from week commencing Monday)
-    # ---------------------------
-    monthly = weekly.copy()
-
-    monthly_by_staff = weekly_by_staff.copy()
-    # Month from the Monday date
-    monthly["month"] = monthly["week_commencing"].dt.to_period("M").dt.to_timestamp()
-
-    monthly_by_staff["month"] = weekly_by_staff["week_commencing"].dt.to_period("M").dt.to_timestamp()
-
-    monthly = (
-        monthly
-        .groupby("month", as_index=False)
-        .agg(
-            total_leave_hours=("total_leave_hours", "sum"),
-            total_contr_hours=("total_contr_hours", "sum"),
-            total_avail_hours=("total_avail_hours", "sum"),
-            total_prog_hours=("total_prog_hours", "sum"),
-            total_non_deploy_hours=("total_non_deploy_hours", "sum"),
-            total_util_hours=("total_util_hours", "sum"),
-            staff_count=("staff_count", "mean"),  # average staff in month
-        )
-        .sort_values("month")
-    )
-
-    monthly_by_staff = (
-        monthly_by_staff
-        .groupby(["staff_member","month"], as_index=False)
-        .agg(
-            total_leave_hours=("total_leave_hours", "sum"),
-            total_contr_hours=("total_contr_hours", "sum"),
-            total_avail_hours=("total_avail_hours", "sum"),
-            total_prog_hours=("total_prog_hours", "sum"),
-            total_non_deploy_hours=("total_non_deploy_hours", "sum"),
-            total_util_hours=("total_util_hours", "sum"),
-            staff_count=("staff_count", "mean"),  # average staff in month
-        )
-        .sort_values("month")
-    )
-
-    st.session_state.staff_detail_monthly_df = monthly_by_staff
-
-    # Compute a rolling 12‑month window: 6 months back and 6 months ahead
-    today = date.today()
-    window_start = pd.Timestamp(today - relativedelta(months=6)).to_period("M").to_timestamp()
-    window_end = pd.Timestamp(today + relativedelta(months=6)).to_period("M").to_timestamp()
-    # Keep only months within this window
-    monthly = monthly.loc[
-        (monthly["month"] >= window_start) &
-        (monthly["month"] <= window_end)
-    ].sort_values("month")
-
-    # Load and prepare legacy file
-    legacy_monthly = pd.read_csv("legacy_capacity_monthly.csv")
-    # ✅ Correct parsing: day/month/year format
-    legacy_monthly["month"] = pd.to_datetime(
-        legacy_monthly["month"],
-        dayfirst=True,   # This fixes the issue
-        errors="coerce"
-    )
-    # Normalize to month start
-    legacy_monthly["month"] = legacy_monthly["month"].dt.to_period("M").dt.to_timestamp()
-
-    # Combine both
-    combined_monthly = pd.concat([legacy_monthly, monthly], ignore_index=True)
-    combined_monthly = (
-        combined_monthly
-        .drop_duplicates(subset=["month"], keep="last")
-        .sort_values("month")
-        .reset_index(drop=True)
-    )
-    # Calculate utilisation rate correctly
-    combined_monthly["util_rate"] = (
-        (combined_monthly["total_non_deploy_hours"] + combined_monthly["total_prog_hours"])
-        / combined_monthly["total_avail_hours"]
-        * 100
-    )
-    combined_monthly["util_target"] = target_util_rate
-    st.session_state.staff_prog_monthly_df = combined_monthly
-
-with sqlite3.connect(DB_PATH) as conn:
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT DISTINCT staff_member
-        FROM leave_calendar
-        ORDER BY staff_member
-    """)
-    available_staff = [row[0] for row in cursor.fetchall()]
-
-with sqlite3.connect(DB_PATH) as conn:
-    cur = conn.cursor()
-
-    if available_staff:
-        placeholders = ",".join("?" for _ in available_staff)
-        query = f"""
-        DELETE FROM on_site_calendar
-        WHERE staff_member NOT IN ({placeholders})
-        """
-        cur.execute(query, available_staff)
-    else:
-        cur.execute("DELETE FROM programme_activity")
-
-    conn.commit()
-
-with sqlite3.connect(DB_PATH) as conn:
-    cursor = conn.cursor()
-    cursor.execute("""
-        UPDATE programme_activity
-        SET programme_category = 'Core Fidelity and CRHT Work'
-        WHERE programme_category = 'Core Fidelity and CRHT work'
-
-    """)
 
 

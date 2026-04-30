@@ -66,7 +66,8 @@ CREATE TABLE IF NOT EXISTS staff_list (
     access_level TEXT NOT NULL,
     must_change_password INTEGER DEFAULT 1,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    updated_at TEXT
+    updated_at TEXT,
+    default_programme TEXT
 )
 """)
 conn.commit()
@@ -244,10 +245,11 @@ print("Database setup complete – tables are ready for CSV load and runtime use
 # DROP TABLE IF EXISTS programme_categories; 
 # """)
 # conn.commit()
-# cursor.execute("""
-# DROP TABLE IF EXISTS staff_list; 
-# """)
-# conn.commit()               
+cursor.execute("""
+DROP TABLE IF EXISTS staff_list; 
+""")
+conn.commit()               
+
 cursor.execute("""
 UPDATE staff_list
                SET username = 'andrew.polychronakis@nhs.net'

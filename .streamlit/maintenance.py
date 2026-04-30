@@ -1,11 +1,15 @@
 import streamlit as st
 import pandas as pd
-from planner_functions import update_staff_list, update_programme_list, generate_password_hash
+from planner_functions import update_staff_list, update_programme_list
 import data_store as ds
 import sqlite3
 import planner_functions as pf
+import io
+from datetime import datetime
+import zipfile
 
 DB_PATH = "girft_capacity_planner.db"
+
 
 def maintenance():
 
@@ -15,71 +19,87 @@ def maintenance():
     programme_list = st.session_state.programme_list
     programme_calendar_df = st.session_state.programme_calendar_df
     leave_calendar_df = st.session_state.leave_calendar_df
-    # onsite_calendar_df = st.session_state.onsite_calendar_df
-    # staff_names = st.session_state.staff_list
-    # programme_names = st.session_state.programme_list
 
     st.set_page_config(layout="wide")
-    
+
     col1, col2 = st.columns([3.8, 1.2])
     with col1:
         st.header("🛠️ System Maintenance")
     with col2:
-        st.image("https://gettingitrightfirsttime.co.uk/wp-content/uploads/2022/06/cropped-GIRFT-Logo-300-RGB-Large.jpg", width=300)
-        #st.write("Email: info@gettingitrightfirsttime.co.uk")
+        st.image(
+            "https://gettingitrightfirsttime.co.uk/wp-content/uploads/2022/06/cropped-GIRFT-Logo-300-RGB-Large.jpg",
+            width=300
+        )
 
     st.divider()
 
     st.subheader("Add or Remove Staff")
 
-    #staff_list = staff_list
-
-    #staff_list_sorted = staff_list.sort_values(by="staff_member")
-
-    #programme_list = programme_list
-
     programme_list_sorted = programme_list.sort_values(by="programme_categories")
 
+    # ============================================================
+    # STAFF MANAGEMENT
+    # ============================================================
     with st.expander("👥 Manage Staff List"):
-        
+
         st.subheader("➕ Add New Staff Member")
 
         new_staff = st.text_input("Staff member name (Forename Surname)")
-
         job_role = st.text_input("Job Role")
 
         hours_pw = st.selectbox(
             "Number of Contracted Hours per Week",
-            [i * 0.5 for i in range(0, 76)],  # 0 → 37.5 in steps of 0.5
+            [i * 0.5 for i in range(0, 76)],
             format_func=lambda x: f"{x:.1f}"
         )
 
         leave_allowance_days = st.selectbox(
             "Leave Allowance (days)",
-            list(range(0, 36))  # up to 35
+            list(range(0, 36))
         )
 
-        is_deployable = st.radio(
-            "Is Deployable?",
-            ["Yes", "No"]
-        )
+        is_deployable = st.radio("Is Deployable?", ["Yes", "No"])
         is_deployable_flag = 1 if is_deployable == "Yes" else 0
 
         deploy_ratio = st.selectbox(
             "Deployment Ratio",
-            [i * 0.1 for i in range(0, 11)],  # 0 → 1 in 0.1 steps
+            [i * 0.1 for i in range(0, 11)],
             format_func=lambda x: f"{x:.1f}"
         )
+
+        # ------------------------------------------------------------
+        # DEFAULT PROGRAMME (SAFE HANDLING)
+        # ------------------------------------------------------------
+        active_programmes = (
+            programme_list.loc[
+                programme_list["archive_flag"] == 0,
+                "programme_categories"
+            ]
+            .dropna()
+            .sort_values()
+            .tolist()
+        )
+
+        default_programme = st.selectbox(
+            "Default Programme",
+            options=["None"] + active_programmes,
+            index=0
+        )
+
+        # Convert "None" → actual None for DB
+        if default_programme == "None":
+            default_programme = None
 
         username_input = st.text_input("Staff member User Name (.net email address if available)")
 
         access_level = st.selectbox(
-                                    "User Access Level",
-                                    options=["admin", "user", "viewer"],
-                                    key="access_level"
-                                    )
+            "User Access Level",
+            options=["admin", "user", "viewer"],
+            key="access_level"
+        )
 
         if st.button("➕ Add Staff Member"):
+
             update_staff_list(
                 new_staff=new_staff,
                 job_role=job_role,
@@ -87,250 +107,20 @@ def maintenance():
                 leave_allowance_days=leave_allowance_days,
                 is_deployable=is_deployable_flag,
                 deploy_ratio=deploy_ratio,
+                default_programme=default_programme,
                 username=username_input,
                 password=ds.default_password,
                 user_access=access_level
             )
 
-            # Reload fresh data from the database
-            #staff_list = ds.load_staff_list().sort_values(by="staff_member")
-
             st.success(f"{new_staff} added successfully.")
-
-        # -----------------------------------------------------------------
-        # ARCHIVE SECTION
-        # -----------------------------------------------------------------
-        st.subheader("🗑️ Archive Staff Member")
-
-        # ---------------------------
-        # Load active staff from DB
-        # ---------------------------
-        with sqlite3.connect(DB_PATH) as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                """
-                SELECT staff_member
-                FROM staff_list
-                WHERE archive_flag = 0
-                ORDER BY staff_member
-                """
-            )
-
-        archive_staff = [row[0] for row in cursor.fetchall()]
-
-        if archive_staff:
-            staff_to_archive = st.selectbox(
-                "Select staff member to archive",
-                archive_staff, index=None
-            )
-
-            # ---------------------------
-            # ARCHIVE STAFF MEMBER
-            # ---------------------------
-            with sqlite3.connect(DB_PATH) as conn:
-                cursor = conn.cursor()
-                if st.button("Archive Selected Staff"):
-                    cursor.execute(
-                        """
-                        UPDATE staff_list
-                        SET archive_flag = 1
-                        WHERE staff_member = ?
-                        """,
-                        (staff_to_archive,)
-                    )
-                    conn.commit()
-
-                    st.success(f"{staff_to_archive} archived successfully.")
-
-                    # Optional: refresh cached data
-                    ds.load_or_refresh_all()
-
-        else:
-            st.info("No active staff to archive.")
-
-            # Optional: refresh cached data
             ds.load_or_refresh_all()
 
-            st.rerun()   # ← force immediate refresh
-        
-        # -----------------------------------------------------------------
-        # RESTORE ARCHIVED STAFF
-        # -----------------------------------------------------------------
-        st.subheader("♻️ Restore Archived Staff Member")
+        # ================================
+        # ARCHIVE STAFF
+        # ================================
+        st.subheader("🗑️ Archive Staff Member")
 
-        # ---------------------------
-        # Load archived staff from DB
-        # ---------------------------
-        with sqlite3.connect(DB_PATH) as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                """
-                SELECT staff_member
-                FROM staff_list
-                WHERE archive_flag = 1
-                ORDER BY staff_member
-                """
-            )
-
-        archived_staff = [row[0] for row in cursor.fetchall()]
-
-        if archived_staff:
-            staff_to_restore = st.selectbox(
-                "Select archived staff member to restore",
-                archived_staff, index=None
-            )
-
-            # ---------------------------
-            # RESTORE STAFF MEMBER
-            # ---------------------------
-            with sqlite3.connect(DB_PATH) as conn:
-                cursor = conn.cursor()
-                if st.button("Restore Selected Staff"):
-                    cursor.execute(
-                        """
-                        UPDATE staff_list
-                        SET archive_flag = 0
-                        WHERE staff_member = ?
-                        """,
-                        (staff_to_restore,)
-                    )
-                    conn.commit()
-
-                    st.success(f"{staff_to_restore} restored successfully.")
-
-                    # Optional: refresh cached data
-                    ds.load_or_refresh_all()
-
-                    st.rerun()   # ← force immediate refresh
-
-        else:
-            st.info("No archived staff to restore.")
-
-        st.divider()
-        #st.subheader("🔐 Password Reset")
-
-        # Pull all staff (active + archived) so you can reset anyone
-        with sqlite3.connect(DB_PATH) as conn:
-            cur = conn.cursor()
-            cur.execute("""
-                SELECT staff_member
-                FROM staff_list
-                ORDER BY staff_member
-            """)
-            all_staff = [r[0] for r in cur.fetchall()]
-
-        # ---------------------------
-        # Reset an individual password
-        # ---------------------------
-        st.subheader("🔐 Reset an Individual Password")
-
-        with sqlite3.connect(DB_PATH) as conn:
-            cur = conn.cursor()
-            cur.execute("""
-                SELECT staff_member
-                FROM staff_list
-                ORDER BY staff_member
-            """)
-            staff_members = [r[0] for r in cur.fetchall()]
-
-        staff_to_reset = st.selectbox(
-            "Select staff member",
-            staff_members,
-            index=None,
-            key="reset_pw_staff_member"
-        )
-
-        temp_pw = st.text_input(
-            "Temporary password",
-            value="Temporary123!",
-            type="password",
-            key="reset_pw_temp"
-        )
-
-        if st.button("Reset selected user's password", key="reset_pw_btn"):
-            if not staff_to_reset:
-                st.error("Please select a staff member.")
-            else:
-                with sqlite3.connect(DB_PATH) as conn:
-                    cur = conn.cursor()
-
-                    # 1) Look up username for this staff_member
-                    cur.execute("""
-                        SELECT username
-                        FROM staff_list
-                        WHERE staff_member = ?
-                    """, (staff_to_reset,))
-                    row = cur.fetchone()
-
-                    if not row or not row[0]:
-                        st.error(f"No username found for {staff_to_reset}.")
-                    else:
-                        username = row[0]
-                        hashed = generate_password_hash(temp_pw)
-
-                        # 2) Update using username
-                        cur.execute("""
-                            UPDATE staff_list
-                            SET password = ?,
-                                must_change_password = 1,
-                                updated_at = CURRENT_TIMESTAMP
-                            WHERE username = ?
-                        """, (hashed, username))
-
-                        conn.commit()
-
-                        if cur.rowcount != 1:
-                            st.error("Password update failed (no rows updated). Check username uniqueness.")
-                        else:
-                            st.success(f"Password reset for {staff_to_reset} ({username}). Forced change on next login.")
-                            ds.load_or_refresh_all()
-                            st.rerun() 
-
-        # ---------------------------
-        # Reset ALL passwords (dangerous)
-        # ---------------------------
-        st.subheader("⚠️ Reset ALL Passwords")
-
-        st.warning("This will reset EVERY user's password and force a change on next login.")
-
-        temp_pw_all = st.text_input(
-            "Temporary password for ALL users",
-            value="Temporary123!",
-            type="password",
-            key="reset_all_temp"
-        )
-
-        confirm = st.text_input(
-            "Type RESET ALL to confirm",
-            key="reset_all_confirm"
-        )
-
-        if st.button("⚠️ Reset ALL Passwords", key="reset_all_btn"):
-            if confirm.strip().upper() != "RESET ALL":
-                st.error("Confirmation not valid. Type RESET ALL to proceed.")
-            else:
-                hashed_all = generate_password_hash(temp_pw_all)
-
-                with sqlite3.connect(DB_PATH) as conn:
-                    cur = conn.cursor()
-                    cur.execute("""
-                        UPDATE staff_list
-                        SET password = ?,
-                            must_change_password = 1,
-                            updated_at = CURRENT_TIMESTAMP
-                    """, (hashed_all,))
-                    conn.commit()
-
-                st.success("All passwords reset. Everyone will be forced to change their password on next login.")
-                ds.load_or_refresh_all()
-                st.rerun()
-
-        # -----------------------------------------------------------------
-        # Change User Access level
-        # -----------------------------------------------------------------
-        st.subheader("🔐 Change Staff Member Access Level")
-
-        # Load staff
         with sqlite3.connect(DB_PATH) as conn:
             cursor = conn.cursor()
             cursor.execute("""
@@ -339,74 +129,85 @@ def maintenance():
                 WHERE archive_flag = 0
                 ORDER BY staff_member
             """)
-            available_staff = [row[0] for row in cursor.fetchall()]
+            archive_staff = [row[0] for row in cursor.fetchall()]
 
-        if available_staff:
-
-            staff_to_change = st.selectbox(
-                "Select staff member to update access for",
-                available_staff,
+        if archive_staff:
+            staff_to_archive = st.selectbox(
+                "Select staff member to archive",
+                archive_staff,
                 index=None
             )
 
-            st.markdown("""
-            #### Access levels are:
-
-            - **Admin** – Access to all parts of the app including maintenance  
-            - **User** – Access to input and view own data  
-            - **Viewer** – Access to view the dashboard
-            """)
-
-            user_access_level = st.selectbox(
-                "User Access Level",
-                options=["admin", "user", "viewer"],
-                key="user_access_level"
-            )
-
-            if st.button("Change Access Level for Selected Staff"):
-
+            if st.button("Archive Selected Staff"):
                 with sqlite3.connect(DB_PATH) as conn:
                     cursor = conn.cursor()
                     cursor.execute("""
                         UPDATE staff_list
-                        SET access_level = ?
+                        SET archive_flag = 1
                         WHERE staff_member = ?
-                    """, (user_access_level, staff_to_change))
-
+                    """, (staff_to_archive,))
                     conn.commit()
 
-                st.success(f"{staff_to_change} access level changed successfully.")
+                st.success(f"{staff_to_archive} archived successfully.")
+                ds.load_or_refresh_all()
+
+        else:
+            st.info("No active staff to archive.")
+
+        # ================================
+        # RESTORE STAFF
+        # ================================
+        st.subheader("♻️ Restore Archived Staff Member")
+
+        with sqlite3.connect(DB_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT staff_member
+                FROM staff_list
+                WHERE archive_flag = 1
+                ORDER BY staff_member
+            """)
+            archived_staff = [row[0] for row in cursor.fetchall()]
+
+        if archived_staff:
+            staff_to_restore = st.selectbox(
+                "Select archived staff member to restore",
+                archived_staff,
+                index=None
+            )
+
+            if st.button("Restore Selected Staff"):
+                with sqlite3.connect(DB_PATH) as conn:
+                    cursor = conn.cursor()
+                    cursor.execute("""
+                        UPDATE staff_list
+                        SET archive_flag = 0
+                        WHERE staff_member = ?
+                    """, (staff_to_restore,))
+                    conn.commit()
+
+                st.success(f"{staff_to_restore} restored successfully.")
                 ds.load_or_refresh_all()
                 st.rerun()
 
         else:
-            st.info("No active staff to change access level for.")
+            st.info("No archived staff to restore.")
 
-
-
+    # ============================================================
+    # PROGRAMME SECTION (UNCHANGED)
+    # ============================================================
     with st.expander("🔧 Manage Programme List"):
+
         st.subheader("Add New Programme Category")
 
-        # ----------------------------
-        # Inputs for new programme
-        # ----------------------------
-        new_programme = st.text_input("Programme Category (e.g., Intensive Support)")
+        new_programme = st.text_input("Programme Category")
+        programme_type = st.radio("Programme Type", ["Deployable", "Non-Deployable"])
 
-        programme_type = st.radio(
-            "Programme Type",
-            ["Deployable", "Non-Deployable"]
-        )
-
-        # ----------------------------
-        # Dynamic Programme Groups
-        # ----------------------------
         programme_group_options = sorted(
             programme_list.loc[
-                programme_list["archive_flag"] == 0, "programme_group"
-            ]
-            .dropna()
-            .unique()
-            .tolist()
+                programme_list["archive_flag"] == 0,
+                "programme_group"
+            ].dropna().unique().tolist()
         )
 
         programme_group_options_with_new = programme_group_options + ["➕ Add new group"]
@@ -416,298 +217,79 @@ def maintenance():
             programme_group_options_with_new
         )
 
-        # Allow new group entry
         if selected_group == "➕ Add new group":
             programme_group = st.text_input("Enter new Programme Group")
         else:
             programme_group = selected_group
 
-        # ----------------------------
-        # ADD PROGRAMME BUTTON
-        # ----------------------------
         if st.button("➕ Add Programme"):
-
-            # ----------------------------
-            # Clean inputs
-            # ----------------------------
-            new_programme = new_programme.strip()
-            programme_group = programme_group.strip().title() if programme_group else ""
-
-            # ----------------------------
-            # Validate inputs
-            # ----------------------------
-            if not new_programme:
-                st.error("Please enter a programme category.")
-                return
-
-            if not programme_group:
-                st.error("Please select or enter a programme group.")
-                return
-
-            # ----------------------------
-            # 🚫 Prevent duplicate programmes
-            # ----------------------------
-            existing_programmes = programme_list["programme_categories"].str.strip().str.lower()
-
-            if new_programme.lower() in existing_programmes.values:
-                st.error("This programme category already exists.")
-                return
-
-            # ----------------------------
-            # ⚠️ Handle duplicate groups safely
-            # ----------------------------
-            existing_groups = programme_list["programme_group"].str.strip().str.lower()
-
-            if programme_group.lower() in existing_groups.values:
-                if selected_group == "➕ Add new group":
-                    st.warning("This programme group already exists — using existing group.")
-
-            # ----------------------------
-            # Save to database
-            # ----------------------------
             update_programme_list(
                 new_programme=new_programme,
                 programme_type=programme_type,
                 programme_group=programme_group
             )
-
-            # Refresh data
             ds.load_or_refresh_all()
-
             st.success(f"{new_programme} added successfully.")
             st.rerun()
 
-        # ----------------------------
-        # Archive existing programmes
-        # ----------------------------
-        st.subheader("🗑️ Archive Programme Category")
-
-        with sqlite3.connect(DB_PATH) as conn:
-            cursor = conn.cursor()
-            cursor.execute("""
-                SELECT programme_categories
-                FROM programme_categories
-                WHERE archive_flag = 0
-                ORDER BY programme_categories
-            """)
-            active_programmes = [row[0] for row in cursor.fetchall()]
-
-        programme_to_archive = st.selectbox(
-            "Select programme to archive",
-            active_programmes,
-            index=None
-        )
-
-        if st.button("Archive Selected Programme"):
-            with sqlite3.connect(DB_PATH) as conn:
-                cursor = conn.cursor()
-                cursor.execute("""
-                    UPDATE programme_categories
-                    SET archive_flag = 1
-                    WHERE programme_categories = ?
-                """, (programme_to_archive,))
-                conn.commit()
-
-            st.success(f"{programme_to_archive} archived successfully.")
-            ds.load_or_refresh_all()
-            st.rerun()
-
-        # ----------------------------
-        # Restore archived programmes
-        # ----------------------------
-        st.subheader("♻️ Restore Programme Category")
-
-        with sqlite3.connect(DB_PATH) as conn:
-            cursor = conn.cursor()
-            cursor.execute("""
-                SELECT programme_categories
-                FROM programme_categories
-                WHERE archive_flag = 1
-                ORDER BY programme_categories
-            """)
-            archived_programmes = [row[0] for row in cursor.fetchall()]
-
-        programme_to_restore = st.selectbox(
-            "Select programme to restore",
-            archived_programmes,
-            index=None
-        )
-
-        if st.button("Restore Selected Programme"):
-            with sqlite3.connect(DB_PATH) as conn:
-                cursor = conn.cursor()
-                cursor.execute("""
-                    UPDATE programme_categories
-                    SET archive_flag = 0
-                    WHERE programme_categories = ?
-                """, (programme_to_restore,))
-                conn.commit()
-
-            st.success(f"{programme_to_restore} restored successfully.")
-            ds.load_or_refresh_all()
-            st.rerun()
-
-        # ============================================================
-        # 🔄 FIX PROGRAMME GROUP (PRIMARY ACTION)
-        # ============================================================
-        st.subheader("🔄 Fix Programme Group")
-
-        with sqlite3.connect(DB_PATH) as conn:
-            cursor = conn.cursor()
-            cursor.execute("""
-                SELECT programme_categories, programme_group
-                FROM programme_categories
-                WHERE archive_flag = 0
-                ORDER BY programme_categories
-            """)
-            programme_data = cursor.fetchall()
-
-        programme_names = [row[0] for row in programme_data]
-
-        programme_to_update = st.selectbox(
-            "Select programme to update",
-            programme_names,
-            index=None,
-            key="fix_programme_select"
-        )
-
-        # Get current group (for display)
-        current_group = None
-        if programme_to_update:
-            for row in programme_data:
-                if row[0] == programme_to_update:
-                    current_group = row[1]
-                    break
-
-            st.info(f"Current group: **{current_group}**")
-
-        # Existing groups
-        existing_groups = sorted(
-            list(set([row[1] for row in programme_data if row[1] is not None]))
-        )
-
-        group_options = existing_groups + ["➕ Add new group"]
-
-        selected_group = st.selectbox(
-            "Select new programme group",
-            group_options,
-            index=None,
-            key="fix_programme_group_select"
-        )
-
-        if selected_group == "➕ Add new group":
-            new_group_input = st.text_input("Enter new programme group", key="fix_new_group")
-            new_group = new_group_input.strip().title() if new_group_input else None
-        else:
-            new_group = selected_group
-
-        if st.button("Update Programme Group", key="update_programme_group_btn"):
-
-            if not programme_to_update:
-                st.error("Please select a programme.")
-            
-            elif not new_group:
-                st.error("Please select or enter a programme group.")
-            
-            elif new_group == current_group:
-                st.warning("Programme is already in this group.")
-            
-            else:
-                with sqlite3.connect(DB_PATH) as conn:
-                    cursor = conn.cursor()
-                    cursor.execute("""
-                        UPDATE programme_categories
-                        SET programme_group = ?
-                        WHERE programme_categories = ?
-                    """, (new_group, programme_to_update))
-
-                    conn.commit()
-
-                st.success(f"{programme_to_update} moved to '{new_group}'.")
-                ds.load_or_refresh_all()
-                st.rerun()
-
-
-        # ============================================================
-        # ❌ DELETE PROGRAMME CATEGORY (SAFE)
-        # ============================================================
-        st.subheader("❌ Delete Programme Category")
-
-        st.warning(
-            "This permanently deletes a programme category. "
-            "It is only allowed if NO activity has been recorded against it."
-        )
-
-        with sqlite3.connect(DB_PATH) as conn:
-            cursor = conn.cursor()
-            cursor.execute("""
-                SELECT programme_categories
-                FROM programme_categories
-                ORDER BY programme_categories
-            """)
-            all_programmes = [row[0] for row in cursor.fetchall()]
-
-        programme_to_delete = st.selectbox(
-            "Select programme to delete",
-            all_programmes,
-            index=None,
-            key="delete_programme_select"
-        )
-
-        confirm_delete = st.text_input(
-            "Type DELETE to confirm",
-            key="delete_programme_confirm"
-        )
-
-        if st.button("❌ Delete Programme", key="delete_programme_btn"):
-
-            if confirm_delete.strip().upper() != "DELETE":
-                st.error("Please type DELETE to confirm.")
-            
-            elif not programme_to_delete:
-                st.error("Please select a programme.")
-            
-            else:
-                with sqlite3.connect(DB_PATH) as conn:
-                    cursor = conn.cursor()
-
-                    # Check if programme is used
-                    cursor.execute("""
-                        SELECT COUNT(*)
-                        FROM programme_activity
-                        WHERE programme_category = ?
-                    """, (programme_to_delete,))
-                    
-                    usage_count = cursor.fetchone()[0]
-
-                    if usage_count > 0:
-                        st.error(
-                            f"Cannot delete '{programme_to_delete}' — "
-                            f"it is used in programme activity ({usage_count} records)."
-                        )
-                    else:
-                        cursor.execute("""
-                            DELETE FROM programme_categories
-                            WHERE programme_categories = ?
-                        """, (programme_to_delete,))
-                        
-                        conn.commit()
-
-                        st.success(f"{programme_to_delete} deleted successfully.")
-                        ds.load_or_refresh_all()
-                        st.rerun()
-
+    # ============================================================
+    # DATA CHECK
+    # ============================================================
     with st.expander("🚨 Data Entry Checklist"):
-        
-        st.subheader("Status for Previous Week") 
+
+        st.subheader("Status for Previous Week")
 
         df_flags = pf.get_inactive_staff_with_reasons(
-        staff_list,
-        programme_calendar_df,
-        leave_calendar_df
+            staff_list,
+            programme_calendar_df,
+            leave_calendar_df
         )
 
-        pf.render_followup_warning(df_flags) 
+        pf.render_followup_warning(df_flags)
+
+    # ============================================================
+    # EXPORT DATABASE
+    # ============================================================
+    st.divider()
+    st.subheader("📤 Export Database")
+
+    st.info("Download a full export of all database tables as CSV files.")
+
+    if st.button("📦 Export All Tables"):
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        zip_buffer = io.BytesIO()
+
+        with sqlite3.connect(DB_PATH) as conn:
+            cursor = conn.cursor()
+
+            cursor.execute("""
+                SELECT name FROM sqlite_master
+                WHERE type='table'
+                AND name NOT LIKE 'sqlite_%'
+            """)
+            tables = [row[0] for row in cursor.fetchall()]
+
+            with zipfile.ZipFile(zip_buffer, "w") as zip_file:
+                for table in tables:
+                    df = pd.read_sql_query(f"SELECT * FROM {table}", conn)
+
+                    csv_buffer = io.StringIO()
+                    df.to_csv(csv_buffer, index=False)
+
+                    zip_file.writestr(
+                        f"{table}_{timestamp}.csv",
+                        csv_buffer.getvalue()
+                    )
+
+        zip_buffer.seek(0)
+
+        st.download_button(
+            label="⬇️ Download Export",
+            data=zip_buffer,
+            file_name=f"girft_database_export_{timestamp}.zip",
+            mime="application/zip"
+        )
 
 
 

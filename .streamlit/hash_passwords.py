@@ -6,9 +6,27 @@ from werkzeug.security import generate_password_hash
 import data_store as ds
 import sqlite3
 
+DB_PATH = "girft_capacity_planner.db"
+
+temp_password = "Temporary123!"
+hashed_pw = generate_password_hash(temp_password)
+
+with sqlite3.connect(DB_PATH) as conn:
+    cur = conn.cursor()
+
+    cur.execute("""
+        UPDATE staff_list
+        SET password = ?,
+            must_change_password = 1
+    """, (hashed_pw,))
+
+    conn.commit()
+
+print("✅ All staff passwords reset and flagged for change")
+
 ds.load_or_refresh_all()
 temp_password = "Temporary123!"
-ds.staff_list["password"] = ds.staff_list["username"].apply(
+ds.staff_list["password"] = temp_password.apply( #ds.staff_list["username"].apply(
     lambda u: generate_password_hash(temp_password)
 )
 ds.staff_list["must_change_password"] = True
@@ -20,7 +38,7 @@ ds.staff_list.to_csv("staff_list.csv", index=False)
 
 DB_PATH = "girft_capacity_planner.db"
 
-temp_password = "Temporary123!"
+#temp_password = "Temporary123!"
 
 with sqlite3.connect(DB_PATH) as conn:
     cur = conn.cursor()
