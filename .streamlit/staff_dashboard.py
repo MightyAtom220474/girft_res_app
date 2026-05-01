@@ -6,9 +6,10 @@ import plotly.graph_objects as go
 #import numpy as np
 # bring in data from data store
 import data_store as ds
+import planner_functions as pf
 
 # Check if another page signaled a data refresh
-ds.handle_trigger_reload()
+pf.handle_trigger_reload()
 
 # Normal initial load (first run)
 if "staff_detail_monthly_df" not in st.session_state:
@@ -38,7 +39,7 @@ def staff_dashboard():
     st.divider()
 
     # Handle any cross‑page reload triggers first
-    ds.handle_trigger_reload()
+    pf.handle_trigger_reload()
     # Ensure everything is loaded (initial only)
     if "staff_detail_monthly_df" not in st.session_state:
         ds.load_or_refresh_all()

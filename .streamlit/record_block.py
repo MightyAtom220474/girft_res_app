@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import planner_functions as pf
 import data_store as ds
-ds.handle_trigger_reload() # force reloading of any saved data
+pf.handle_trigger_reload() # force reloading of any saved data
 from datetime import date, timedelta
 import time
 

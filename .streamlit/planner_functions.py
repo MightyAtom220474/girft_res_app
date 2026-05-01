@@ -10,7 +10,8 @@ from werkzeug.security import generate_password_hash
 #import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 #import numpy as np
-from data_store import DB_PATH
+from config import DB_PATH
+import data_store as ds
 
 num_weeks = 52
 year = 2025   # you can make this a user input if you want
@@ -668,29 +669,56 @@ def render_followup_warning(df_flags):
 
         st.dataframe(display_df, use_container_width=True)
 
-def get_default_programme_map(staff_df):
-    return dict(
-        zip(
-            staff_df["staff_member"],
-            staff_df.get("default_programme", [None] * len(staff_df))
-        )
+# ============================
+# DEFAULT PROGRAMME HELPERS
+# ============================
+
+def clean_default_programme_column(staff_df, programme_df):
+    """
+    Ensures default_programme exists, is cleaned, and valid.
+    """
+    df = staff_df.copy()
+
+    if "default_programme" not in df.columns:
+        df["default_programme"] = None
+
+    df["default_programme"] = (
+        df["default_programme"]
+        .astype(str)
+        .str.strip()
+        .replace({"": None, "nan": None})
     )
+
+    valid_programmes = set(
+        programme_df["programme_categories"]
+        .dropna()
+        .astype(str)
+        .str.strip()
+    )
+
+    df["default_programme"] = df["default_programme"].apply(
+        lambda x: x if x in valid_programmes else None
+    )
+
+    return df
+
+
+def get_default_programme_map(staff_df):
+    return dict(zip(staff_df["staff_member"], staff_df["default_programme"]))
+
 
 def get_deployable_hours_map(staff_df):
     df = staff_df.copy()
-
     df["hours_pw"] = df["hours_pw"].fillna(37.5)
     df["deploy_ratio"] = df["deploy_ratio"].fillna(1.0)
-
     df["deployable_hours"] = df["hours_pw"] * df["deploy_ratio"]
-
     return dict(zip(df["staff_member"], df["deployable_hours"]))
 
-def calculate_default_hours_for_staff(staff_df, staff_member, pct=0.8):
-    """
-    Looks up staff member and calculates default hours.
-    """
 
+def calculate_default_hours_for_staff(staff_df, staff_member, pct=1.0):
+    """
+    Calculates default hours based on deployable capacity.
+    """
     row = staff_df.loc[staff_df["staff_member"] == staff_member]
 
     if row.empty:
@@ -702,3 +730,266 @@ def calculate_default_hours_for_staff(staff_df, staff_member, pct=0.8):
     deployable_hours = hours_pw * deploy_ratio
 
     return round(deployable_hours * pct, 1)
+
+
+# ============================
+# CAPACITY CALCULATIONS
+# ============================
+
+def build_staff_week_capacity(prog_df, leave_df, staff_df):
+    """
+    Builds staff-week capacity table.
+    """
+    prog_staff_week = (
+        prog_df
+        .groupby(["staff_member", "week_commencing"], as_index=False)
+        .agg(total_prog_hours=("activity_value", "sum"))
+    )
+
+    leave_df = leave_df.copy()
+    leave_df["leave_hours"] = leave_df["days_leave"].fillna(0) * 7.5
+
+    leave_staff_week = (
+        leave_df
+        .groupby(["staff_member", "week_commencing"], as_index=False)
+        .agg(total_leave_hours=("leave_hours", "sum"))
+    )
+
+    staff_base = staff_df[["staff_member", "hours_pw", "deploy_ratio"]].copy()
+
+    staff_week = prog_staff_week.merge(
+        leave_staff_week,
+        on=["staff_member", "week_commencing"],
+        how="outer"
+    ).merge(
+        staff_base,
+        on="staff_member",
+        how="left"
+    )
+
+    staff_week = staff_week.fillna({
+        "total_prog_hours": 0,
+        "total_leave_hours": 0,
+        "deploy_ratio": 1.0,
+        "hours_pw": 37.5
+    })
+
+    staff_week["total_contr_hours"] = staff_week["hours_pw"]
+    staff_week["total_avail_hours"] = (
+        staff_week["total_contr_hours"] - staff_week["total_leave_hours"]
+    ).clip(lower=0)
+
+    staff_week["total_non_deploy_hours"] = (
+        staff_week["total_avail_hours"] * (1 - staff_week["deploy_ratio"])
+    )
+
+    staff_week["total_util_hours"] = (
+        staff_week["total_prog_hours"] + staff_week["total_non_deploy_hours"]
+    )
+
+    return staff_week
+
+
+def build_weekly_summary(staff_week, target_util_rate):
+    weekly = (
+        staff_week
+        .groupby("week_commencing", as_index=False)
+        .agg(
+            total_leave_hours=("total_leave_hours", "sum"),
+            total_contr_hours=("total_contr_hours", "sum"),
+            total_avail_hours=("total_avail_hours", "sum"),
+            total_prog_hours=("total_prog_hours", "sum"),
+            total_non_deploy_hours=("total_non_deploy_hours", "sum"),
+            total_util_hours=("total_util_hours", "sum"),
+        )
+        .sort_values("week_commencing")
+    )
+
+    weekly["util_rate"] = (
+        (weekly["total_non_deploy_hours"] + weekly["total_prog_hours"])
+        / weekly["total_avail_hours"]
+        * 100
+    ).fillna(0)
+
+    weekly["util_target"] = target_util_rate
+
+    return weekly
+
+
+def build_monthly_summary(staff_week, weekly):
+    weekly_by_staff = (
+        staff_week
+        .groupby(["staff_member","week_commencing"], as_index=False)
+        .sum(numeric_only=True)
+    )
+
+    monthly = weekly.copy()
+    monthly["month"] = monthly["week_commencing"].dt.to_period("M").dt.to_timestamp()
+
+    monthly_by_staff = weekly_by_staff.copy()
+    monthly_by_staff["month"] = monthly_by_staff["week_commencing"].dt.to_period("M").dt.to_timestamp()
+
+    monthly_by_staff = (
+        monthly_by_staff
+        .groupby(["staff_member","month"], as_index=False)
+        .sum(numeric_only=True)
+    )
+
+    return monthly_by_staff
+
+def handle_trigger_reload():
+    """
+    Centralised reload handler for Streamlit session state triggers.
+    Calls appropriate data refresh functions in data_store.
+    """
+
+    trigger = st.session_state.get("trigger_reload")
+
+    if not trigger:
+        return
+
+    if trigger == "leave":
+        ds.refresh_leave_calendar()
+
+    elif trigger == "onsite":
+        ds.refresh_onsite_calendar()
+
+    elif trigger == "programme":
+        ds.refresh_programme_activity()
+
+    elif trigger == "all":
+        ds.load_or_refresh_all()
+
+    # Clear trigger after handling
+    del st.session_state["trigger_reload"]
+
+def reset_all_passwords(temp_password="Temporary123!", only_if_null=False):
+    """
+    Resets passwords for staff in the database.
+
+    Args:
+        temp_password (str): password to apply
+        only_if_null (bool): if True, only reset users with no password set
+    """
+
+    hashed_pw = generate_password_hash(temp_password)
+
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.cursor()
+
+        if only_if_null:
+            cursor.execute("""
+                UPDATE staff_list
+                SET password = ?, must_change_password = 1
+                WHERE password IS NULL OR password = ''
+            """, (hashed_pw,))
+        else:
+            cursor.execute("""
+                UPDATE staff_list
+                SET password = ?, must_change_password = 1
+            """, (hashed_pw,))
+
+        conn.commit()
+
+    return True
+
+def reset_passwords_from_dataframe(staff_df, temp_password="Temporary123!"):
+    hashed_pw = generate_password_hash(temp_password)
+
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.cursor()
+
+        for _, row in staff_df.iterrows():
+            cursor.execute("""
+                UPDATE staff_list
+                SET password = ?, must_change_password = 1
+                WHERE staff_member = ?
+            """, (hashed_pw, row["staff_member"]))
+
+        conn.commit()
+
+def build_monthly_capacity_df(staff_week_df, target_util_rate=85):
+    """
+    Builds monthly capacity summary from staff_week_capacity_df
+    """
+
+    if staff_week_df is None or staff_week_df.empty:
+        return pd.DataFrame(), pd.DataFrame()
+
+    # ---------------------------
+    # Weekly base
+    # ---------------------------
+    weekly = (
+        staff_week_df
+        .groupby("week_commencing", as_index=False)
+        .agg(
+            total_leave_hours=("total_leave_hours", "sum"),
+            total_contr_hours=("total_contr_hours", "sum"),
+            total_avail_hours=("total_avail_hours", "sum"),
+            total_prog_hours=("total_prog_hours", "sum"),
+            total_non_deploy_hours=("total_non_deploy_hours", "sum"),
+            total_util_hours=("total_util_hours", "sum"),
+            staff_count=("staff_member", "nunique"),
+        )
+        .sort_values("week_commencing")
+    )
+
+    weekly["util_rate"] = (
+        (weekly["total_non_deploy_hours"] + weekly["total_prog_hours"])
+        / weekly["total_avail_hours"]
+        * 100
+    ).fillna(0)
+
+    weekly["util_target"] = target_util_rate
+
+    # ---------------------------
+    # Monthly (overall)
+    # ---------------------------
+    weekly["month"] = weekly["week_commencing"].dt.to_period("M").dt.to_timestamp()
+
+    monthly = (
+        weekly
+        .groupby("month", as_index=False)
+        .agg(
+            total_leave_hours=("total_leave_hours", "sum"),
+            total_contr_hours=("total_contr_hours", "sum"),
+            total_avail_hours=("total_avail_hours", "sum"),
+            total_prog_hours=("total_prog_hours", "sum"),
+            total_non_deploy_hours=("total_non_deploy_hours", "sum"),
+            total_util_hours=("total_util_hours", "sum"),
+            staff_count=("staff_count", "mean"),
+        )
+        .sort_values("month")
+    )
+
+    # ---------------------------
+    # Monthly by staff
+    # ---------------------------
+    staff_week_df["month"] = staff_week_df["week_commencing"].dt.to_period("M").dt.to_timestamp()
+
+    monthly_by_staff = (
+        staff_week_df
+        .groupby(["staff_member", "month"], as_index=False)
+        .agg(
+            total_leave_hours=("total_leave_hours", "sum"),
+            total_contr_hours=("total_contr_hours", "sum"),
+            total_avail_hours=("total_avail_hours", "sum"),
+            total_prog_hours=("total_prog_hours", "sum"),
+            total_non_deploy_hours=("total_non_deploy_hours", "sum"),
+            total_util_hours=("total_util_hours", "sum"),
+        )
+        .sort_values("month")
+    )
+
+    # ---------------------------
+    # Util %
+    # ---------------------------
+    monthly["util_rate"] = (
+        (monthly["total_non_deploy_hours"] + monthly["total_prog_hours"])
+        / monthly["total_avail_hours"]
+        * 100
+    ).fillna(0)
+
+    monthly["util_target"] = target_util_rate
+
+    return monthly, monthly_by_staff

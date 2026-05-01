@@ -2,13 +2,15 @@ import streamlit as st
 import pandas as pd
 import planner_functions as pf
 import data_store as ds
-ds.handle_trigger_reload()
+
 
 from datetime import date, timedelta
 import time
 
 today = date.today()
 current_monday = today - timedelta(days=today.weekday() + 7)
+
+pf.handle_trigger_reload()
 
 
 def planner():

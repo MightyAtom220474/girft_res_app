@@ -3,7 +3,7 @@ import pandas as pd
 import planner_functions as pf
 import data_store as ds
 from data_store import DB_PATH
-ds.handle_trigger_reload() # force reloading of any saved data
+pf.handle_trigger_reload() # force reloading of any saved data
 from datetime import date, timedelta
 import time
 import sqlite3
@@ -31,7 +31,7 @@ def leave():
         ds.load_or_refresh_all()
         
     staff_list = st.session_state.staff_list
-    staff_names = st.session_state.staff_list
+    staff_names = st.session_state.staff_names
 
     st.set_page_config(layout="wide")
 
