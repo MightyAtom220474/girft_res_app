@@ -24,6 +24,7 @@ onsite_calendar_df = None
 staff_leave_merged_df = None
 staff_prog_merged_df = None
 staff_prog_combined_df = None
+staff_detail_monthly_df = None
 staff_prog_pivot_df = None
 staff_leave_df = None
 programme_names = None
