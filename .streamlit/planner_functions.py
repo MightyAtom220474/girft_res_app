@@ -776,7 +776,7 @@ def build_staff_week_capacity(prog_df, leave_df, staff_df):
 
     staff_week["total_contr_hours"] = staff_week["hours_pw"]
     staff_week["total_avail_hours"] = (
-        staff_week["total_contr_hours"] - staff_week["total_leave_hours"]
+        (staff_week["total_contr_hours"] - staff_week["total_leave_hours"]) * (1 - staff_week["deploy_ratio"])
     ).clip(lower=0)
 
     staff_week["total_non_deploy_hours"] = (
@@ -991,5 +991,20 @@ def build_monthly_capacity_df(staff_week_df, target_util_rate=85):
     ).fillna(0)
 
     monthly["util_target"] = target_util_rate
+
+    # ---------------------------
+    # Filter to latest 12 months
+    # ---------------------------
+    latest_month = monthly["month"].max()
+    start_month = latest_month - pd.DateOffset(months=11)
+    year_month = '2025-01-01'
+
+    monthly = monthly[
+        monthly["month"].between(year_month, latest_month)
+    ]
+
+    monthly_by_staff = monthly_by_staff[
+        monthly_by_staff["month"].between(start_month, latest_month)
+    ]
 
     return monthly, monthly_by_staff

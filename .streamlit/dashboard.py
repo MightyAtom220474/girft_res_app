@@ -114,7 +114,7 @@ def dashboard():
         go.Scatter(
             x=dfm["month_label"],
             y=dfm["total_avail_hours"],
-            name="Actual Capacity (Hours)",
+            name="Deployable Capacity (Hours)",
             mode="lines",
             line=dict(color="yellow"),
             yaxis="y1"
@@ -126,7 +126,7 @@ def dashboard():
         go.Scatter(
             x=dfm["month_label"],
             y=dfm["total_contr_hours"],
-            name="Total Capacity (Hours)",
+            name="Establishment (Hours)",
             mode="lines",
             line=dict(color="limegreen"),
             yaxis="y1"
