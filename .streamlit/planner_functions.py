@@ -80,6 +80,7 @@ def update_staff_list(
     leave_allowance_days=None,
     is_deployable=None,
     deploy_ratio=None,
+    default_programme=None,
     username=None,
     password=None,
     user_access=None
@@ -101,6 +102,7 @@ def update_staff_list(
                         leave_allowance_days,
                         is_deployable,
                         deploy_ratio,
+                        default_programme
                         username,
                         password,
                         access_level,
@@ -114,6 +116,7 @@ def update_staff_list(
                         leave_allowance_days = excluded.leave_allowance_days,
                         is_deployable = excluded.is_deployable,
                         deploy_ratio = excluded.deploy_ratio,
+                        default_programme = excluded.default_programme,
                         username = excluded.username,
                         password = excluded.password,
                         access_level = excluded.access_level
@@ -124,6 +127,7 @@ def update_staff_list(
                         leave_allowance_days,
                         int(is_deployable) if is_deployable is not None else None,
                         deploy_ratio,
+                        default_programme,
                         username,
                         password,
                         user_access
@@ -407,24 +411,70 @@ def create_52week_heatmap(
     )
 
     # Highlight current week column fully behind heatmap
+    shapes = []
+
+    # Current week highlight
     if highlight_current_week and current_idx is not None:
-        fig.update_layout(
-            shapes=[
-                dict(
-                    type="rect",
-                    x0=current_idx - 0.5,
-                    x1=current_idx + 0.5,
-                    y0=-0.5,           
-                    y1=len(y)-0.5,     
-                    xref="x",
-                    yref="y",          
-                    fillcolor="black",    
-                    opacity=0.3,           
-                    line_width=5,        
-                    layer="above",      
-                )
-            ]
+        shapes.append(
+            dict(
+                type="rect",
+                x0=current_idx - 0.5,
+                x1=current_idx + 0.5,
+                y0=-0.5,
+                y1=len(y)-0.5,
+                xref="x",
+                yref="y",
+                fillcolor="black",
+                opacity=0.3,
+                line_width=5,
+                layer="above",
+            )
         )
+
+    # Subtle horizontal row separators
+    for i in range(1, len(y)):
+        shapes.append(
+            dict(
+                type="line",
+                x0=-0.5,
+                x1=len(x_vals) - 0.5,
+                y0=i - 0.5,
+                y1=i - 0.5,
+                xref="x",
+                yref="y",
+                line=dict(
+                    color="rgba(120,120,120,0.25)",
+                    width=0.8
+                ),
+                layer="above"
+            )
+        )
+
+    fig.update_layout(shapes=shapes)
+
+    row_lines = []
+
+    for i in range(1, len(y)):
+        row_lines.append(
+            dict(
+                type="line",
+                x0=-0.5,
+                x1=len(x_vals) - 0.5,
+                y0=i - 0.5,
+                y1=i - 0.5,
+                xref="x",
+                yref="y",
+                line=dict(
+                    color="rgba(120,120,120,0.25)",
+                    width=0.8
+                ),
+                layer="above"
+            )
+        )
+
+    # Preserve existing shapes if present
+    existing_shapes = list(fig.layout.shapes) if fig.layout.shapes else []
+    fig.update_layout(shapes=existing_shapes + row_lines)
 
     return fig
 
@@ -849,13 +899,13 @@ def handle_trigger_reload():
         return
 
     if trigger == "leave":
-        ds.refresh_leave_calendar()
+        refresh_leave_calendar()
 
     elif trigger == "onsite":
-        ds.refresh_onsite_calendar()
+        refresh_onsite_calendar()
 
     elif trigger == "programme":
-        ds.refresh_programme_activity()
+        refresh_programme_activity()
 
     elif trigger == "all":
         ds.load_or_refresh_all()
@@ -1008,3 +1058,26 @@ def build_monthly_capacity_df(staff_week_df, target_util_rate=85):
     ]
 
     return monthly, monthly_by_staff
+
+def refresh_leave_calendar():
+    with sqlite3.connect(DB_PATH) as conn:
+        st.session_state.leave_calendar_df = pd.read_sql("SELECT * FROM leave_calendar", conn)
+    st.session_state.leave_calendar_df["week_commencing"] = pd.to_datetime(
+        st.session_state.leave_calendar_df["week_commencing"], errors="coerce"
+    )
+def refresh_onsite_calendar():
+    with sqlite3.connect(DB_PATH) as conn:
+        st.session_state.onsite_calendar_df = pd.read_sql("""
+            SELECT staff_member, week_commencing, week_number, SUM(on_site_days) AS on_site_days
+            FROM on_site_calendar
+            GROUP BY staff_member, week_commencing, week_number
+        """, conn)
+    st.session_state.onsite_calendar_df["week_commencing"] = pd.to_datetime(
+        st.session_state.onsite_calendar_df["week_commencing"], errors="coerce"
+    )
+def refresh_programme_activity():
+    with sqlite3.connect(DB_PATH) as conn:
+        st.session_state.programme_calendar_df = pd.read_sql("SELECT * FROM programme_activity", conn)
+    st.session_state.programme_calendar_df["week_commencing"] = pd.to_datetime(
+        st.session_state.programme_calendar_df["week_commencing"], errors="coerce"
+    )

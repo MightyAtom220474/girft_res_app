@@ -299,9 +299,12 @@ def dashboard():
     # ------------------------------------------------
     # Load and filter data
     # ------------------------------------------------
-    leave_df = pf.filter_by_access(leave_calendar_df).copy()
+    #leave_df = pf.filter_by_access(leave_calendar_df).copy()
+    leave_df = leave_calendar_df.copy()
     
-    onsite_df = pf.filter_by_access(onsite_calendar_df).copy()
+    #onsite_df = pf.filter_by_access(onsite_calendar_df).copy()
+    onsite_df = onsite_calendar_df.copy()
+
     leave_df["week_commencing"] = pd.to_datetime(leave_df["week_commencing"], errors="coerce")
     onsite_df["week_commencing"] = pd.to_datetime(onsite_df["week_commencing"], errors="coerce")
     # Apply 12‑month rolling (6 months back, 6 months ahead)
