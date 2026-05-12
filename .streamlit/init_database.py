@@ -9,9 +9,11 @@ import sqlite3
 import pandas as pd
 import os
 import data_store as ds
+import config as cf
+from werkzeug.security import generate_password_hash
 
-BASE_DIR = ds.BASE_DIR
-DB_PATH = ds.DB_PATH
+BASE_DIR = cf.BASE_DIR
+DB_PATH = cf.DB_PATH
 PC_CSV_PATH = os.path.join(BASE_DIR, "programme_categories.csv")
 SL_CSV_PATH = os.path.join(BASE_DIR, "staff_list.csv")
 LC_CSV_PATH = os.path.join(BASE_DIR, "legacy_leave_weekly_normalised.csv")
@@ -260,13 +262,29 @@ conn.commit()
 with sqlite3.connect(DB_PATH) as conn:
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT username
-        FROM staff_list
-        ORDER BY staff_member
+        DELETE        FROM staff_list
+        WHERE username like '%burd%'
+        
     """)
     all_staff = [row[0] for row in cursor.fetchall()]
 
 print(all_staff)
+
+# Example: update one specific user
+username = "andrew@andrewburdettdesign.com"
+plain_password = "Temporary123!"
+
+hashed_password = generate_password_hash(plain_password)
+
+cursor.execute("""
+    UPDATE staff_list
+    SET password = ?
+    WHERE username = ?
+""", (hashed_password, username))
+
+conn.commit()
+
+print("Password updated successfully.")
 
 
 cursor.execute("""

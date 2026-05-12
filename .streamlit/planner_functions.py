@@ -102,13 +102,13 @@ def update_staff_list(
                         leave_allowance_days,
                         is_deployable,
                         deploy_ratio,
-                        default_programme
+                        default_programme,
                         username,
                         password,
                         access_level,
                         archive_flag
                     )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
                     ON CONFLICT(staff_member)
                     DO UPDATE SET
                         job_role = excluded.job_role,
@@ -129,9 +129,11 @@ def update_staff_list(
                         deploy_ratio,
                         default_programme,
                         username,
-                        password,
+                        generate_password_hash(password) if password else None,
                         user_access
                     ))
+            
+            conn.commit()
         
 def update_programme_list(
     new_programme=None,
@@ -155,6 +157,8 @@ def update_programme_list(
                 """,
                 (new_programme, programme_type, programme_group)
             )
+
+            conn.commit()
 
         # if archive_programme:
         #     cursor.execute(
