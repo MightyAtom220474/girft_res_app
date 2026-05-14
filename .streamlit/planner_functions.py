@@ -363,11 +363,19 @@ def create_52week_heatmap(
 
     # Pivot for heatmap
     pivot = df_full.pivot_table(
-        index=staff_col,
-        columns=week_col,
-        values=value_col,
-        fill_value=0
+    index=staff_col,
+    columns=week_col,
+    values=value_col,
+    fill_value=0
     )
+
+    # Remove unwanted axis labels like "undefined"
+    pivot.index.name = None
+    pivot.columns.name = None
+
+    # Alternative safe method
+    pivot = pivot.rename_axis(None, axis=0)
+    pivot = pivot.rename_axis(None, axis=1)
 
     z = pivot.to_numpy()
     y = pivot.index.astype(str).tolist()
@@ -401,18 +409,22 @@ def create_52week_heatmap(
     )
 
     fig.update_layout(
-        title=title,
-        xaxis=dict(
-            tickmode="array",
-            tickvals=x_vals,
-            ticktext=ticktext,
-            tickangle=90,
-        ),
-        yaxis=dict(automargin=True),
-        margin=dict(l=160, r=20, t=40, b=120),
-        height=max(350, pivot.shape[0] * 20 + 160),
-        showlegend=False,
-    )
+    title=title if title else "",
+    xaxis=dict(
+        tickmode="array",
+        tickvals=x_vals,
+        ticktext=ticktext,
+        tickangle=90,
+        title=None
+    ),
+    yaxis=dict(
+        automargin=True,
+        title=None
+    ),
+    margin=dict(l=160, r=20, t=40, b=120),
+    height=max(350, pivot.shape[0] * 20 + 160),
+    showlegend=False,
+    )  
 
     # Highlight current week column fully behind heatmap
     shapes = []
