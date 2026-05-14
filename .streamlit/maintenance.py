@@ -1,11 +1,16 @@
 import streamlit as st
 import pandas as pd
-from planner_functions import update_staff_list, update_programme_list, generate_password_hash
+from planner_functions import update_staff_list, update_programme_list
 import data_store as ds
 import sqlite3
 import planner_functions as pf
+import io
+from datetime import datetime
+import zipfile
+from werkzeug.security import generate_password_hash
 
 DB_PATH = "girft_capacity_planner.db"
+
 
 def maintenance():
 
@@ -15,71 +20,87 @@ def maintenance():
     programme_list = st.session_state.programme_list
     programme_calendar_df = st.session_state.programme_calendar_df
     leave_calendar_df = st.session_state.leave_calendar_df
-    # onsite_calendar_df = st.session_state.onsite_calendar_df
-    # staff_names = st.session_state.staff_list
-    # programme_names = st.session_state.programme_list
 
     st.set_page_config(layout="wide")
-    
+
     col1, col2 = st.columns([3.8, 1.2])
     with col1:
         st.header("🛠️ System Maintenance")
     with col2:
-        st.image("https://gettingitrightfirsttime.co.uk/wp-content/uploads/2022/06/cropped-GIRFT-Logo-300-RGB-Large.jpg", width=300)
-        #st.write("Email: info@gettingitrightfirsttime.co.uk")
+        st.image(
+            "https://gettingitrightfirsttime.co.uk/wp-content/uploads/2022/06/cropped-GIRFT-Logo-300-RGB-Large.jpg",
+            width=300
+        )
 
     st.divider()
 
     st.subheader("Add or Remove Staff")
 
-    #staff_list = staff_list
-
-    #staff_list_sorted = staff_list.sort_values(by="staff_member")
-
-    #programme_list = programme_list
-
     programme_list_sorted = programme_list.sort_values(by="programme_categories")
 
+    # ============================================================
+    # STAFF MANAGEMENT
+    # ============================================================
     with st.expander("👥 Manage Staff List"):
-        
+
         st.subheader("➕ Add New Staff Member")
 
         new_staff = st.text_input("Staff member name (Forename Surname)")
-
         job_role = st.text_input("Job Role")
 
         hours_pw = st.selectbox(
             "Number of Contracted Hours per Week",
-            [i * 0.5 for i in range(0, 76)],  # 0 → 37.5 in steps of 0.5
+            [i * 0.5 for i in range(0, 76)],
             format_func=lambda x: f"{x:.1f}"
         )
 
         leave_allowance_days = st.selectbox(
             "Leave Allowance (days)",
-            list(range(0, 36))  # up to 35
+            list(range(0, 36))
         )
 
-        is_deployable = st.radio(
-            "Is Deployable?",
-            ["Yes", "No"]
-        )
+        is_deployable = st.radio("Is Deployable?", ["Yes", "No"])
         is_deployable_flag = 1 if is_deployable == "Yes" else 0
 
         deploy_ratio = st.selectbox(
             "Deployment Ratio",
-            [i * 0.1 for i in range(0, 11)],  # 0 → 1 in 0.1 steps
+            [i * 0.1 for i in range(0, 11)],
             format_func=lambda x: f"{x:.1f}"
         )
+
+        # ------------------------------------------------------------
+        # DEFAULT PROGRAMME (SAFE HANDLING)
+        # ------------------------------------------------------------
+        active_programmes = (
+            programme_list.loc[
+                programme_list["archive_flag"] == 0,
+                "programme_categories"
+            ]
+            .dropna()
+            .sort_values()
+            .tolist()
+        )
+
+        default_programme = st.selectbox(
+            "Default Programme",
+            options=["None"] + active_programmes,
+            index=0
+        )
+
+        # Convert "None" → actual None for DB
+        if default_programme == "None":
+            default_programme = None
 
         username_input = st.text_input("Staff member User Name (.net email address if available)")
 
         access_level = st.selectbox(
-                                    "User Access Level",
-                                    options=["admin", "user", "viewer"],
-                                    key="access_level"
-                                    )
+            "User Access Level",
+            options=["admin", "user", "viewer"],
+            key="access_level"
+        )
 
         if st.button("➕ Add Staff Member"):
+
             update_staff_list(
                 new_staff=new_staff,
                 job_role=job_role,
@@ -87,15 +108,14 @@ def maintenance():
                 leave_allowance_days=leave_allowance_days,
                 is_deployable=is_deployable_flag,
                 deploy_ratio=deploy_ratio,
+                default_programme=default_programme,
                 username=username_input,
                 password=ds.default_password,
                 user_access=access_level
             )
 
-            # Reload fresh data from the database
-            #staff_list = ds.load_staff_list().sort_values(by="staff_member")
-
             st.success(f"{new_staff} added successfully.")
+            ds.load_or_refresh_all()
 
         # -----------------------------------------------------------------
         # ARCHIVE SECTION
@@ -708,6 +728,50 @@ def maintenance():
         )
 
         pf.render_followup_warning(df_flags) 
+
+    # ============================================================
+    # EXPORT DATABASE
+    # ============================================================
+    st.divider()
+    st.subheader("📤 Export Database")
+
+    st.info("Download a full export of all database tables as CSV files.")
+
+    if st.button("📦 Export All Tables"):
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        zip_buffer = io.BytesIO()
+
+        with sqlite3.connect(DB_PATH) as conn:
+            cursor = conn.cursor()
+
+            cursor.execute("""
+                SELECT name FROM sqlite_master
+                WHERE type='table'
+                AND name NOT LIKE 'sqlite_%'
+            """)
+            tables = [row[0] for row in cursor.fetchall()]
+
+            with zipfile.ZipFile(zip_buffer, "w") as zip_file:
+                for table in tables:
+                    df = pd.read_sql_query(f"SELECT * FROM {table}", conn)
+
+                    csv_buffer = io.StringIO()
+                    df.to_csv(csv_buffer, index=False)
+
+                    zip_file.writestr(
+                        f"{table}_{timestamp}.csv",
+                        csv_buffer.getvalue()
+                    )
+
+        zip_buffer.seek(0)
+
+        st.download_button(
+            label="⬇️ Download Export",
+            data=zip_buffer,
+            file_name=f"girft_database_export_{timestamp}.zip",
+            mime="application/zip"
+        )
 
 
 

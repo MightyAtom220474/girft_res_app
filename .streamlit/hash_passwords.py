@@ -6,13 +6,38 @@ from werkzeug.security import generate_password_hash
 import data_store as ds
 import sqlite3
 
-ds.load_or_refresh_all()
+DB_PATH = "girft_capacity_planner.db"
+
 temp_password = "Temporary123!"
-ds.staff_list["password"] = ds.staff_list["username"].apply(
-    lambda u: generate_password_hash(temp_password)
-)
-ds.staff_list["must_change_password"] = True
-ds.staff_list.to_csv("staff_list.csv", index=False)
+hashed_pw = generate_password_hash(temp_password)
+
+with sqlite3.connect(DB_PATH) as conn:
+    cur = conn.cursor()
+
+    cur.execute("""
+        UPDATE staff_list
+        SET password = ?,
+            must_change_password = 1
+    """, (hashed_pw,))
+
+    conn.commit()
+
+print("✅ All staff passwords reset and flagged for change")
+
+
+# Load latest data
+ds.load_or_refresh_all()
+
+temp_password = "Temporary123!"
+hashed_pw = generate_password_hash(temp_password)
+
+# Update dataframe
+ds.staff_list["password"] = hashed_pw
+ds.staff_list["must_change_password"] = 1
+
+# ✅ Write back to database
+with sqlite3.connect(ds.DB_PATH) as conn:
+    ds.staff_list.to_sql("staff_list", conn, if_exists="replace", index=False)
 
 ##########################################################################
 # reset all passwords back to default
@@ -20,7 +45,7 @@ ds.staff_list.to_csv("staff_list.csv", index=False)
 
 DB_PATH = "girft_capacity_planner.db"
 
-temp_password = "Temporary123!"
+#temp_password = "Temporary123!"
 
 with sqlite3.connect(DB_PATH) as conn:
     cur = conn.cursor()
