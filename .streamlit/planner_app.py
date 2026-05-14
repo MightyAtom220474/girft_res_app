@@ -240,3 +240,45 @@ def planner():
 
         st.session_state["trigger_reload"] = "programme"
         st.rerun()
+
+        # ---------------------------
+    # RECENT ACTIVITY TABLE
+    # ---------------------------
+    st.divider()
+
+    st.subheader("🕒 10 Most Recent Programme Activities")
+
+    recent_activity = (
+        programme_calendar_df.loc[
+            programme_calendar_df["staff_member"] == selected_staff
+        ]
+        .sort_values(
+            by=["week_commencing", "programme_category"],
+            ascending=[False, True]
+        )
+        .head(10)
+        .copy()
+    )
+
+    if not recent_activity.empty:
+
+        recent_activity["week_commencing"] = pd.to_datetime(
+            recent_activity["week_commencing"]
+        ).dt.date
+
+        recent_activity = recent_activity.rename(columns={
+            "week_commencing": "Week Commencing",
+            "programme_category": "Programme",
+            "activity_value": "Hours"
+        })
+
+        st.dataframe(
+            recent_activity[
+                ["Week Commencing", "Programme", "Hours"]
+            ],
+            use_container_width=True,
+            hide_index=True
+        )
+
+    else:
+        st.info("No programme activity recorded yet.")
