@@ -45,7 +45,7 @@ def block():
     )
     
     # Add custom entries manually so can book out for other reasons
-    custom_programmes = ["Team Away Day", "Team Meeting"]
+    custom_programmes = ["Team Away Day","Conference","Training/Study"]
     # Merge them and remove duplicates (if any)
     programme_names = sorted(list(set(programme_names + custom_programmes)))
 

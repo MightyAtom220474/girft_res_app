@@ -7,9 +7,6 @@ import data_store as ds
 from datetime import date, timedelta
 import time
 
-today = date.today()
-current_monday = today - timedelta(days=today.weekday() + 7)
-
 pf.handle_trigger_reload()
 
 
@@ -22,11 +19,19 @@ def planner():
         ds.load_or_refresh_all()
         st.session_state["trigger_reload"] = None
 
-    staff_list = st.session_state.staff_list
-    programme_list = st.session_state.programme_list
-    programme_calendar_df = st.session_state.programme_calendar_df
+    today = date.today()
+    current_monday = today - timedelta(days=today.weekday() + 7)
+
+    staff_list = st.session_state.get("staff_list", pd.DataFrame())
+    programme_list = st.session_state.get("programme_list", pd.DataFrame())
+    programme_calendar_df = st.session_state.get("programme_calendar_df", pd.DataFrame())
+    leave_calendar_df = st.session_state.get("leave_calendar_df", pd.DataFrame())
+    on_site_calendar_df = st.session_state.get("onsite_calendar_df", pd.DataFrame())
 
     st.set_page_config(layout="wide")
+
+    # st.write(on_site_calendar_df.columns)
+    # st.write(on_site_calendar_df.head())
 
     col1, col2 = st.columns([3.8, 1.2])
     with col1:
@@ -119,18 +124,181 @@ def planner():
                     default_group = match.iloc[0]["programme_group"]
 
             c1, c2 = st.columns(2)
+
             with c1:
                 st.success(f"Contracted hours: {hours_pw:.1f}")
+
             with c2:
                 st.success(f"Deployable hours: {deployable_hours:.1f}")
+
+            # ---------------------------------
+            # WEEKLY LEAVE / ON-SITE SUMMARY
+            # ---------------------------------
+
+            # assumes you already have selected_week somewhere later in page
+            # if not, replace selected_week with your actual week variable
+
+            week_start = pd.to_datetime(current_monday)
+
+            week_end = week_start + pd.Timedelta(days=6)
+
+            # --- LEAVE FILTER ---
+            staff_leave = leave_calendar_df[
+                (leave_calendar_df["staff_member"] == selected_staff)
+                & (
+                    pd.to_datetime(leave_calendar_df["week_commencing"])
+                    .between(week_start, week_end)
+                )
+            ].copy()
+
+            # --- ON SITE FILTER ---
+            staff_onsite = on_site_calendar_df[
+                (on_site_calendar_df["staff_member"] == selected_staff)
+                & (
+                    pd.to_datetime(on_site_calendar_df["week_commencing"])
+                    .between(week_start, week_end)
+                )
+            ].copy()
+
+            leave_col, onsite_col = st.columns(2)
+
+            # --------------------
+            # LEAVE COLUMN
+            # --------------------
+            with leave_col:
+
+                st.markdown("### 🚫 Leave Booked")
+
+                if not staff_leave.empty:
+
+                    for _, row in staff_leave.sort_values("week_commencing").iterrows():
+
+                        leave_date = pd.to_datetime(row["week_commencing"]).strftime("%a %d %b")
+
+                        leave_type = row.get("leave_type", "Leave")
+
+                        st.markdown(
+                            f"""
+                            <div style="
+                                background-color:#ffdddd;
+                                padding:10px;
+                                border-radius:8px;
+                                margin-bottom:8px;
+                                border-left:6px solid #cc0000;
+                            ">
+                                <b>{leave_date}</b><br>
+                                {leave_type}
+                            </div>
+                            """,
+                            unsafe_allow_html=True
+                        )
+
+                else:
+
+                    st.markdown(
+                        """
+                        <div style="
+                            background-color:#fff5f5;
+                            padding:10px;
+                            border-radius:8px;
+                        ">
+                            No leave booked this week
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
+
+            # --------------------
+            # ON-SITE COLUMN
+            # --------------------
+            with onsite_col:
+
+                st.markdown("### 🏢 On-Site Activity")
+
+                if not staff_onsite.empty:
+
+                    for _, row in staff_onsite.sort_values("week_commencing").iterrows():
+
+                        onsite_date = pd.to_datetime(row["week_commencing"]).strftime("%a %d %b")
+
+                        location = row.get("location", "On-site")
+
+                        st.markdown(
+                            f"""
+                            <div style="
+                                background-color:#ddeeff;
+                                padding:10px;
+                                border-radius:8px;
+                                margin-bottom:8px;
+                                border-left:6px solid #0066cc;
+                            ">
+                                <b>{onsite_date}</b><br>
+                                {location}
+                            </div>
+                            """,
+                            unsafe_allow_html=True
+                        )
+
+                else:
+
+                    st.markdown(
+                        """
+                        <div style="
+                            background-color:#f5f9ff;
+                            padding:10px;
+                            border-radius:8px;
+                        ">
+                            No on-site activity this week
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
 
     # ---------------------------
     # WEEK
     # ---------------------------
     week_commencing = st.date_input(
-        "Select Week Commencing (Monday)",
-        value=current_monday
-    )
+    "Select Week Commencing (Monday)",
+    value=current_monday
+)
+
+    week_start = pd.to_datetime(week_commencing)
+    week_end = week_start + pd.Timedelta(days=6)
+
+    # ---------------------------
+    # RECURRING OPTIONS (EXPANDABLE)
+    # ---------------------------
+    st.divider()
+
+    repeat_weeks = 1  # default = single entry
+
+    with st.expander("🔁 Optional: Repeat this activity over multiple weeks"):
+
+        repeat_activity = st.checkbox(
+            "Enable recurring schedule",
+            value=False
+        )
+
+        if repeat_activity:
+            repeat_weeks = st.number_input(
+                "Number of consecutive weeks",
+                min_value=1,
+                max_value=52,
+                value=1,
+                step=1
+            )
+
+            end_date = (
+                pd.to_datetime(week_commencing)
+                + pd.Timedelta(weeks=repeat_weeks - 1)
+            ).date()
+
+            st.info(
+                f"This will be saved from "
+                f"{week_commencing} to {end_date}"
+            )
+        else:
+            st.caption("Default: activity will only be recorded for the selected week")
 
     # ---------------------------
     # PROGRAMME FILTER
@@ -167,9 +335,13 @@ def planner():
     # ---------------------------
     # EXISTING ACTIVITY
     # ---------------------------
+    programme_calendar_df["week_commencing"] = pd.to_datetime(
+    programme_calendar_df["week_commencing"]
+    ).dt.date
+
     mask = (
         (programme_calendar_df["staff_member"] == selected_staff) &
-        (programme_calendar_df["week_commencing"] == pd.to_datetime(week_commencing))
+        (programme_calendar_df["week_commencing"] == week_commencing)
     )
 
     existing_lookup = (
@@ -226,7 +398,8 @@ def planner():
         pf.save_programme_activity(
             selected_staff=selected_staff,
             week_commencing=week_commencing,
-            activity_inputs=activity_inputs
+            activity_inputs=activity_inputs,
+            repeat_weeks=repeat_weeks
         )
 
         success_box = st.empty()

@@ -211,44 +211,68 @@ def restore_staff(conn, staff_member):
 def save_programme_activity(
     selected_staff,
     week_commencing,
-    activity_inputs
-    ):
-    week_dt = pd.to_datetime(week_commencing)
-    week_number = int(week_dt.isocalendar().week)
+    activity_inputs,
+    repeat_weeks=1
+):
+    """
+    Save programme activity for one or multiple weeks.
+    """
+
+    import sqlite3
+    import pandas as pd
+    from datetime import timedelta
+    from data_store import DB_PATH
+
+    base_week = pd.to_datetime(week_commencing)
 
     with sqlite3.connect(DB_PATH) as conn:
+
         cursor = conn.cursor()
 
+        for week_offset in range(repeat_weeks):
 
-        for programme_category, activity_value in activity_inputs.items():
-            cursor.execute(
-                """
-                INSERT INTO programme_activity (
-                    staff_member,
-                    week_commencing,
-                    week_number,
-                    programme_category,
-                    activity_value,
-                    updated_at
-                )
-                VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-                ON CONFLICT(staff_member, week_commencing, programme_category)
-                DO UPDATE SET
-                    activity_value = excluded.activity_value,
-                    week_number = excluded.week_number,
-                    updated_at = CURRENT_TIMESTAMP
-                """,
-                (
+            current_week = base_week + timedelta(weeks=week_offset)
+
+            week_number = int(current_week.isocalendar().week)
+
+            # ---------------------------------
+            # DELETE EXISTING ENTRIES
+            # ---------------------------------
+            cursor.execute("""
+                DELETE FROM programme_activity
+                WHERE staff_member = ?
+                AND week_commencing = ?
+            """, (
+                selected_staff,
+                current_week.strftime("%Y-%m-%d")
+            ))
+
+            # ---------------------------------
+            # INSERT NEW VALUES
+            # ---------------------------------
+            for programme, hours in activity_inputs.items():
+
+                if float(hours) <= 0:
+                    continue
+
+                cursor.execute("""
+                    INSERT INTO programme_activity (
+                        staff_member,
+                        programme_category,
+                        activity_value,
+                        week_commencing,
+                        week_number
+                    )
+                    VALUES (?, ?, ?, ?, ?)
+                """, (
                     selected_staff,
-                    week_dt.date(),
-                    week_number,
-                    programme_category,
-                    activity_value
-                )
-            )
+                    programme,
+                    float(hours),
+                    current_week.strftime("%Y-%m-%d"),
+                    week_number
+                ))
 
         conn.commit()
-        #conn.close()
 
 def save_annual_leave(staff_member, week_commencing, days_leave):
     week_commencing = pd.to_datetime(week_commencing)
@@ -613,127 +637,151 @@ def clean_programme(text):
 
     return ' '.join(cleaned_words)
 
-def get_inactive_staff_with_reasons(
+def get_weekly_data_entry_status(
     staff_list,
     programme_calendar_df,
-    leave_calendar_df
+    leave_calendar_df,
+    week_commencing
     ):
-    # -----------------------------
-    # Previous week (Monday)
-    # -----------------------------
-    today = date.today()
-    current_week_start = today - timedelta(days=today.weekday())
-    previous_week_start = current_week_start - timedelta(weeks=1)
+    """
+    Returns a staff-level checklist showing whether each staff member
+    has entered programme activity for the selected week.
+    """
+
+    import pandas as pd
 
     # -----------------------------
-    # Standardise dates
+    # Standardise week format
     # -----------------------------
+    week_commencing = pd.to_datetime(week_commencing).date()
+
     programme_calendar_df = programme_calendar_df.copy()
     leave_calendar_df = leave_calendar_df.copy()
 
-    programme_calendar_df['week_commencing'] = pd.to_datetime(
-        programme_calendar_df['week_commencing']
+    programme_calendar_df["week_commencing"] = pd.to_datetime(
+        programme_calendar_df["week_commencing"]
     ).dt.date
 
-    leave_calendar_df['week_commencing'] = pd.to_datetime(
-        leave_calendar_df['week_commencing']
+    leave_calendar_df["week_commencing"] = pd.to_datetime(
+        leave_calendar_df["week_commencing"]
     ).dt.date
 
     # -----------------------------
     # Active staff only
     # -----------------------------
     df = staff_list.loc[
-        staff_list['archive_flag'] == 0,
-        ['staff_member']
+        staff_list["archive_flag"] == 0,
+        ["staff_member"]
     ].copy()
 
     # -----------------------------
-    # Activity last week (>0 only)
+    # WHO HAS ENTERED PROGRAMME DATA
     # -----------------------------
-    active_last_week = programme_calendar_df.loc[
-        (programme_calendar_df['week_commencing'] == previous_week_start) &
-        (programme_calendar_df['activity_value'].fillna(0) > 0),
-        'staff_member'
-    ].unique()
+    entered_staff = programme_calendar_df.loc[
+        programme_calendar_df["week_commencing"] == week_commencing,
+        "staff_member"
+    ].dropna().unique()
 
-    df['no_activity_last_week'] = ~df['staff_member'].isin(active_last_week)
+    df["has_entered"] = df["staff_member"].isin(entered_staff)
 
     # -----------------------------
-    # Leave last week
+    # OPTIONAL: leave context (not blocking entry flag)
     # -----------------------------
-    leave_last_week = leave_calendar_df.loc[
-        leave_calendar_df['week_commencing'] == previous_week_start
-    ]
+    leave_summary = leave_calendar_df.loc[
+        leave_calendar_df["week_commencing"] == week_commencing
+    ].copy()
 
-    leave_summary = (
-        leave_last_week
-        .assign(value=lambda x: x['days_leave'].fillna(0))
-        .groupby('staff_member')['days_leave']
-        .sum()
-        .reset_index()
-        #.rename(columns={'value': 'days_leave'})
+    if not leave_summary.empty:
+        leave_summary = (
+            leave_summary.groupby("staff_member")["days_leave"]
+            .sum()
+            .reset_index()
         )
+    else:
+        leave_summary = pd.DataFrame(columns=["staff_member", "days_leave"])
 
-    df = df.merge(leave_summary, on='staff_member', how='left')
-    df['days_leave'] = df['days_leave'].fillna(0)
+    df = df.merge(leave_summary, on="staff_member", how="left")
+    df["days_leave"] = df["days_leave"].fillna(0)
 
-    df['full_week_leave'] = df['days_leave'] >= 5
+    df["on_full_leave"] = df["days_leave"] >= 5
 
     # -----------------------------
-    # Reason logic
+    # STATUS LOGIC
     # -----------------------------
-    def get_reason(row):
-        if row['no_activity_last_week'] and not row['full_week_leave']:
-            return "No activity recorded"
-        elif row['full_week_leave']:
-            return "On leave (5+ days)"
+    def get_status(row):
+        if row["has_entered"]:
+            return "Entered"
+        elif row["on_full_leave"]:
+            return "On Leave"
         else:
-            return "OK"
+            return "Missing"
 
-    df['reason'] = df.apply(get_reason, axis=1)
+    df["status"] = df.apply(get_status, axis=1)
 
     # -----------------------------
-    # Final follow-up flag
+    # PRIORITY FLAG (for sorting / red highlighting)
     # -----------------------------
-    df['needs_follow_up'] = (
-        df['no_activity_last_week'] &
-        (~df['full_week_leave'])
+    df["needs_attention"] = ~df["has_entered"] & ~df["on_full_leave"]
+
+    # -----------------------------
+    # SORT: missing first
+    # -----------------------------
+    df = df.sort_values(
+        ["needs_attention", "staff_member"],
+        ascending=[False, True]
+    ).reset_index(drop=True)
+
+    # -----------------------------
+    # CLEAN OUTPUT FOR UI
+    # -----------------------------
+
+    df["days_leave"] = df["days_leave"].fillna(0)
+
+    # round to nearest 0.5 day
+    df["days_leave"] = (df["days_leave"] * 2).round() / 2
+
+    df_clean = df.rename(columns={
+        "staff_member": "Staff Member",
+        "days_leave": "Days Leave",
+        "status": "Status"
+    })[["Staff Member", "Days Leave", "Status"]]
+
+    return df_clean
+
+def render_data_entry_checklist(df_flags):
+
+    import streamlit as st
+
+    st.subheader("📋 Data Entry Checklist")
+
+    def colour_row(row):
+
+        if row["Status"] == "Entered":
+            return ["background-color: #d4edda"] * len(row)
+
+        elif row["Status"] == "On Leave":
+            return ["background-color: #fff3cd"] * len(row)
+
+        else:
+            return ["background-color: #f8d7da"] * len(row)
+
+    st.dataframe(
+        df_flags.style.apply(colour_row, axis=1),
+        use_container_width=True,
+        hide_index=True
     )
 
-    return df.sort_values(['needs_follow_up', 'staff_member'], ascending=[False, True]).reset_index(drop=True)
+    missing = (df_flags["Status"] == "Missing").sum()
 
-def render_followup_warning(df_flags):
-    # Filter staff needing follow-up
-    follow_up_df = df_flags[df_flags['needs_follow_up']]
+    on_leave = (df_flags["Status"] == "On Leave").sum()
 
-    if follow_up_df.empty:
-        st.success("✅ All staff have recorded activity for last week")
-        return
+    if missing == 0:
+        st.success("✅ All staff have entered data for this week")
+    else:
+        st.warning(f"⚠️ {missing} staff still need to enter data")
 
-    # -----------------------------
-    # Warning header
-    # -----------------------------
-    st.error(f"🚨 {len(follow_up_df)} staff member(s) need to record activity for last week")
-
-    # -----------------------------
-    # Clean list display
-    # -----------------------------
-    names = ", ".join(follow_up_df['staff_member'].tolist())
-    st.markdown(f"**Staff to follow up:** {names}")
-
-    # -----------------------------
-    # Expandable detail view
-    # -----------------------------
-    with st.expander("View details"):
-        display_df = follow_up_df[
-            ['staff_member', 'days_leave', 'reason']
-        ].rename(columns={
-            'staff_member': 'Staff Member',
-            'days_leave': 'Leave Days',
-            'reason': 'Status'
-        })
-
-        st.dataframe(display_df, use_container_width=True)
+    if on_leave > 0:
+        st.info(f"🏖 {on_leave} staff are on full-week leave")
 
 # ============================
 # DEFAULT PROGRAMME HELPERS

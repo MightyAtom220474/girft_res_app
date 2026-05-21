@@ -5,7 +5,7 @@ import data_store as ds
 import sqlite3
 import planner_functions as pf
 import io
-from datetime import datetime
+from datetime import datetime, date, timedelta
 import zipfile
 from werkzeug.security import generate_password_hash
 
@@ -721,13 +721,17 @@ def maintenance():
         
         st.subheader("Status for Previous Week") 
 
-        df_flags = pf.get_inactive_staff_with_reasons(
+        today = date.today()
+        week_commencing = today - timedelta(days=today.weekday() + 7)
+
+        df_flags = pf.get_weekly_data_entry_status(
         staff_list,
         programme_calendar_df,
-        leave_calendar_df
+        leave_calendar_df,
+        week_commencing
         )
 
-        pf.render_followup_warning(df_flags) 
+        pf.render_data_entry_checklist(df_flags)
 
     # ============================================================
     # EXPORT DATABASE
