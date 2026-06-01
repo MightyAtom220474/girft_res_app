@@ -213,15 +213,21 @@ def planner():
             # --------------------
             with onsite_col:
 
-                st.markdown("### 🏢 On-Site Activity")
+                st.markdown("### 🏢 Planned Activity")
 
                 if not staff_onsite.empty:
 
                     for _, row in staff_onsite.sort_values("week_commencing").iterrows():
 
-                        onsite_date = pd.to_datetime(row["week_commencing"]).strftime("%a %d %b")
+                        onsite_date = pd.to_datetime(
+                            row["week_commencing"]
+                        ).strftime("%a %d %b")
 
                         location = row.get("location", "On-site")
+
+                        programme = row.get("programme_category", "Unallocated")
+
+                        onsite_days = row.get("on_site_days", 0)
 
                         st.markdown(
                             f"""
@@ -233,7 +239,9 @@ def planner():
                                 border-left:6px solid #0066cc;
                             ">
                                 <b>{onsite_date}</b><br>
-                                {location}
+                                📍 {location}<br>
+                                📚 Programme: <b>{programme}</b><br>
+                                ⏱️ Days Planned: {onsite_days}
                             </div>
                             """,
                             unsafe_allow_html=True
@@ -248,11 +256,11 @@ def planner():
                             padding:10px;
                             border-radius:8px;
                         ">
-                            No on-site activity this week
+                            No planned activity this week
                         </div>
                         """,
                         unsafe_allow_html=True
-                    )
+                    )       
 
     # ---------------------------
     # WEEK
