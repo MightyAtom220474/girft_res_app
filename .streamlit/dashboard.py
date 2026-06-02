@@ -261,28 +261,74 @@ def dashboard():
     # ========================================================
     # HEATMAPS
     # ========================================================
+    # ------------------------------------------------
+    # HEATMAPS WITH COLOR SELECTOR (FULL RESTORED)
+    # ------------------------------------------------
+
     st.divider()
-    st.subheader("👥 Staff Availability")
 
+    st.subheader("🎨 Heatmap Color Options")
+
+    # ------------------------------------------------
+    # COLOR OPTIONS
+    # ------------------------------------------------
+    color_options = {
+        "1️⃣ Traffic Light (Green → Yellow → Red)": [
+            [0.0, "rgb(0, 200, 0)"], [0.5, "rgb(255, 255, 0)"], [1.0, "rgb(255, 0, 0)"]
+        ],
+        "2️⃣ Blue → Yellow → Orange": [
+            [0.0, "rgb(0, 120, 255)"], [0.5, "rgb(255, 255, 150)"], [1.0, "rgb(255, 140, 0)"]
+        ],
+        "3️⃣ Light → Dark Blue": [
+            [0.0, "rgb(230, 245, 255)"], [1.0, "rgb(0, 70, 140)"]
+        ],
+        "4️⃣ Viridis (Plotly Built‑in)": "Viridis",
+        "5️⃣ Grey → Amber → Purple": [
+            [0.0, "rgb(220, 220, 220)"], [0.5, "rgb(255, 180, 50)"], [1.0, "rgb(120, 0, 120)"]
+        ]
+    }
+
+    # ------------------------------------------------
+    # COLOR PICKER
+    # ------------------------------------------------
+    selected_name = st.radio(
+        "Select a colorscale:",
+        list(color_options.keys()),
+        horizontal=True
+    )
+
+    # ------------------------------------------------
+    # PREVIEW BAR
+    # ------------------------------------------------
+    st.plotly_chart(
+        pf.preview_colorscale(
+            color_options[selected_name],
+            title=selected_name
+        ),
+        use_container_width=True
+    )
+
+    st.divider()
+
+    # ------------------------------------------------
+    # DATA PREP
+    # ------------------------------------------------
     MAX_DAYS = 5
-    today = date.today()
 
-    window_start = pd.Timestamp(today - relativedelta(months=6))
-    window_end = pd.Timestamp(today + relativedelta(months=6))
+    leave_df = st.session_state.leave_calendar_df.copy()
+    onsite_df = st.session_state.onsite_calendar_df.copy()
 
-    leave_df["week_commencing"] = pd.to_datetime(leave_df["week_commencing"])
-    onsite_df["week_commencing"] = pd.to_datetime(onsite_df["week_commencing"])
+    # Ensure datetime consistency
+    leave_df["week_commencing"] = pd.to_datetime(
+        leave_df["week_commencing"], errors="coerce"
+    )
+    onsite_df["week_commencing"] = pd.to_datetime(
+        onsite_df["week_commencing"], errors="coerce"
+    )
 
-    leave_df = leave_df[
-        (leave_df["week_commencing"] >= window_start) &
-        (leave_df["week_commencing"] <= window_end)
-    ]
-
-    onsite_df = onsite_df[
-        (onsite_df["week_commencing"] >= window_start) &
-        (onsite_df["week_commencing"] <= window_end)
-    ]
-
+    # ------------------------------------------------
+    # COMBINED DATASET
+    # ------------------------------------------------
     combined_df = (
         leave_df[["staff_member", "week_commencing", "days_leave"]]
         .merge(
@@ -297,31 +343,62 @@ def dashboard():
         combined_df["days_leave"] + combined_df["on_site_days"]
     )
 
-    view = st.radio(
-        "View:",
-        ["Leave", "Planner", "Combined"],
+    # ------------------------------------------------
+    # VIEW SELECTOR
+    # ------------------------------------------------
+    st.subheader("👥 Staff Availability - Heatmap")
+
+    view_option = st.radio(
+        "Select View:",
+        ["✈️ Leave Heatmap", "🗓️ Planner Heatmap", "🔀 Combined Heatmap"],
         horizontal=True
     )
 
-    if view == "Leave":
+    # ------------------------------------------------
+    # RENDER HEATMAPS
+    # ------------------------------------------------
+
+    if view_option == "✈️ Leave Heatmap":
+        st.subheader("✈️ Leave")
+
         fig = pf.create_52week_heatmap(
             leave_df,
             value_col="days_leave",
-            zmax=MAX_DAYS
+            title=None,
+            colorscale=color_options[selected_name],
+            colorbar_title="Days of Leave",
+            zmax=MAX_DAYS,
+            highlight_current_week=True
         )
 
-    elif view == "Planner":
+        st.plotly_chart(fig, use_container_width=True)
+
+    elif view_option == "🗓️ Planner Heatmap":
+        st.subheader("🗓️ Planner")
+
         fig = pf.create_52week_heatmap(
             onsite_df,
             value_col="on_site_days",
-            zmax=MAX_DAYS
+            title=None,
+            colorscale=color_options[selected_name],
+            colorbar_title="Days Booked Out",
+            zmax=MAX_DAYS,
+            highlight_current_week=True
         )
 
+        st.plotly_chart(fig, use_container_width=True)
+
     else:
+        st.subheader("🔀 Combined")
+
         fig = pf.create_52week_heatmap(
             combined_df,
             value_col="total_days",
-            zmax=MAX_DAYS
+            title=None,
+            colorscale=color_options[selected_name],
+            colorbar_title="Total Days (Leave + Planner)",
+            zmax=MAX_DAYS,
+            highlight_current_week=True
         )
 
-    st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True)
