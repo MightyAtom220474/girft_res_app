@@ -882,7 +882,7 @@ def build_monthly_capacity_df(staff_week_df, target_util_rate=0.85):
     
     today = date.today()
 
-    window_start = pd.Timestamp(today - relativedelta(months=6))
+    window_start = pd.Timestamp(today - relativedelta(months=12))
     window_end   = pd.Timestamp(today + relativedelta(months=6))
 
     monthly_df = monthly_df[
@@ -992,86 +992,193 @@ def clean_programme(value):
 # ============================================================
 def create_52week_heatmap(
     df,
-    value_col,
-    title=None,
-    colorscale="Viridis",
+    staff_col="staff_member",
+    week_col="week_commencing",
+    value_col="value",
+    title="Staff Weekly Heatmap",
+    colorscale="YlGnBu",
     colorbar_title="Value",
-    zmax=5,
+    zmax=None,
     highlight_current_week=True
 ):
+    """
+    52 week heatmap (26 back / 26 forward) with correct labels and stable datetime handling
+    """
+
     import pandas as pd
     import numpy as np
     import plotly.graph_objects as go
     from datetime import date, timedelta
 
-    data = df.copy()
+    df = df.copy()
 
     # --------------------------------------------------------
-    # Ensure date format
+    # ✅ FIX 1 — KEEP AS DATETIME (NOT .date)
     # --------------------------------------------------------
-    data["week_commencing"] = pd.to_datetime(
-        data["week_commencing"], errors="coerce"
+    df[week_col] = pd.to_datetime(df[week_col], errors="coerce")
+
+    # --------------------------------------------------------
+    # ✅ 52 WEEK WINDOW (UNCHANGED LOGIC)
+    # --------------------------------------------------------
+    today = date.today()
+    current_week_start = today - timedelta(days=today.weekday())
+
+    start_monday = current_week_start - timedelta(weeks=26)
+
+    # ✅ FIX 2 — USE pd.date_range (CONSISTENT TYPES)
+    week_commencings = pd.date_range(
+        start=pd.Timestamp(start_monday),
+        periods=52,
+        freq="W-MON"
     )
 
     # --------------------------------------------------------
-    # Create week index (relative)
+    # FULL GRID
     # --------------------------------------------------------
-    today = date.today()
-    current_week = today - timedelta(days=today.weekday())
+    staff_members = df[staff_col].dropna().unique()
 
-    # relative week index
-    data["week_index"] = (
-        (data["week_commencing"] - pd.Timestamp(current_week)) / np.timedelta64(1, 'W')
-    ).astype(int)
+    full_grid = pd.MultiIndex.from_product(
+        [staff_members, week_commencings],
+        names=[staff_col, week_col]
+    ).to_frame(index=False)
+
+    full_grid = full_grid.sort_values([staff_col, week_col]).reset_index(drop=True)
+
+    full_grid["week_number"] = (
+        full_grid.groupby(staff_col).cumcount() + 1
+    )
 
     # --------------------------------------------------------
-    # Pivot for heatmap
+    # MERGE DATA
     # --------------------------------------------------------
-    pivot = data.pivot_table(
-        index="staff_member",
-        columns="week_index",
+    df_full = full_grid.merge(
+        df[[staff_col, week_col, value_col]],
+        on=[staff_col, week_col],
+        how="left"
+    )
+
+    df_full[value_col] = df_full[value_col].fillna(0)
+
+    if zmax is None:
+        zmax = df_full[value_col].max()
+
+    # --------------------------------------------------------
+    # PIVOT
+    # --------------------------------------------------------
+    pivot = df_full.pivot_table(
+        index=staff_col,
+        columns=week_col,
         values=value_col,
-        aggfunc="sum",
         fill_value=0
     )
 
-    pivot = pivot.sort_index()
+    pivot = pivot.rename_axis(None, axis=0)
+    pivot = pivot.rename_axis(None, axis=1)
 
     # --------------------------------------------------------
-    # Build heatmap
+    # MATRIX BUILD
     # --------------------------------------------------------
-    fig = go.Figure(data=go.Heatmap(
-        z=pivot.values,
-        x=pivot.columns,
-        y=pivot.index,
-        colorscale=colorscale,
-        zmin=0,
-        zmax=zmax,
-        colorbar=dict(title=colorbar_title)
-    ))
+    z = pivot.to_numpy()
+    y = pivot.index.astype(str).tolist()
+    cols = list(pivot.columns)
+
+    x_vals = list(range(len(cols)))
 
     # --------------------------------------------------------
-    # Highlight current week
+    # ✅ FIX 3 — CLEAN LABELS (NO TYPE ISSUES)
     # --------------------------------------------------------
-    if highlight_current_week and 0 in pivot.columns:
-        fig.add_shape(
-            type="rect",
-            x0=-0.5,
-            x1=0.5,
-            y0=-0.5,
-            y1=len(pivot.index) - 0.5,
-            line=dict(color="black", width=2),
-            fillcolor="rgba(0,0,0,0)"
+    ticktext = []
+    current_idx = None
+
+    for i, c in enumerate(cols):
+        c_date = pd.to_datetime(c)
+        ticktext.append(c_date.strftime("%d-%b"))
+
+        if highlight_current_week and c_date.date() == current_week_start:
+            current_idx = i
+
+    # --------------------------------------------------------
+    # HEATMAP
+    # --------------------------------------------------------
+    fig = go.Figure(
+        data=go.Heatmap(
+            z=z,
+            x=x_vals,
+            y=y,
+            colorscale=colorscale,
+            zmin=0,
+            zmax=zmax,
+            colorbar=dict(title=colorbar_title),
+            hoverinfo="skip",
+            hovertemplate=None
+        )
+    )
+
+    # --------------------------------------------------------
+    # AXES + LAYOUT
+    # --------------------------------------------------------
+    fig.update_layout(
+        title=title if title else "",
+        xaxis=dict(
+            tickmode="array",
+            tickvals=x_vals,
+            ticktext=ticktext,
+            tickangle=90,
+            title=None
+        ),
+        yaxis=dict(
+            automargin=True,
+            title=None
+        ),
+        margin=dict(l=160, r=20, t=40, b=120),
+        height=max(350, pivot.shape[0] * 20 + 160),
+        showlegend=False,
+    )
+
+    # --------------------------------------------------------
+    # CURRENT WEEK HIGHLIGHT (GREY + BORDER)
+    # --------------------------------------------------------
+    shapes = []
+
+    if highlight_current_week and current_idx is not None:
+        shapes.append(
+            dict(
+                type="rect",
+                x0=current_idx - 0.5,
+                x1=current_idx + 0.5,
+                y0=-0.5,
+                y1=len(y) - 0.5,
+                xref="x",
+                yref="y",
+                fillcolor="rgba(0,0,0,0.12)",
+                opacity=0.3,
+                line=dict(color="black", width=2),
+                layer="above"
+            )
         )
 
     # --------------------------------------------------------
-    # Layout
+    # ROW SEPARATORS (YOUR ORIGINAL STYLE)
     # --------------------------------------------------------
-    fig.update_layout(
-        title=title,
-        xaxis_title="Week",
-        yaxis_title="Staff",
-        height=500
-    )
+    for i in range(1, len(y)):
+        shapes.append(
+            dict(
+                type="line",
+                x0=-0.5,
+                x1=len(x_vals) - 0.5,
+                y0=i - 0.5,
+                y1=i - 0.5,
+                xref="x",
+                yref="y",
+                line=dict(
+                    color="rgba(120,120,120,0.25)",
+                    width=0.8
+                ),
+                layer="above"
+            )
+        )
+
+    fig.update_layout(shapes=shapes)
 
     return fig
+
