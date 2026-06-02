@@ -968,11 +968,8 @@ def build_weekly_summary(staff_week_df, target_util_rate=0.85):
 # ============================================================
 # CLEAN PROGRAMME GROUP
 # ============================================================
-def clean_programme(value):
-    """
-    Cleans programme group names for consistency.
-    """
 
+def clean_programme(value):
     if value is None:
         return None
 
@@ -981,11 +978,14 @@ def clean_programme(value):
     if value == "" or value.lower() == "nan":
         return None
 
-    # Standardise formatting
     value = value.replace(" and ", " & ")
-    value = value.title()
+
+    # ✅ Only title-case if not already uppercase acronym
+    if not value.isupper():
+        value = value.title()
 
     return value
+
 
 # ============================================================
 # 52-WEEK HEATMAP
