@@ -1182,3 +1182,22 @@ def create_52week_heatmap(
 
     return fig
 
+def preview_colorscale(colorscale, title="Color Preview", n=100):
+    """Show a horizontal bar preview of a given colorscale."""
+    z = np.tile(np.linspace(0, 1, n), (10, 1))
+    fig = go.Figure(
+        data=go.Heatmap(
+            z=z,
+            colorscale=colorscale,
+            showscale=False
+        )
+    )
+    fig.update_layout(
+        title={"text": title, "x": 0.5},
+        xaxis=dict(showticklabels=False),
+        yaxis=dict(showticklabels=False),
+        height=100,
+        margin=dict(l=20, r=20, t=40, b=20),
+    )
+    return fig
+
