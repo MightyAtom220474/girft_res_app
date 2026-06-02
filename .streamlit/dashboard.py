@@ -256,7 +256,17 @@ def dashboard():
 
     ##### Code to test different heatmap colors #####
     
+    # ------------------------------------------------
+    # HEATMAPS WITH COLOR SELECTOR (FULL RESTORED)
+    # ------------------------------------------------
+
+    st.divider()
+
     st.subheader("🎨 Heatmap Color Options")
+
+    # ------------------------------------------------
+    # COLOR OPTIONS
+    # ------------------------------------------------
     color_options = {
         "1️⃣ Traffic Light (Green → Yellow → Red)": [
             [0.0, "rgb(0, 200, 0)"], [0.5, "rgb(255, 255, 0)"], [1.0, "rgb(255, 0, 0)"]
@@ -272,54 +282,47 @@ def dashboard():
             [0.0, "rgb(220, 220, 220)"], [0.5, "rgb(255, 180, 50)"], [1.0, "rgb(120, 0, 120)"]
         ]
     }
-    # Allow the user to pick one
-    selected_name = st.radio("Select a colorscale to preview:", list(color_options.keys()))
-    # Show preview bar
-    st.plotly_chart(
-        pf.preview_colorscale(color_options[selected_name], title=selected_name),
-        width='stretch'
-    )
 
-    ##########
-
-    MAX_DAYS = 5
-    today = date.today()
-    current_week_start = today - timedelta(days=today.weekday())
-    # Radio Button selector
-    view_option = st.radio(
-        "Select View:",
-        ["✈️ Leave Heatmap", "🗓️ Planner Heatmap", "🔀 Combined Heatmap"],
+    # ------------------------------------------------
+    # COLOR PICKER
+    # ------------------------------------------------
+    selected_name = st.radio(
+        "Select a colorscale:",
+        list(color_options.keys()),
         horizontal=True
     )
-    # Filter data to show 6 months back 6 months forward
-    # Define 6 months backward and forward window
-    today = date.today()
-    window_start = pd.Timestamp(today - relativedelta(months=6))
-    window_end = pd.Timestamp(today + relativedelta(months=6))
-    # ------------------------------------------------
-    # Load and filter data
-    # ------------------------------------------------
-    #leave_df = pf.filter_by_access(leave_calendar_df).copy()
-    leave_df = leave_calendar_df.copy()
-    
-    #onsite_df = pf.filter_by_access(onsite_calendar_df).copy()
-    onsite_df = onsite_calendar_df.copy()
-
-    leave_df["week_commencing"] = pd.to_datetime(leave_df["week_commencing"], errors="coerce")
-    onsite_df["week_commencing"] = pd.to_datetime(onsite_df["week_commencing"], errors="coerce")
-    # Apply 12‑month rolling (6 months back, 6 months ahead)
-    leave_df = leave_df[
-        (leave_df["week_commencing"] >= window_start) &
-        (leave_df["week_commencing"] <= window_end)
-    ]
-    #st.write(leave_df)
-    onsite_df = onsite_df[
-        (onsite_df["week_commencing"] >= window_start) &
-        (onsite_df["week_commencing"] <= window_end)
-    ]
 
     # ------------------------------------------------
-    # Build combined dataset after filtering
+    # PREVIEW BAR
+    # ------------------------------------------------
+    st.plotly_chart(
+        pf.preview_colorscale(
+            color_options[selected_name],
+            title=selected_name
+        ),
+        use_container_width=True
+    )
+
+    st.divider()
+
+    # ------------------------------------------------
+    # DATA PREP
+    # ------------------------------------------------
+    MAX_DAYS = 5
+
+    leave_df = st.session_state.leave_calendar_df.copy()
+    onsite_df = st.session_state.onsite_calendar_df.copy()
+
+    # Ensure datetime consistency
+    leave_df["week_commencing"] = pd.to_datetime(
+        leave_df["week_commencing"], errors="coerce"
+    )
+    onsite_df["week_commencing"] = pd.to_datetime(
+        onsite_df["week_commencing"], errors="coerce"
+    )
+
+    # ------------------------------------------------
+    # COMBINED DATASET
     # ------------------------------------------------
     combined_df = (
         leave_df[["staff_member", "week_commencing", "days_leave"]]
@@ -330,14 +333,29 @@ def dashboard():
         )
         .fillna(0)
     )
-    combined_df["total_days"] = combined_df["days_leave"] + combined_df["on_site_days"]
 
+    combined_df["total_days"] = (
+        combined_df["days_leave"] + combined_df["on_site_days"]
+    )
+
+    # ------------------------------------------------
+    # VIEW SELECTOR
+    # ------------------------------------------------
     st.subheader("👥 Staff Availability - Heatmap")
 
-    # View selector logic
+    view_option = st.radio(
+        "Select View:",
+        ["✈️ Leave Heatmap", "🗓️ Planner Heatmap", "🔀 Combined Heatmap"],
+        horizontal=True
+    )
+
+    # ------------------------------------------------
+    # RENDER HEATMAPS
+    # ------------------------------------------------
+
     if view_option == "✈️ Leave Heatmap":
         st.subheader("✈️ Leave")
-        leave_colors = [[0.0, "rgb(0,200,0)"], [1.0, "rgb(255,0,0)"]]
+
         fig = pf.create_52week_heatmap(
             leave_df,
             value_col="days_leave",
@@ -347,10 +365,12 @@ def dashboard():
             zmax=MAX_DAYS,
             highlight_current_week=True
         )
-        st.plotly_chart(fig, width='stretch')
+
+        st.plotly_chart(fig, use_container_width=True)
+
     elif view_option == "🗓️ Planner Heatmap":
         st.subheader("🗓️ Planner")
-        planner_colors = [[0.0, "rgb(0,200,0)"], [1.0, "rgb(0,0,255)"]]
+
         fig = pf.create_52week_heatmap(
             onsite_df,
             value_col="on_site_days",
@@ -359,12 +379,13 @@ def dashboard():
             colorbar_title="Days Booked Out",
             zmax=MAX_DAYS,
             highlight_current_week=True
-            
         )
-        st.plotly_chart(fig, width='stretch')
+
+        st.plotly_chart(fig, use_container_width=True)
+
     else:
         st.subheader("🔀 Combined")
-        combined_colors = [[0.0, "rgb(150,255,150)"], [1.0, "rgb(255,100,0)"]]
+
         fig = pf.create_52week_heatmap(
             combined_df,
             value_col="total_days",
@@ -374,4 +395,5 @@ def dashboard():
             zmax=MAX_DAYS,
             highlight_current_week=True
         )
-        st.plotly_chart(fig, width='stretch')
+
+        st.plotly_chart(fig, use_container_width=True)
