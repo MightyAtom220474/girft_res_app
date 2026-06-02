@@ -3,83 +3,96 @@ import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 import plotly.colors as pc
-#import numpy as np
-# bring in data from data store
+
 import data_store as ds
 import planner_functions as pf
 
-# Check if another page signaled a data refresh
+from datetime import date, timedelta
+from dateutil.relativedelta import relativedelta
+
+
+# ============================================================
+# INITIAL LOAD / TRIGGERS
+# ============================================================
 pf.handle_trigger_reload()
 
-# Normal initial load (first run)
-if "staff_prog_monthly_df" not in st.session_state:
+
+if (
+    "staff_prog_monthly_df" not in st.session_state
+    or st.session_state.staff_prog_monthly_df.empty
+):
     ds.load_or_refresh_all()
-    
-#import numpy as np
-import planner_functions as pf
-from datetime import date, timedelta
-from dateutil.relativedelta import relativedelta  # convenient for month offsets
 
-max_days = 5
-steps = 50
-
+# ============================================================
+# DASHBOARD FUNCTION
+# ============================================================
 def dashboard():
 
     st.set_page_config(layout="wide")
 
+    # --------------------------------------------------------
+    # HEADER
+    # --------------------------------------------------------
     col1, col2 = st.columns([3.8, 1.2])
+
     with col1:
         st.header("📊 Team Capacity Dashboard")
+
     with col2:
-        st.image("https://gettingitrightfirsttime.co.uk/wp-content/uploads/2022/06/cropped-GIRFT-Logo-300-RGB-Large.jpg", width=300)
-        #st.write("Email: info@gettingitrightfirsttime.co.uk")
+        st.image(
+            "https://gettingitrightfirsttime.co.uk/wp-content/uploads/2022/06/cropped-GIRFT-Logo-300-RGB-Large.jpg",
+            width=300
+        )
 
     st.divider()
 
-    # Handle any cross‑page reload triggers first
+    # --------------------------------------------------------
+    # REFRESH HANDLER
+    # --------------------------------------------------------
     pf.handle_trigger_reload()
-    # Ensure everything is loaded (initial only)
+
     if "staff_prog_monthly_df" not in st.session_state:
         ds.load_or_refresh_all()
 
-    leave_calendar_df = st.session_state.leave_calendar_df
-    onsite_calendar_df = st.session_state.onsite_calendar_df
-    programme_activity_df = st.session_state.programme_calendar_df
-    staff_prog_monthly_df = st.session_state.staff_prog_monthly_df
+    # --------------------------------------------------------
+    # LOAD DATA
+    # --------------------------------------------------------
+    leave_df = st.session_state.leave_calendar_df
+    onsite_df = st.session_state.onsite_calendar_df
+    programme_df = st.session_state.programme_calendar_df
+    monthly_df = st.session_state.staff_prog_monthly_df
 
-    # Ensure dates are proper datetime
-    programme_activity_df["week_commencing"] = pd.to_datetime(
-        programme_activity_df["week_commencing"],
-        dayfirst=True,
+    # --------------------------------------------------------
+    # DATE CLEANING
+    # --------------------------------------------------------
+    programme_df["week_commencing"] = pd.to_datetime(
+        programme_df["week_commencing"],
         errors="coerce"
     )
 
-    # Month from the Monday date
-    programme_activity_df["month"] = programme_activity_df["week_commencing"].dt.to_period("M").dt.to_timestamp()
+    programme_df["month"] = programme_df["week_commencing"].dt.to_period("M").dt.to_timestamp()
 
-    #st.write(programme_activity_df)
-    
-    # Rename for clarity
+    # --------------------------------------------------------
+    # PROGRAMME MERGE + PIVOT
+    # --------------------------------------------------------
     programme_list_df = st.session_state.programme_list
-    # Join programme_activity_df with lookup on the correct column name
-    merged_df = programme_activity_df.merge(
+
+    merged_df = programme_df.merge(
         programme_list_df[["programme_categories", "programme_group"]],
         how="left",
-        left_on="programme_category",      # your activity df column
-        right_on="programme_categories"    # lookup df column
-        )
-    # get rid of programme_category column
+        left_on="programme_category",
+        right_on="programme_categories"
+    )
+
     merged_df.drop(columns="programme_category", inplace=True)
 
-    # clean up programme groups
-    merged_df['programme_group'] = merged_df['programme_group'].apply(pf.clean_programme)
+    merged_df["programme_group"] = merged_df["programme_group"].apply(pf.clean_programme)
 
-    # Replace programme_category with programme_group for the pivot
     pivot = (
         merged_df
         .pivot_table(
             index="month",
-            columns="programme_group",     # <-- now using group instead of category
+            columns="programme_group",
             values="activity_value",
             aggfunc="sum",
             fill_value=0
@@ -88,87 +101,86 @@ def dashboard():
         .reset_index()
     )
 
-    # ---------------------------
-    # Monthly Capacity / Utilisation Chart
-    # ---------------------------
-    dfm = staff_prog_monthly_df
+    # ========================================================
+    # MONTHLY CAPACITY CHART
+    # ========================================================
+    st.subheader("👥 Staff Utilisation")
 
-    if dfm is None or dfm.empty:
+    if monthly_df is None or monthly_df.empty:
         st.info("No monthly capacity data available yet.")
         return
+    
+    
+    # st.write("DEBUG monthly_df columns:", monthly_df.columns.tolist())
+    # st.write("DEBUG monthly_df head:", monthly_df.head())
 
-    # Ensure month is datetime
-    dfm["month"] = pd.to_datetime(dfm["month"], errors="coerce")
-    dfm = dfm.dropna(subset=["month"]).sort_values("month").reset_index(drop=True)
 
-    # Default: last 12 months in the data (or fewer if not available)
-    #dfm = dfm.tail(12).copy()
-    dfm["month_label"] = dfm["month"].dt.strftime("%b-%Y")
-
-    st.subheader("👥 Staff Utilisation")
+    monthly_df["month"] = pd.to_datetime(monthly_df["month"])
+    monthly_df["month_label"] = monthly_df["month"].dt.strftime("%b-%Y")
 
     fig = go.Figure()
 
-    # --- Available Hours (yellow line, Y1 axis) ---
-    fig.add_trace(
-        go.Scatter(
-            x=dfm["month_label"],
-            y=dfm["total_avail_hours"],
-            name="Deployable Capacity (Hours)",
-            mode="lines",
-            line=dict(color="yellow"),
-            yaxis="y1"
-        )
-    )
+    # ---------------------------
+    # PRIMARY AXIS (HOURS)
+    # ---------------------------
 
-    # --- Total Capacity (green line, Y1 axis) ---
-    fig.add_trace(
-        go.Scatter(
-            x=dfm["month_label"],
-            y=dfm["total_contr_hours"],
-            name="Establishment (Hours)",
-            mode="lines",
-            line=dict(color="limegreen"),
-            yaxis="y1"
-        )
-    )
+    # Establishment
+    fig.add_trace(go.Scatter(
+        x=monthly_df["month_label"],
+        y=monthly_df["total_contr_hours"],
+        name="Establishment (Hours)",
+        mode="lines",
+        line=dict(color="limegreen"),
+        yaxis="y1"
+    ))
 
-    # --- Utilisation Rate (darkblue dashed line, Y2 axis) ---
-    fig.add_trace(
-        go.Scatter(
-            x=dfm["month_label"],
-            y=dfm["util_rate"],
-            name="Utilisation Rate (%)",
-            yaxis="y2",
-            mode="lines",
-            line=dict(color="blue", dash="dash", width=2)
-        )
-    )
+    # Available capacity
+    fig.add_trace(go.Scatter(
+        x=monthly_df["month_label"],
+        y=monthly_df["total_avail_hours"],
+        name="Deployable Capacity (Hours)",
+        mode="lines",
+        line=dict(color="gold"),
+        yaxis="y1"
+    ))
 
-    # --- Utilisation Hours (bar chart, Y1 axis, NHS Blue) ---
-    fig.add_trace(
-        go.Bar(
-            x=dfm["month_label"],
-            y=dfm["total_util_hours"],
-            name="Utilisation Hours",
-            yaxis="y1",
-            opacity=0.8,
-            marker_color="dodgerblue" #"003f7f"
-        )
-    )
+    # Utilisation hours (bars)
+    fig.add_trace(go.Bar(
+        x=monthly_df["month_label"],
+        y=monthly_df["total_util_hours"],
+        name="Utilisation Hours",
+        marker_color="dodgerblue",
+        opacity=0.8,
+        yaxis="y1"
+    ))
 
-    # --- Utilisation Target (red dashed line, Y2 axis) ---
-    if "util_target" in dfm.columns:
-        fig.add_trace(
-            go.Scatter(
-                x=dfm["month_label"],
-                y=dfm["util_target"],
-                name="Utilisation Target",
-                mode="lines",
-                line=dict(color="red", dash="dash", width=2),
-                yaxis="y2"
-            )
-        )
+    # ---------------------------
+    # SECONDARY AXIS (%)
+    # ---------------------------
+
+    # Utilisation %
+    fig.add_trace(go.Scatter(
+        x=monthly_df["month_label"],
+        y=monthly_df["util_rate"],
+        name="Utilisation %",
+        mode="lines",
+        line=dict(color="blue", dash="dash", width=2),
+        yaxis="y2"
+    ))
+
+    # Target %
+    fig.add_trace(go.Scatter(
+        x=monthly_df["month_label"],
+        y=monthly_df["util_target"],
+        name="Target %",
+        mode="lines",
+        line=dict(color="red", dash="dot", width=2),
+        yaxis="y2"
+    ))
+
+    # ---------------------------
+    # LAYOUT (CRITICAL)
+    # ---------------------------
 
     fig.update_layout(
         xaxis=dict(
@@ -176,151 +188,101 @@ def dashboard():
             type="category",
             tickangle=-45
         ),
+
+        # Primary axis → HOURS
         yaxis=dict(
             title="Hours",
             side="left",
             showgrid=False
         ),
+
+        # Secondary axis → %
         yaxis2=dict(
-            title="Utilisation Rate (%)",
-            overlaying="y",
+            title="Utilisation (%)",
+            overlaying="y",   # ✅ THIS IS KEY
             side="right",
-            showgrid=False,
-            range=[0, 150]
+            range=[0, 150],   # matches your % scale
+            showgrid=False
         ),
+
         barmode="overlay",
+
         legend=dict(
             orientation="v",
-            xanchor="left",
             x=0.01,
-            yanchor="bottom",
-            y=0.02,
-            bgcolor="rgba(255,255,255,0.6)",
-            bordercolor="gray",
-            borderwidth=1
+            y=0.01,
+            bgcolor="rgba(255,255,255,0.6)"
         ),
-        margin=dict(b=80, t=80),
+
         height=600
     )
 
+    st.plotly_chart(fig, use_container_width=True)
 
-    st.plotly_chart(fig, width='stretch')
 
-    # ------------------------------------------------
-    # Monthly Programme Activity Stacked Area Chart
-    # ------------------------------------------------
-
+    # ========================================================
+    # PROGRAMME STACKED AREA
+    # ========================================================
     st.divider()
-
     st.subheader("🧩 Programme Activity")
 
-    category_cols = [col for col in pivot.columns if col != "month"]
-    num_categories = len(category_cols)
+    category_cols = [c for c in pivot.columns if c != "month"]
+
     colorscale = px.colors.sequential.Viridis
-    # Evenly sample colors from scale
     color_sequence = pc.sample_colorscale(
         colorscale,
-        [i / max(1, (num_categories - 1)) for i in range(num_categories)]
+        [i / max(1, len(category_cols)-1) for i in range(len(category_cols))]
     )
-    # Helper to convert 'rgb(r,g,b)' → 'rgba(r,g,b,a)'
-    def rgb_to_rgba(rgb_str, alpha=0.6):
-        rgb_values = rgb_str.strip("rgb()").split(",")
-        return f"rgba({rgb_values[0]},{rgb_values[1]},{rgb_values[2]},{alpha})"
+
+    def rgb_to_rgba(rgb, alpha=0.6):
+        vals = rgb.strip("rgb()").split(",")
+        return f"rgba({vals[0]},{vals[1]},{vals[2]},{alpha})"
+
     fig2 = go.Figure()
+
     for i, col in enumerate(category_cols):
-        rgb_color = color_sequence[i]
-        rgba_color = rgb_to_rgba(rgb_color, alpha=0.6)
-        fig2.add_trace(
-            go.Scatter(
-                x=pivot["month"],
-                y=pivot[col],
-                mode="lines",
-                stackgroup="one",
-                name=col,
-                line=dict(color=rgb_color, width=2),
-                fillcolor=rgba_color  # now valid RGBA string
-            )
-        )
+        fig2.add_trace(go.Scatter(
+            x=pivot["month"],
+            y=pivot[col],
+            stackgroup="one",
+            name=col,
+            line=dict(color=color_sequence[i]),
+            fillcolor=rgb_to_rgba(color_sequence[i])
+        ))
+
     fig2.update_layout(
         xaxis_title="Month",
-        yaxis_title="Total Activity (Hours)",
-        hovermode="x unified",
-        height=600,
-        template="plotly_white"
-    )
-    st.plotly_chart(fig2, width='stretch')     
-
-    # ------------------------------------------------
-    # Weekly Leave, Booked-Out and Combined Heatmaps
-    # ------------------------------------------------
-
-    ##### Code to test different heatmap colors #####
-    
-    st.subheader("🎨 Heatmap Color Options")
-    color_options = {
-        "1️⃣ Traffic Light (Green → Yellow → Red)": [
-            [0.0, "rgb(0, 200, 0)"], [0.5, "rgb(255, 255, 0)"], [1.0, "rgb(255, 0, 0)"]
-        ],
-        "2️⃣ Blue → Yellow → Orange": [
-            [0.0, "rgb(0, 120, 255)"], [0.5, "rgb(255, 255, 150)"], [1.0, "rgb(255, 140, 0)"]
-        ],
-        "3️⃣ Light → Dark Blue": [
-            [0.0, "rgb(230, 245, 255)"], [1.0, "rgb(0, 70, 140)"]
-        ],
-        "4️⃣ Viridis (Plotly Built‑in)": "Viridis",
-        "5️⃣ Grey → Amber → Purple": [
-            [0.0, "rgb(220, 220, 220)"], [0.5, "rgb(255, 180, 50)"], [1.0, "rgb(120, 0, 120)"]
-        ]
-    }
-    # Allow the user to pick one
-    selected_name = st.radio("Select a colorscale to preview:", list(color_options.keys()))
-    # Show preview bar
-    st.plotly_chart(
-        pf.preview_colorscale(color_options[selected_name], title=selected_name),
-        width='stretch'
+        yaxis_title="Hours",
+        height=600
     )
 
-    ##########
+    st.plotly_chart(fig2, use_container_width=True)
+
+    # ========================================================
+    # HEATMAPS
+    # ========================================================
+    st.divider()
+    st.subheader("👥 Staff Availability")
 
     MAX_DAYS = 5
     today = date.today()
-    current_week_start = today - timedelta(days=today.weekday())
-    # Radio Button selector
-    view_option = st.radio(
-        "Select View:",
-        ["✈️ Leave Heatmap", "🗓️ Planner Heatmap", "🔀 Combined Heatmap"],
-        horizontal=True
-    )
-    # Filter data to show 6 months back 6 months forward
-    # Define 6 months backward and forward window
-    today = date.today()
+
     window_start = pd.Timestamp(today - relativedelta(months=6))
     window_end = pd.Timestamp(today + relativedelta(months=6))
-    # ------------------------------------------------
-    # Load and filter data
-    # ------------------------------------------------
-    #leave_df = pf.filter_by_access(leave_calendar_df).copy()
-    leave_df = leave_calendar_df.copy()
-    
-    #onsite_df = pf.filter_by_access(onsite_calendar_df).copy()
-    onsite_df = onsite_calendar_df.copy()
 
-    leave_df["week_commencing"] = pd.to_datetime(leave_df["week_commencing"], errors="coerce")
-    onsite_df["week_commencing"] = pd.to_datetime(onsite_df["week_commencing"], errors="coerce")
-    # Apply 12‑month rolling (6 months back, 6 months ahead)
+    leave_df["week_commencing"] = pd.to_datetime(leave_df["week_commencing"])
+    onsite_df["week_commencing"] = pd.to_datetime(onsite_df["week_commencing"])
+
     leave_df = leave_df[
         (leave_df["week_commencing"] >= window_start) &
         (leave_df["week_commencing"] <= window_end)
     ]
-    #st.write(leave_df)
+
     onsite_df = onsite_df[
         (onsite_df["week_commencing"] >= window_start) &
         (onsite_df["week_commencing"] <= window_end)
     ]
 
-    # ------------------------------------------------
-    # Build combined dataset after filtering
-    # ------------------------------------------------
     combined_df = (
         leave_df[["staff_member", "week_commencing", "days_leave"]]
         .merge(
@@ -330,48 +292,36 @@ def dashboard():
         )
         .fillna(0)
     )
-    combined_df["total_days"] = combined_df["days_leave"] + combined_df["on_site_days"]
 
-    st.subheader("👥 Staff Availability - Heatmap")
+    combined_df["total_days"] = (
+        combined_df["days_leave"] + combined_df["on_site_days"]
+    )
 
-    # View selector logic
-    if view_option == "✈️ Leave Heatmap":
-        st.subheader("✈️ Leave")
-        leave_colors = [[0.0, "rgb(0,200,0)"], [1.0, "rgb(255,0,0)"]]
+    view = st.radio(
+        "View:",
+        ["Leave", "Planner", "Combined"],
+        horizontal=True
+    )
+
+    if view == "Leave":
         fig = pf.create_52week_heatmap(
             leave_df,
             value_col="days_leave",
-            title=None,
-            colorscale=color_options[selected_name],
-            colorbar_title="Days of Leave",
-            zmax=MAX_DAYS,
-            highlight_current_week=True
+            zmax=MAX_DAYS
         )
-        st.plotly_chart(fig, width='stretch')
-    elif view_option == "🗓️ Planner Heatmap":
-        st.subheader("🗓️ Planner")
-        planner_colors = [[0.0, "rgb(0,200,0)"], [1.0, "rgb(0,0,255)"]]
+
+    elif view == "Planner":
         fig = pf.create_52week_heatmap(
             onsite_df,
             value_col="on_site_days",
-            title=None,
-            colorscale=color_options[selected_name],
-            colorbar_title="Days Booked Out",
-            zmax=MAX_DAYS,
-            highlight_current_week=True
-            
+            zmax=MAX_DAYS
         )
-        st.plotly_chart(fig, width='stretch')
+
     else:
-        st.subheader("🔀 Combined")
-        combined_colors = [[0.0, "rgb(150,255,150)"], [1.0, "rgb(255,100,0)"]]
         fig = pf.create_52week_heatmap(
             combined_df,
             value_col="total_days",
-            title=None,
-            colorscale=color_options[selected_name],
-            colorbar_title="Total Days (Leave + Planner)",
-            zmax=MAX_DAYS,
-            highlight_current_week=True
+            zmax=MAX_DAYS
         )
-        st.plotly_chart(fig, width='stretch')
+
+    st.plotly_chart(fig, use_container_width=True)

@@ -1,27 +1,30 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import sqlite3
 import re
-#import os
-from datetime import date, timedelta
-# import data_store as ds
-from werkzeug.security import generate_password_hash
-#import matplotlib.pyplot as plt
 import plotly.graph_objects as go
-#import numpy as np
-from config import DB_PATH
+
+from datetime import date, timedelta
+from dateutil.relativedelta import relativedelta
+from werkzeug.security import generate_password_hash
+
+from db import execute, query_df
 import data_store as ds
 
+
+# ============================================================
+# CONSTANTS
+# ============================================================
 num_weeks = 52
-year = 2025   # you can make this a user input if you want
-decimals = 1 # number of decimal places
+year = 2025
+decimals = 1
 
 
+# ============================================================
+# ACTIVITY CHART
+# ============================================================
 def make_activity_chart(activity_calendar_df, programme_names):
-    import plotly.graph_objects as go
 
-    # Pivot normalised data → wide just for plotting
     plot_df = (
         activity_calendar_df
         .groupby(["week_number", "programme_category"], as_index=False)
@@ -39,13 +42,11 @@ def make_activity_chart(activity_calendar_df, programme_names):
 
     for programme in programme_names:
         if programme in plot_df.columns:
-            fig.add_trace(
-                go.Bar(
-                    x=plot_df.index,
-                    y=plot_df[programme],
-                    name=programme
-                )
-            )
+            fig.add_trace(go.Bar(
+                x=plot_df.index,
+                y=plot_df[programme],
+                name=programme
+            ))
 
     fig.update_layout(
         barmode="stack",
@@ -55,24 +56,27 @@ def make_activity_chart(activity_calendar_df, programme_names):
 
     return fig
 
-# function to dynamically change what users can view based on their access level
+
+# ============================================================
+# ACCESS FILTER
+# ============================================================
 def filter_by_access(df, staff_col="staff_member"):
+
     access = st.session_state.access_level
     username = st.session_state.username
 
-    # Admins and viewers see everything
     if access in ("admin", "viewer"):
         return df
 
-    # Users only see their own rows
     if access == "user":
         return df[df["username"] == username]
 
-    # Safety fallback
     return df.iloc[0:0]
 
-##### Functions to interact with SQLite database #####
 
+# ============================================================
+# STAFF
+# ============================================================
 def update_staff_list(
     new_staff=None,
     job_role=None,
@@ -84,877 +88,215 @@ def update_staff_list(
     username=None,
     password=None,
     user_access=None
-    ):
-    """
-    Update staff_list table in SQLite.
-    """
+):
 
-    with sqlite3.connect(DB_PATH) as conn:
-        cursor = conn.cursor()
+    if not new_staff:
+        return
 
-        # --- ADD NEW STAFF MEMBER ---
-        if new_staff:
-            cursor.execute("""
-                    INSERT INTO staff_list (
-                        staff_member,
-                        job_role,
-                        hours_pw,
-                        leave_allowance_days,
-                        is_deployable,
-                        deploy_ratio,
-                        default_programme,
-                        username,
-                        password,
-                        access_level,
-                        archive_flag
-                    )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
-                    ON CONFLICT(staff_member)
-                    DO UPDATE SET
-                        job_role = excluded.job_role,
-                        hours_pw = excluded.hours_pw,
-                        leave_allowance_days = excluded.leave_allowance_days,
-                        is_deployable = excluded.is_deployable,
-                        deploy_ratio = excluded.deploy_ratio,
-                        default_programme = excluded.default_programme,
-                        username = excluded.username,
-                        password = excluded.password,
-                        access_level = excluded.access_level
-                    """, (
-                        new_staff,
-                        job_role,
-                        hours_pw,
-                        leave_allowance_days,
-                        int(is_deployable) if is_deployable is not None else None,
-                        deploy_ratio,
-                        default_programme,
-                        username,
-                        generate_password_hash(password) if password else None,
-                        user_access
-                    ))
-            
-            conn.commit()
-        
-def update_programme_list(
-    new_programme=None,
-    programme_type=None,
-    programme_group=None
-    #archive_programme=None
-    ):
-    with sqlite3.connect(DB_PATH) as conn:
-        cursor = conn.cursor()
+    hashed_pw = generate_password_hash(password) if password else None
 
-        if new_programme:
-            cursor.execute(
-                """
-                INSERT OR IGNORE INTO programme_categories (
-                    programme_categories,
-                    programme_type,
-                    programme_group,
-                    archive_flag
-                )
-                VALUES (?, ?, ?, 0)
-                """,
-                (new_programme, programme_type, programme_group)
-            )
-
-            conn.commit()
-
-        # if archive_programme:
-        #     cursor.execute(
-        #         """
-        #         UPDATE programme_categories
-        #         SET archive_flag = 1
-        #         WHERE programme_categories = ?
-        #         """,
-        #         (archive_programme,)
-        #     )
-
-        # conn.commit()
+    execute("""
+        INSERT INTO staff_list (
+            staff_member,
+            job_role,
+            hours_pw,
+            leave_allowance_days,
+            is_deployable,
+            deploy_ratio,
+            default_programme,
+            username,
+            password,
+            access_level,
+            archive_flag
+        )
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 0)
+        ON CONFLICT (staff_member)
+        DO UPDATE SET
+            job_role = EXCLUDED.job_role,
+            hours_pw = EXCLUDED.hours_pw,
+            leave_allowance_days = EXCLUDED.leave_allowance_days,
+            is_deployable = EXCLUDED.is_deployable,
+            deploy_ratio = EXCLUDED.deploy_ratio,
+            default_programme = EXCLUDED.default_programme,
+            username = EXCLUDED.username,
+            password = EXCLUDED.password,
+            access_level = EXCLUDED.access_level
+    """, (
+        new_staff,
+        job_role,
+        hours_pw,
+        leave_allowance_days,
+        int(is_deployable) if is_deployable is not None else None,
+        deploy_ratio,
+        default_programme,
+        username,
+        hashed_pw,
+        user_access
+    ))
 
 
-def update_password(conn, username, new_password):
-    """
-    Update a user's password and clear must_change_password flag
-    """
+def restore_staff(staff_member):
+
+    execute("""
+        UPDATE staff_list
+        SET archive_flag = 0
+        WHERE staff_member = %s
+    """, (staff_member,))
+
+
+def update_password(username, new_password):
 
     hashed_password = generate_password_hash(new_password)
 
-    with sqlite3.connect(DB_PATH) as conn:
-        cursor = conn.cursor()
-        
-        cursor.execute(
-            """
-            UPDATE staff_list
-            SET password = ?,
-                must_change_password = 0
-            WHERE username = ?
-            """,
-            (hashed_password, username)
+    execute("""
+        UPDATE staff_list
+        SET password = %s,
+            must_change_password = 0
+        WHERE username = %s
+    """, (hashed_password, username))
+
+
+# ============================================================
+# PROGRAMME
+# ============================================================
+def update_programme_list(new_programme=None, programme_type=None, programme_group=None):
+
+    if not new_programme:
+        return
+
+    execute("""
+        INSERT INTO programme_categories (
+            programme_category,
+            programme_type,
+            programme_group,
+            archive_flag
         )
+        VALUES (%s, %s, %s, 0)
+        ON CONFLICT (programme_category)
+        DO UPDATE SET
+            programme_type = EXCLUDED.programme_type,
+            programme_group = EXCLUDED.programme_group
+    """, (new_programme, programme_type, programme_group))
 
-        conn.commit()
-        #conn.close()
 
-def restore_staff(conn, staff_member):
-    
-    with sqlite3.connect(DB_PATH) as conn:
-        cursor = conn.cursor()
-
-        cursor.execute(
-            "UPDATE staff_list SET archive_flag = 0 WHERE staff_member = ?",
-            (staff_member,)
-        )
-        conn.commit()
-        #conn.close()
-
+# ============================================================
+# PROGRAMME ACTIVITY
+# ============================================================
 def save_programme_activity(
     selected_staff,
     week_commencing,
     activity_inputs,
     repeat_weeks=1
 ):
-    """
-    Save programme activity for one or multiple weeks.
-    """
-
-    import sqlite3
-    import pandas as pd
-    from datetime import timedelta
-    from data_store import DB_PATH
 
     base_week = pd.to_datetime(week_commencing)
 
-    with sqlite3.connect(DB_PATH) as conn:
+    for week_offset in range(repeat_weeks):
 
-        cursor = conn.cursor()
+        current_week = base_week + timedelta(weeks=week_offset)
+        week_number = int(current_week.isocalendar().week)
 
-        for week_offset in range(repeat_weeks):
+        execute("""
+            DELETE FROM programme_activity
+            WHERE staff_member = %s
+            AND week_commencing = %s
+        """, (selected_staff, current_week.date()))
 
-            current_week = base_week + timedelta(weeks=week_offset)
+        for programme, hours in activity_inputs.items():
 
-            week_number = int(current_week.isocalendar().week)
+            if float(hours) <= 0:
+                continue
 
-            # ---------------------------------
-            # DELETE EXISTING ENTRIES
-            # ---------------------------------
-            cursor.execute("""
-                DELETE FROM programme_activity
-                WHERE staff_member = ?
-                AND week_commencing = ?
+            execute("""
+                INSERT INTO programme_activity (
+                    staff_member,
+                    programme_category,
+                    activity_value,
+                    week_commencing,
+                    week_number
+                )
+                VALUES (%s, %s, %s, %s, %s)
             """, (
                 selected_staff,
-                current_week.strftime("%Y-%m-%d")
+                programme,
+                float(hours),
+                current_week.date(),
+                week_number
             ))
 
-            # ---------------------------------
-            # INSERT NEW VALUES
-            # ---------------------------------
-            for programme, hours in activity_inputs.items():
 
-                if float(hours) <= 0:
-                    continue
-
-                cursor.execute("""
-                    INSERT INTO programme_activity (
-                        staff_member,
-                        programme_category,
-                        activity_value,
-                        week_commencing,
-                        week_number
-                    )
-                    VALUES (?, ?, ?, ?, ?)
-                """, (
-                    selected_staff,
-                    programme,
-                    float(hours),
-                    current_week.strftime("%Y-%m-%d"),
-                    week_number
-                ))
-
-        conn.commit()
-
+# ============================================================
+# LEAVE
+# ============================================================
 def save_annual_leave(staff_member, week_commencing, days_leave):
+
     week_commencing = pd.to_datetime(week_commencing)
     week_number = int(week_commencing.isocalendar().week)
 
-    with sqlite3.connect(DB_PATH) as conn:
-        cursor = conn.cursor()
-
-        cursor.execute("""
-            INSERT INTO leave_calendar (
-                staff_member,
-                week_commencing,
-                week_number,
-                days_leave,
-                updated_at
-            )
-            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
-            ON CONFLICT(staff_member, week_commencing)
-            DO UPDATE SET
-                days_leave = excluded.days_leave,
-                week_number = excluded.week_number,
-                updated_at = CURRENT_TIMESTAMP
-        """, (
+    execute("""
+        INSERT INTO leave_calendar (
             staff_member,
-            week_commencing.date(),
+            week_commencing,
             week_number,
-            days_leave
-        ))
+            days_leave,
+            updated_at
+        )
+        VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP)
+        ON CONFLICT (staff_member, week_commencing)
+        DO UPDATE SET
+            days_leave = EXCLUDED.days_leave,
+            week_number = EXCLUDED.week_number,
+            updated_at = CURRENT_TIMESTAMP
+    """, (
+        staff_member,
+        week_commencing.date(),
+        week_number,
+        days_leave
+    ))
 
-        conn.commit()
-        #conn.close()
 
+# ============================================================
+# ON SITE
+# ============================================================
 def save_on_site(staff_member, programme_category, week_commencing, on_site_days):
+
     week_commencing = pd.to_datetime(week_commencing)
     week_number = int(week_commencing.isocalendar().week)
-    with sqlite3.connect(DB_PATH) as conn:
-        cursor = conn.cursor()
-        cursor.execute("""
-            INSERT INTO on_site_calendar (
-                staff_member,
-                programme_category,
-                week_commencing,
-                week_number,
-                on_site_days,
-                updated_at
-            )
-            VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-            ON CONFLICT(staff_member, programme_category, week_commencing)
-            DO UPDATE SET
-                on_site_days = excluded.on_site_days,
-                week_number = excluded.week_number,
-                updated_at = CURRENT_TIMESTAMP
-        """, (
+
+    execute("""
+        INSERT INTO on_site_calendar (
             staff_member,
             programme_category,
-            week_commencing.date(),
+            week_commencing,
             week_number,
-            on_site_days
-        ))
-        conn.commit()
-
-# ------------------------------------------------
-# Helper function to create heatmaps
-# ------------------------------------------------
-
-def create_52week_heatmap(
-    df,
-    staff_col='staff_member',
-    week_col='week_commencing',
-    value_col='value',
-    title="Staff Weekly Heatmap",
-    colorscale="YlGnBu",
-    colorbar_title="Value",
-    zmax=None,
-    highlight_current_week=True  # toggle highlight
-    ):
-    """
-    Generates a 52-week heatmap for all staff with optional current week highlight
-    and hover text disabled.
-    """
-
-    df = df.copy()
-
-    # Convert week_col to datetime.date
-    df[week_col] = pd.to_datetime(df[week_col], errors='coerce').dt.date
-
-    # Generate 52 Mondays (26 back, 26 forward)
-    today = date.today()
-    start_monday = today - timedelta(weeks=26, days=today.weekday())
-    week_commencings = [start_monday + timedelta(weeks=i) for i in range(52)]
-
-    # Full staff × week grid
-    staff_members = df[staff_col].unique()
-    full_grid = pd.MultiIndex.from_product(
-        [staff_members, week_commencings],
-        names=[staff_col, week_col]
-    ).to_frame(index=False)
-    full_grid = full_grid.sort_values([staff_col, week_col]).reset_index(drop=True)
-    full_grid['week_number'] = full_grid.groupby(staff_col).cumcount() + 1
-
-    # Merge with existing data
-    df_full = full_grid.merge(
-        df[[staff_col, week_col, value_col]],
-        on=[staff_col, week_col],
-        how='left'
-    )
-    df_full[value_col] = df_full[value_col].fillna(0).astype(int)
-
-    # Determine zmax
-    if zmax is None:
-        zmax = df_full[value_col].max()
-
-    # Pivot for heatmap
-    pivot = df_full.pivot_table(
-    index=staff_col,
-    columns=week_col,
-    values=value_col,
-    fill_value=0
-    )
-
-    # Remove unwanted axis labels like "undefined"
-    pivot.index.name = None
-    pivot.columns.name = None
-
-    # Alternative safe method
-    pivot = pivot.rename_axis(None, axis=0)
-    pivot = pivot.rename_axis(None, axis=1)
-
-    z = pivot.to_numpy()
-    y = pivot.index.astype(str).tolist()
-    cols = list(pivot.columns)
-    x_vals = list(range(len(cols)))
-
-    # Tick labels and current week index
-    ticktext = []
-    current_idx = None
-    current_week_start = today - timedelta(days=today.weekday())
-
-    for i, c in enumerate(cols):
-        c_date = pd.to_datetime(c).date() if isinstance(c, str) else c
-        ticktext.append(c_date.strftime("%d-%b-%y"))
-        if highlight_current_week and c_date == current_week_start:
-            current_idx = i
-
-    # Build heatmap with hover disabled
-    fig = go.Figure(
-        data=go.Heatmap(
-            z=z,
-            x=x_vals,
-            y=y,
-            colorscale=colorscale,
-            zmin=0,
-            zmax=zmax,
-            colorbar=dict(title=colorbar_title),
-            hoverinfo='skip',       # disables hover
-            hovertemplate=None       # ensures hover template is ignored
+            on_site_days,
+            updated_at
         )
-    )
-
-    fig.update_layout(
-    title=title if title else "",
-    xaxis=dict(
-        tickmode="array",
-        tickvals=x_vals,
-        ticktext=ticktext,
-        tickangle=90,
-        title=None
-    ),
-    yaxis=dict(
-        automargin=True,
-        title=None
-    ),
-    margin=dict(l=160, r=20, t=40, b=120),
-    height=max(350, pivot.shape[0] * 20 + 160),
-    showlegend=False,
-    )  
-
-    # Highlight current week column fully behind heatmap
-    shapes = []
-
-    # Current week highlight
-    if highlight_current_week and current_idx is not None:
-        shapes.append(
-            dict(
-                type="rect",
-                x0=current_idx - 0.5,
-                x1=current_idx + 0.5,
-                y0=-0.5,
-                y1=len(y)-0.5,
-                xref="x",
-                yref="y",
-                fillcolor="black",
-                opacity=0.3,
-                line_width=5,
-                layer="above",
-            )
-        )
-
-    # Subtle horizontal row separators
-    for i in range(1, len(y)):
-        shapes.append(
-            dict(
-                type="line",
-                x0=-0.5,
-                x1=len(x_vals) - 0.5,
-                y0=i - 0.5,
-                y1=i - 0.5,
-                xref="x",
-                yref="y",
-                line=dict(
-                    color="rgba(120,120,120,0.25)",
-                    width=0.8
-                ),
-                layer="above"
-            )
-        )
-
-    fig.update_layout(shapes=shapes)
-
-    row_lines = []
-
-    for i in range(1, len(y)):
-        row_lines.append(
-            dict(
-                type="line",
-                x0=-0.5,
-                x1=len(x_vals) - 0.5,
-                y0=i - 0.5,
-                y1=i - 0.5,
-                xref="x",
-                yref="y",
-                line=dict(
-                    color="rgba(120,120,120,0.25)",
-                    width=0.8
-                ),
-                layer="above"
-            )
-        )
-
-    # Preserve existing shapes if present
-    existing_shapes = list(fig.layout.shapes) if fig.layout.shapes else []
-    fig.update_layout(shapes=existing_shapes + row_lines)
-
-    return fig
-
-def create_heatmap(
-    df,
-    value_col,
-    title,
-    colorscale,
-    colorbar_title,
-    zmax,
-    current_week_start=None
-    ):
-    """Build a standardized Plotly heatmap used in dashboard pages."""
-    MAX_DAYS = zmax
-    if current_week_start is None:
-        today = date.today()
-        current_week_start = today - timedelta(days=today.weekday())
-    df = df.copy()
-    df["week_commencing"] = pd.to_datetime(df["week_commencing"], errors="coerce").dt.date
-    pivot = df.pivot_table(
-        index="staff_member",
-        columns="week_commencing",
-        values=value_col,
-        fill_value=0
-    )
-    z = pivot.to_numpy()
-    y = pivot.index.astype(str).tolist()
-    cols = list(pivot.columns)
-    x_vals = list(range(len(cols)))
-    ticktext = []
-    current_idx = None
-    for i, c in enumerate(cols):
-        if hasattr(c, "date"):
-            c_date = c.date()
-            ticktext.append(c.strftime("%d-%b-%y"))
-            if c_date == current_week_start:
-                current_idx = i
-        else:
-            ticktext.append(str(c))
-    fig = go.Figure(
-        data=go.Heatmap(
-            z=z,
-            x=x_vals,
-            y=y,
-            colorscale=colorscale,
-            zmin=0,
-            zmax=MAX_DAYS,
-            colorbar=dict(title=colorbar_title),
-            customdata=[[c.strftime("%d-%b-%y") for c in cols]] * len(y),
-            hovertemplate=(
-                "Staff: %{y}<br>"
-                "Week Commencing: %{customdata}<br>"
-                f"{colorbar_title}: " + "%{z:.1f}<extra></extra>"
-            ),
-        )
-    )
-    fig.update_layout(
-        xaxis=dict(
-            tickmode="array",
-            tickvals=x_vals,
-            ticktext=ticktext,
-            tickangle=90,
-        ),
-        yaxis=dict(automargin=True),
-        margin=dict(l=160, r=20, t=40, b=120),
-        height=max(350, pivot.shape[0] * 20 + 160),
-        showlegend=False,
-    )
-    if current_idx is not None:
-        fig.add_vrect(
-            x0=current_idx - 0.5,
-            x1=current_idx + 0.5,
-            xref="x",
-            yref="paper",
-            fillcolor="rgba(0,0,0,0.12)",
-            opacity=0.15,
-            line_width=2,
-            line_color="black",
-            layer="below",
-        )
-    return fig
-
-def preview_colorscale(colorscale, title="Color Preview", n=100):
-    """Show a horizontal bar preview of a given colorscale."""
-    z = np.tile(np.linspace(0, 1, n), (10, 1))
-    fig = go.Figure(
-        data=go.Heatmap(
-            z=z,
-            colorscale=colorscale,
-            showscale=False
-        )
-    )
-    fig.update_layout(
-        title={"text": title, "x": 0.5},
-        xaxis=dict(showticklabels=False),
-        yaxis=dict(showticklabels=False),
-        height=100,
-        margin=dict(l=20, r=20, t=40, b=20),
-    )
-    return fig
-
-def clean_programme(text):
-    if pd.isna(text):
-        return text
-
-    # Step 1: Replace standalone "and" with "&" (case-insensitive)
-    text = re.sub(r'\band\b', '&', text, flags=re.IGNORECASE)
-
-    # Step 2: Split text into words
-    words = text.split()
-
-    cleaned_words = []
-    for w in words:
-        # If word is all uppercase (acronym), keep it as is
-        if w.isupper():
-            cleaned_words.append(w)
-        else:
-            # Otherwise capitalize first letter
-            cleaned_words.append(w.capitalize())
-
-    return ' '.join(cleaned_words)
-
-def get_weekly_data_entry_status(
-    staff_list,
-    programme_calendar_df,
-    leave_calendar_df,
-    week_commencing
-    ):
-    """
-    Returns a staff-level checklist showing whether each staff member
-    has entered programme activity for the selected week.
-    """
-
-    import pandas as pd
-
-    # -----------------------------
-    # Standardise week format
-    # -----------------------------
-    week_commencing = pd.to_datetime(week_commencing).date()
-
-    programme_calendar_df = programme_calendar_df.copy()
-    leave_calendar_df = leave_calendar_df.copy()
-
-    programme_calendar_df["week_commencing"] = pd.to_datetime(
-        programme_calendar_df["week_commencing"]
-    ).dt.date
-
-    leave_calendar_df["week_commencing"] = pd.to_datetime(
-        leave_calendar_df["week_commencing"]
-    ).dt.date
-
-    # -----------------------------
-    # Active staff only
-    # -----------------------------
-    df = staff_list.loc[
-        staff_list["archive_flag"] == 0,
-        ["staff_member"]
-    ].copy()
-
-    # -----------------------------
-    # WHO HAS ENTERED PROGRAMME DATA
-    # -----------------------------
-    entered_staff = programme_calendar_df.loc[
-        programme_calendar_df["week_commencing"] == week_commencing,
-        "staff_member"
-    ].dropna().unique()
-
-    df["has_entered"] = df["staff_member"].isin(entered_staff)
-
-    # -----------------------------
-    # OPTIONAL: leave context (not blocking entry flag)
-    # -----------------------------
-    leave_summary = leave_calendar_df.loc[
-        leave_calendar_df["week_commencing"] == week_commencing
-    ].copy()
-
-    if not leave_summary.empty:
-        leave_summary = (
-            leave_summary.groupby("staff_member")["days_leave"]
-            .sum()
-            .reset_index()
-        )
-    else:
-        leave_summary = pd.DataFrame(columns=["staff_member", "days_leave"])
-
-    df = df.merge(leave_summary, on="staff_member", how="left")
-    df["days_leave"] = df["days_leave"].fillna(0)
-
-    df["on_full_leave"] = df["days_leave"] >= 5
-
-    # -----------------------------
-    # STATUS LOGIC
-    # -----------------------------
-    def get_status(row):
-        if row["has_entered"]:
-            return "Entered"
-        elif row["on_full_leave"]:
-            return "On Leave"
-        else:
-            return "Missing"
-
-    df["status"] = df.apply(get_status, axis=1)
-
-    # -----------------------------
-    # PRIORITY FLAG (for sorting / red highlighting)
-    # -----------------------------
-    df["needs_attention"] = ~df["has_entered"] & ~df["on_full_leave"]
-
-    # -----------------------------
-    # SORT: missing first
-    # -----------------------------
-    df = df.sort_values(
-        ["needs_attention", "staff_member"],
-        ascending=[False, True]
-    ).reset_index(drop=True)
-
-    # -----------------------------
-    # CLEAN OUTPUT FOR UI
-    # -----------------------------
-
-    df["days_leave"] = df["days_leave"].fillna(0)
-
-    # round to nearest 0.5 day
-    df["days_leave"] = (df["days_leave"] * 2).round() / 2
-
-    df_clean = df.rename(columns={
-        "staff_member": "Staff Member",
-        "days_leave": "Days Leave",
-        "status": "Status"
-    })[["Staff Member", "Days Leave", "Status"]]
-
-    return df_clean
-
-def render_data_entry_checklist(df_flags):
-
-    import streamlit as st
-
-    st.subheader("📋 Data Entry Checklist")
-
-    def colour_row(row):
-
-        if row["Status"] == "Entered":
-            return ["background-color: #d4edda"] * len(row)
-
-        elif row["Status"] == "On Leave":
-            return ["background-color: #fff3cd"] * len(row)
-
-        else:
-            return ["background-color: #f8d7da"] * len(row)
-
-    st.dataframe(
-        df_flags.style.apply(colour_row, axis=1),
-        use_container_width=True,
-        hide_index=True
-    )
-
-    missing = (df_flags["Status"] == "Missing").sum()
-
-    on_leave = (df_flags["Status"] == "On Leave").sum()
-
-    if missing == 0:
-        st.success("✅ All staff have entered data for this week")
-    else:
-        st.warning(f"⚠️ {missing} staff still need to enter data")
-
-    if on_leave > 0:
-        st.info(f"🏖 {on_leave} staff are on full-week leave")
-
-# ============================
-# DEFAULT PROGRAMME HELPERS
-# ============================
-
-def clean_default_programme_column(staff_df, programme_df):
-    """
-    Ensures default_programme exists, is cleaned, and valid.
-    """
-    df = staff_df.copy()
-
-    if "default_programme" not in df.columns:
-        df["default_programme"] = None
-
-    df["default_programme"] = (
-        df["default_programme"]
-        .astype(str)
-        .str.strip()
-        .replace({"": None, "nan": None})
-    )
-
-    valid_programmes = set(
-        programme_df["programme_categories"]
-        .dropna()
-        .astype(str)
-        .str.strip()
-    )
-
-    df["default_programme"] = df["default_programme"].apply(
-        lambda x: x if x in valid_programmes else None
-    )
-
-    return df
-
-
-def get_default_programme_map(staff_df):
-    return dict(zip(staff_df["staff_member"], staff_df["default_programme"]))
-
-
-def get_deployable_hours_map(staff_df):
-    df = staff_df.copy()
-    df["hours_pw"] = df["hours_pw"].fillna(37.5)
-    df["deploy_ratio"] = df["deploy_ratio"].fillna(1.0)
-    df["deployable_hours"] = df["hours_pw"] * df["deploy_ratio"]
-    return dict(zip(df["staff_member"], df["deployable_hours"]))
-
-
-def calculate_default_hours_for_staff(staff_df, staff_member, pct=1.0):
-    """
-    Calculates default hours based on deployable capacity.
-    """
-    row = staff_df.loc[staff_df["staff_member"] == staff_member]
-
-    if row.empty:
-        return 0.0
-
-    hours_pw = float(row.iloc[0].get("hours_pw", 37.5) or 37.5)
-    deploy_ratio = float(row.iloc[0].get("deploy_ratio", 1.0) or 1.0)
-
-    deployable_hours = hours_pw * deploy_ratio
-
-    return round(deployable_hours * pct, 1)
-
-
-# ============================
-# CAPACITY CALCULATIONS
-# ============================
-
-def build_staff_week_capacity(prog_df, leave_df, staff_df):
-    """
-    Builds staff-week capacity table.
-    """
-    prog_staff_week = (
-        prog_df
-        .groupby(["staff_member", "week_commencing"], as_index=False)
-        .agg(total_prog_hours=("activity_value", "sum"))
-    )
-
-    leave_df = leave_df.copy()
-    leave_df["leave_hours"] = leave_df["days_leave"].fillna(0) * 7.5
-
-    leave_staff_week = (
-        leave_df
-        .groupby(["staff_member", "week_commencing"], as_index=False)
-        .agg(total_leave_hours=("leave_hours", "sum"))
-    )
-
-    staff_base = staff_df[["staff_member", "hours_pw", "deploy_ratio"]].copy()
-
-    staff_week = prog_staff_week.merge(
-        leave_staff_week,
-        on=["staff_member", "week_commencing"],
-        how="outer"
-    ).merge(
-        staff_base,
-        on="staff_member",
-        how="left"
-    )
-
-    staff_week = staff_week.fillna({
-        "total_prog_hours": 0,
-        "total_leave_hours": 0,
-        "deploy_ratio": 1.0,
-        "hours_pw": 37.5
-    })
-
-    staff_week["total_contr_hours"] = staff_week["hours_pw"]
-    staff_week["total_avail_hours"] = (
-        (staff_week["total_contr_hours"] - staff_week["total_leave_hours"]) * (1 - staff_week["deploy_ratio"])
-    ).clip(lower=0)
-
-    staff_week["total_non_deploy_hours"] = (
-        staff_week["total_avail_hours"] * (1 - staff_week["deploy_ratio"])
-    )
-
-    staff_week["total_util_hours"] = (
-        staff_week["total_prog_hours"] + staff_week["total_non_deploy_hours"]
-    )
-
-    return staff_week
-
-
-def build_weekly_summary(staff_week, target_util_rate):
-    weekly = (
-        staff_week
-        .groupby("week_commencing", as_index=False)
-        .agg(
-            total_leave_hours=("total_leave_hours", "sum"),
-            total_contr_hours=("total_contr_hours", "sum"),
-            total_avail_hours=("total_avail_hours", "sum"),
-            total_prog_hours=("total_prog_hours", "sum"),
-            total_non_deploy_hours=("total_non_deploy_hours", "sum"),
-            total_util_hours=("total_util_hours", "sum"),
-        )
-        .sort_values("week_commencing")
-    )
-
-    weekly["util_rate"] = (
-        (weekly["total_non_deploy_hours"] + weekly["total_prog_hours"])
-        / weekly["total_avail_hours"]
-        * 100
-    ).fillna(0)
-
-    weekly["util_target"] = target_util_rate
-
-    return weekly
-
-
-def build_monthly_summary(staff_week, weekly):
-    weekly_by_staff = (
-        staff_week
-        .groupby(["staff_member","week_commencing"], as_index=False)
-        .sum(numeric_only=True)
-    )
-
-    monthly = weekly.copy()
-    monthly["month"] = monthly["week_commencing"].dt.to_period("M").dt.to_timestamp()
-
-    monthly_by_staff = weekly_by_staff.copy()
-    monthly_by_staff["month"] = monthly_by_staff["week_commencing"].dt.to_period("M").dt.to_timestamp()
-
-    monthly_by_staff = (
-        monthly_by_staff
-        .groupby(["staff_member","month"], as_index=False)
-        .sum(numeric_only=True)
-    )
-
-    return monthly_by_staff
-
+        VALUES (%s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
+        ON CONFLICT (staff_member, programme_category, week_commencing)
+        DO UPDATE SET
+            on_site_days = EXCLUDED.on_site_days,
+            week_number = EXCLUDED.week_number,
+            updated_at = CURRENT_TIMESTAMP
+    """, (
+        staff_member,
+        programme_category,
+        week_commencing.date(),
+        week_number,
+        on_site_days
+    ))
+
+
+# ============================================================
+# REFRESH FUNCTIONS
+# ============================================================
+
+# ============================================================
+# TRIGGER RELOAD HANDLER
+# ============================================================
 def handle_trigger_reload():
     """
     Centralised reload handler for Streamlit session state triggers.
-    Calls appropriate data refresh functions in data_store.
     """
 
     trigger = st.session_state.get("trigger_reload")
@@ -976,172 +318,760 @@ def handle_trigger_reload():
 
     # Clear trigger after handling
     del st.session_state["trigger_reload"]
+def refresh_leave_calendar():
+    df = query_df("SELECT * FROM leave_calendar")
+    df["week_commencing"] = pd.to_datetime(df["week_commencing"], errors="coerce")
+    st.session_state.leave_calendar_df = df
 
-def reset_all_passwords(temp_password="Temporary123!", only_if_null=False):
+
+def refresh_onsite_calendar():
+    df = query_df("""
+        SELECT staff_member,
+               week_commencing,
+               week_number,
+               SUM(on_site_days) AS on_site_days
+        FROM on_site_calendar
+        GROUP BY staff_member, week_commencing, week_number
+    """)
+    df["week_commencing"] = pd.to_datetime(df["week_commencing"], errors="coerce")
+    st.session_state.onsite_calendar_df = df
+
+
+def refresh_programme_activity():
+    df = query_df("SELECT * FROM programme_activity")
+    df["week_commencing"] = pd.to_datetime(df["week_commencing"], errors="coerce")
+    st.session_state.programme_calendar_df = df
+
+# ============================================================
+# DEFAULT PROGRAMME CLEANING
+# ============================================================
+def clean_default_programme_column(programme_df):
     """
-    Resets passwords for staff in the database.
-
-    Args:
-        temp_password (str): password to apply
-        only_if_null (bool): if True, only reset users with no password set
+    Ensures default_programme exists, is cleaned, and valid.
     """
 
-    hashed_pw = generate_password_hash(temp_password)
+    df = programme_df.copy()
 
-    with sqlite3.connect(DB_PATH) as conn:
-        cursor = conn.cursor()
+    # Ensure column exists
+    if "default_programme" not in df.columns:
+        df["default_programme"] = None
 
-        if only_if_null:
-            cursor.execute("""
-                UPDATE staff_list
-                SET password = ?, must_change_password = 1
-                WHERE password IS NULL OR password = ''
-            """, (hashed_pw,))
+    # Clean values
+    df["default_programme"] = (
+        df["default_programme"]
+        .astype(str)
+        .str.strip()
+        .replace({"": None, "nan": None})
+    )
+
+    # Validate against actual programme list
+    valid_programmes = set(
+        programme_df["programme_category"]
+        .dropna()
+        .astype(str)
+        .str.strip()
+    )
+
+    df["default_programme"] = df["default_programme"].apply(
+        lambda x: x if x in valid_programmes else None
+    )
+
+    return df
+
+# ============================================================
+# DEFAULT PROGRAMME HELPERS
+# ============================================================
+
+# ============================================================
+# DEFAULT PROGRAMME CLEANING (FIXED FOR YOUR COLUMN)
+# ============================================================
+def clean_default_programme_column(programme_df):
+    """
+    Cleans and validates the default_programme column.
+    Uses actual DB column: programme_categories
+    """
+
+    df = programme_df.copy()
+
+    # ✅ Use your real column name
+    programme_col = "programme_categories"
+
+    if programme_col not in df.columns:
+        raise KeyError(
+            f"Column '{programme_col}' not found. Columns: {list(df.columns)}"
+        )
+
+    # --------------------------------------------------------
+    # Ensure default_programme exists
+    # --------------------------------------------------------
+    if "default_programme" not in df.columns:
+        df["default_programme"] = None
+
+    # --------------------------------------------------------
+    # Clean values
+    # --------------------------------------------------------
+    df["default_programme"] = (
+        df["default_programme"]
+        .astype(str)
+        .str.strip()
+        .replace({"": None, "nan": None, "None": None})
+    )
+
+    # --------------------------------------------------------
+    # Validate against real programme list
+    # --------------------------------------------------------
+    valid_programmes = set(
+        df[programme_col]
+        .dropna()
+        .astype(str)
+        .str.strip()
+    )
+
+    df["default_programme"] = df["default_programme"].apply(
+        lambda x: x if x in valid_programmes else None
+    )
+
+    return df
+
+def get_default_programme_map(staff_df):
+    return dict(zip(staff_df["staff_member"], staff_df["default_programme"]))
+
+
+def get_deployable_hours_map(staff_df):
+    df = staff_df.copy()
+    df["hours_pw"] = df["hours_pw"].fillna(37.5)
+    df["deploy_ratio"] = df["deploy_ratio"].fillna(1.0)
+    df["deployable_hours"] = df["hours_pw"] * df["deploy_ratio"]
+    return dict(zip(df["staff_member"], df["deployable_hours"]))
+
+
+def calculate_default_hours_for_staff(staff_df, staff_member, pct=1.0):
+
+    row = staff_df.loc[staff_df["staff_member"] == staff_member]
+
+    if row.empty:
+        return 0.0
+
+    hours_pw = float(row.iloc[0].get("hours_pw", 37.5) or 37.5)
+    deploy_ratio = float(row.iloc[0].get("deploy_ratio", 1.0) or 1.0)
+
+    deployable_hours = hours_pw * deploy_ratio
+
+    return round(deployable_hours * pct, 1)
+
+
+# ============================================================
+# DATA ENTRY STATUS
+# ============================================================
+
+def get_weekly_data_entry_status(staff_list, programme_calendar_df, leave_calendar_df, week_commencing):
+
+    week_commencing = pd.to_datetime(week_commencing).date()
+
+    programme_calendar_df = programme_calendar_df.copy()
+    leave_calendar_df = leave_calendar_df.copy()
+
+    programme_calendar_df["week_commencing"] = pd.to_datetime(programme_calendar_df["week_commencing"]).dt.date
+    leave_calendar_df["week_commencing"] = pd.to_datetime(leave_calendar_df["week_commencing"]).dt.date
+
+    df = staff_list.loc[
+        staff_list["archive_flag"] == 0,
+        ["staff_member"]
+    ].copy()
+
+    entered_staff = programme_calendar_df.loc[
+        programme_calendar_df["week_commencing"] == week_commencing,
+        "staff_member"
+    ].dropna().unique()
+
+    df["has_entered"] = df["staff_member"].isin(entered_staff)
+
+    leave_summary = leave_calendar_df.loc[
+        leave_calendar_df["week_commencing"] == week_commencing
+    ]
+
+    if not leave_summary.empty:
+        leave_summary = leave_summary.groupby("staff_member")["days_leave"].sum().reset_index()
+    else:
+        leave_summary = pd.DataFrame(columns=["staff_member", "days_leave"])
+
+    df = df.merge(leave_summary, on="staff_member", how="left")
+    df["days_leave"] = df["days_leave"].fillna(0)
+
+    df["on_full_leave"] = df["days_leave"] >= 5
+
+    def get_status(row):
+        if row["has_entered"]:
+            return "Entered"
+        elif row["on_full_leave"]:
+            return "On Leave"
         else:
-            cursor.execute("""
-                UPDATE staff_list
-                SET password = ?, must_change_password = 1
-            """, (hashed_pw,))
+            return "Missing"
 
-        conn.commit()
+    df["status"] = df.apply(get_status, axis=1)
+    df["needs_attention"] = ~df["has_entered"] & ~df["on_full_leave"]
 
-    return True
+    df = df.sort_values(["needs_attention", "staff_member"], ascending=[False, True])
 
-def reset_passwords_from_dataframe(staff_df, temp_password="Temporary123!"):
-    hashed_pw = generate_password_hash(temp_password)
+    return df
 
-    with sqlite3.connect(DB_PATH) as conn:
-        cursor = conn.cursor()
+def render_data_entry_checklist(df_flags):
 
-        for _, row in staff_df.iterrows():
-            cursor.execute("""
-                UPDATE staff_list
-                SET password = ?, must_change_password = 1
-                WHERE staff_member = ?
-            """, (hashed_pw, row["staff_member"]))
+    st.subheader("📋 Data Entry Checklist")
 
-        conn.commit()
+    def colour_row(row):
+        if row["status"] == "Entered":
+            return ["background-color: #d4edda"] * len(row)
+        elif row["status"] == "On Leave":
+            return ["background-color: #fff3cd"] * len(row)
+        else:
+            return ["background-color: #f8d7da"] * len(row)
 
-def build_monthly_capacity_df(staff_week_df, target_util_rate=85):
+    st.dataframe(df_flags.style.apply(colour_row, axis=1), use_container_width=True)
+
+# ============================================================
+# STAFF WEEK CAPACITY
+# ============================================================
+# ============================================================
+# STAFF WEEK CAPACITY
+# ============================================================
+def build_staff_week_capacity(
+    staff_df,
+    programme_df,
+    leave_df,
+    onsite_df=None,
+    target_util_rate=0.85
+):
     """
-    Builds monthly capacity summary from staff_week_capacity_df
+    Builds weekly capacity per staff member.
+
+    Returns:
+        DataFrame with:
+        - staff_member
+        - week_commencing
+        - deployable_hours
+        - capacity_hours
+        - leave_hours
+        - available_hours
     """
 
-    if staff_week_df is None or staff_week_df.empty:
-        return pd.DataFrame(), pd.DataFrame()
+    # --------------------------------------------------------
+    # COPY INPUTS (safe)
+    # --------------------------------------------------------
+    staff_df = staff_df.copy()
+    programme_df = programme_df.copy()
+    leave_df = leave_df.copy()
 
-    # ---------------------------
-    # Weekly base
-    # ---------------------------
-    weekly = (
-        staff_week_df
-        .groupby("week_commencing", as_index=False)
+    if onsite_df is not None:
+        onsite_df = onsite_df.copy()
+
+    # --------------------------------------------------------
+    # CHECK REQUIRED COLUMNS
+    # --------------------------------------------------------
+    for col in ["staff_member"]:
+        if col not in staff_df.columns:
+            raise KeyError(f"Missing '{col}' in staff_df")
+
+    for col in ["staff_member", "week_commencing"]:
+        if col not in programme_df.columns:
+            raise KeyError(f"Missing '{col}' in programme_df")
+
+    for col in ["staff_member", "week_commencing", "days_leave"]:
+        if col not in leave_df.columns:
+            raise KeyError(f"Missing '{col}' in leave_df")
+
+    # --------------------------------------------------------
+    # PARSE DATES
+    # --------------------------------------------------------
+    programme_df["week_commencing"] = pd.to_datetime(
+        programme_df["week_commencing"], errors="coerce"
+    )
+
+    leave_df["week_commencing"] = pd.to_datetime(
+        leave_df["week_commencing"], errors="coerce"
+    )
+
+    # --------------------------------------------------------
+    # STAFF DEFAULTS
+    # --------------------------------------------------------
+    staff_df["hours_pw"] = staff_df.get("hours_pw", 37.5).fillna(37.5)
+    staff_df["deploy_ratio"] = staff_df.get("deploy_ratio", 1.0).fillna(1.0)
+
+    staff_df["deployable_hours"] = (
+        staff_df["hours_pw"] * staff_df["deploy_ratio"]
+    )
+
+    # --------------------------------------------------------
+    # GET UNIQUE WEEKS
+    # --------------------------------------------------------
+    weeks = (
+        programme_df["week_commencing"]
+        .dropna()
+        .sort_values()
+        .unique()
+    )
+
+    if len(weeks) == 0:
+        # fallback if programme table empty
+        weeks = (
+            leave_df["week_commencing"]
+            .dropna()
+            .sort_values()
+            .unique()
+        )
+
+    if len(weeks) == 0:
+        # final fallback → return empty safely
+        return pd.DataFrame(columns=[
+            "staff_member",
+            "week_commencing",
+            "deployable_hours",
+            "capacity_hours",
+            "leave_hours",
+            "available_hours"
+        ])
+
+    # --------------------------------------------------------
+    # BUILD BASE GRID (staff x weeks)
+    # --------------------------------------------------------
+    base = pd.MultiIndex.from_product(
+        [staff_df["staff_member"], weeks],
+        names=["staff_member", "week_commencing"]
+    ).to_frame(index=False)
+
+    # --------------------------------------------------------
+    # MERGE STAFF DATA
+    # --------------------------------------------------------
+    base = base.merge(
+        staff_df[["staff_member", "deployable_hours"]],
+        on="staff_member",
+        how="left"
+    )
+
+    # --------------------------------------------------------
+    # AGGREGATE LEAVE
+    # --------------------------------------------------------
+    leave_summary = (
+        leave_df
+        .groupby(["staff_member", "week_commencing"], as_index=False)
+        .agg(days_leave=("days_leave", "sum"))
+    )
+
+    base = base.merge(
+        leave_summary,
+        on=["staff_member", "week_commencing"],
+        how="left"
+    )
+
+    base["days_leave"] = base["days_leave"].fillna(0)
+
+    # --------------------------------------------------------
+    # CONVERT LEAVE TO HOURS
+    # --------------------------------------------------------
+    base["leave_hours"] = (
+        base["days_leave"] / 5.0 * base["deployable_hours"]
+    )
+
+    # --------------------------------------------------------
+    # CAPACITY CALCULATION
+    # --------------------------------------------------------
+    base["capacity_hours"] = (
+        base["deployable_hours"] * target_util_rate
+    )
+
+    # --------------------------------------------------------
+    # AVAILABLE HOURS
+    # --------------------------------------------------------
+    base["available_hours"] = (
+        base["capacity_hours"] - base["leave_hours"]
+    )
+
+    # Prevent negative values
+    base["available_hours"] = base["available_hours"].clip(lower=0)
+
+    # --------------------------------------------------------
+    # FINAL SORT
+    # --------------------------------------------------------
+    base = base.sort_values(
+        ["staff_member", "week_commencing"]
+    ).reset_index(drop=True)
+
+    return base
+
+# ============================================================
+# MONTHLY SUMMARY (BY STAFF)
+# ============================================================
+def build_monthly_summary(staff_week_df, weekly_df):
+    """
+    Builds monthly summary per staff member.
+
+    Inputs:
+        staff_week_df : output of build_staff_week_capacity
+        weekly_df     : output of build_weekly_summary
+
+    Returns:
+        DataFrame grouped by:
+        - staff_member
+        - month
+    """
+
+    df = staff_week_df.copy()
+
+    # --------------------------------------------------------
+    # SAFETY CHECKS
+    # --------------------------------------------------------
+    required_cols = [
+        "staff_member",
+        "week_commencing",
+        "capacity_hours",
+        "available_hours",
+        "leave_hours"
+    ]
+
+    for col in required_cols:
+        if col not in df.columns:
+            raise KeyError(f"Missing column '{col}' in staff_week_df")
+
+    # --------------------------------------------------------
+    # ADD MONTH COLUMN
+    # --------------------------------------------------------
+    df["week_commencing"] = pd.to_datetime(
+        df["week_commencing"], errors="coerce"
+    )
+
+    df["month"] = df["week_commencing"].dt.to_period("M").astype(str)
+
+    # --------------------------------------------------------
+    # AGGREGATE PER STAFF PER MONTH
+    # --------------------------------------------------------
+    monthly = (
+        df
+        .groupby(["staff_member", "month"], as_index=False)
         .agg(
-            total_leave_hours=("total_leave_hours", "sum"),
+            total_capacity_hours=("capacity_hours", "sum"),
+            total_available_hours=("available_hours", "sum"),
+            total_leave_hours=("leave_hours", "sum")
+        )
+    )
+
+    # --------------------------------------------------------
+    # CALCULATE UTILISATION
+    # --------------------------------------------------------
+    monthly["utilisation_rate"] = (
+        1 - (monthly["total_available_hours"] / monthly["total_capacity_hours"])
+    )
+
+    monthly["utilisation_rate"] = monthly["utilisation_rate"].replace(
+        [np.inf, -np.inf], 0
+    ).fillna(0)
+
+    # --------------------------------------------------------
+    # SORT CLEANLY
+    # --------------------------------------------------------
+    monthly = monthly.sort_values(
+        ["staff_member", "month"]
+    ).reset_index(drop=True)
+
+    return monthly
+
+# ============================================================
+# MONTHLY CAPACITY SUMMARY (FIXED WITH total_util_hours)
+# ============================================================
+def build_monthly_capacity_df(staff_week_df, target_util_rate=0.85):
+
+    import pandas as pd
+    import numpy as np
+
+    df = staff_week_df.copy()
+
+    # --------------------------------------------------------
+    # CHECK REQUIRED COLUMNS
+    # --------------------------------------------------------
+    required_cols = [
+        "staff_member",
+        "week_commencing",
+        "capacity_hours",
+        "available_hours"
+    ]
+
+    for col in required_cols:
+        if col not in df.columns:
+            raise KeyError(f"Missing column '{col}' in staff_week_df")
+
+    # --------------------------------------------------------
+    # DATE → MONTH
+    # --------------------------------------------------------
+    df["week_commencing"] = pd.to_datetime(df["week_commencing"], errors="coerce")
+    df["month"] = df["week_commencing"].dt.to_period("M").dt.to_timestamp()
+
+    # --------------------------------------------------------
+    # AGGREGATE PER STAFF PER MONTH
+    # --------------------------------------------------------
+    monthly_staff_df = (
+        df.groupby(["staff_member", "month"], as_index=False)
+        .agg(
+            total_contr_hours=("capacity_hours", "sum"),
+            total_avail_hours=("available_hours", "sum")
+        )
+    )
+
+    # --------------------------------------------------------
+    # ✅ THIS WAS MISSING (CRITICAL FIX)
+    # --------------------------------------------------------
+    monthly_staff_df["total_util_hours"] = (
+        monthly_staff_df["total_contr_hours"]
+        - monthly_staff_df["total_avail_hours"]
+    )
+
+    # --------------------------------------------------------
+    # UTIL %
+    # --------------------------------------------------------
+    monthly_staff_df["util_rate"] = (
+        monthly_staff_df["total_util_hours"]
+        / monthly_staff_df["total_contr_hours"]
+    )
+
+    monthly_staff_df["util_rate"] = (
+        monthly_staff_df["util_rate"]
+        .replace([np.inf, -np.inf], 0)
+        .fillna(0)
+        * 100
+    )
+
+    # --------------------------------------------------------
+    # OVERALL MONTHLY TOTALS (FOR DASHBOARD)
+    # --------------------------------------------------------
+    monthly_df = (
+        monthly_staff_df
+        .groupby("month", as_index=False)
+        .agg(
             total_contr_hours=("total_contr_hours", "sum"),
             total_avail_hours=("total_avail_hours", "sum"),
-            total_prog_hours=("total_prog_hours", "sum"),
-            total_non_deploy_hours=("total_non_deploy_hours", "sum"),
-            total_util_hours=("total_util_hours", "sum"),
-            staff_count=("staff_member", "nunique"),
+            total_util_hours=("total_util_hours", "sum")
+        )
+    )
+
+    # --------------------------------------------------------
+    # FINAL UTIL %
+    # --------------------------------------------------------
+    monthly_df["util_rate"] = (
+        monthly_df["total_util_hours"]
+        / monthly_df["total_contr_hours"]
+    )
+
+    monthly_df["util_rate"] = (
+        monthly_df["util_rate"]
+        .replace([np.inf, -np.inf], 0)
+        .fillna(0)
+        * 100
+    )
+
+    # --------------------------------------------------------
+    # TARGET
+    # --------------------------------------------------------
+    monthly_df["util_target"] = target_util_rate * 100
+
+    # --------------------------------------------------------
+    # SORT
+    # --------------------------------------------------------
+    monthly_df = monthly_df.sort_values("month").reset_index(drop=True)
+    monthly_staff_df = monthly_staff_df.sort_values(
+        ["staff_member", "month"]
+    ).reset_index(drop=True)
+
+    
+    today = date.today()
+
+    window_start = pd.Timestamp(today - relativedelta(months=6))
+    window_end   = pd.Timestamp(today + relativedelta(months=6))
+
+    monthly_df = monthly_df[
+        (monthly_df["month"] >= window_start) &
+        (monthly_df["month"] <= window_end)
+    ].copy()
+
+    monthly_staff_df = monthly_staff_df[
+        (monthly_staff_df["month"] >= window_start) &
+        (monthly_staff_df["month"] <= window_end)
+    ].copy()
+
+
+    return monthly_df, monthly_staff_df
+
+# ============================================================
+# WEEKLY SUMMARY
+# ============================================================
+def build_weekly_summary(staff_week_df, target_util_rate=0.85):
+    """
+    Aggregates weekly capacity + availability across all staff.
+
+    Returns:
+        DataFrame with:
+        - week_commencing
+        - total_capacity_hours
+        - total_available_hours
+        - total_leave_hours
+        - utilisation_rate
+    """
+
+    df = staff_week_df.copy()
+
+    # --------------------------------------------------------
+    # Safety checks
+    # --------------------------------------------------------
+    required_cols = [
+        "week_commencing",
+        "capacity_hours",
+        "available_hours",
+        "leave_hours"
+    ]
+
+    for col in required_cols:
+        if col not in df.columns:
+            raise KeyError(f"Missing column '{col}' in staff_week_df")
+
+    # --------------------------------------------------------
+    # Aggregate per week
+    # --------------------------------------------------------
+    weekly = (
+        df
+        .groupby("week_commencing", as_index=False)
+        .agg(
+            total_capacity_hours=("capacity_hours", "sum"),
+            total_available_hours=("available_hours", "sum"),
+            total_leave_hours=("leave_hours", "sum")
         )
         .sort_values("week_commencing")
     )
 
-    weekly["util_rate"] = (
-        (weekly["total_non_deploy_hours"] + weekly["total_prog_hours"])
-        / weekly["total_avail_hours"]
-        * 100
-    ).fillna(0)
+    # --------------------------------------------------------
+    # Utilisation
+    # --------------------------------------------------------
+    weekly["utilisation_rate"] = (
+        1 - (weekly["total_available_hours"] / weekly["total_capacity_hours"])
+    )
 
-    weekly["util_target"] = target_util_rate
+    # Handle divide-by-zero safely
+    weekly["utilisation_rate"] = weekly["utilisation_rate"].replace([np.inf, -np.inf], 0)
+    weekly["utilisation_rate"] = weekly["utilisation_rate"].fillna(0)
 
-    # ---------------------------
-    # Monthly (overall)
-    # ---------------------------
-    weekly["month"] = weekly["week_commencing"].dt.to_period("M").dt.to_timestamp()
+    # --------------------------------------------------------
+    # Target comparison (useful for dashboard)
+    # --------------------------------------------------------
+    weekly["target_utilisation"] = target_util_rate
+    weekly["variance_to_target"] = (
+        weekly["utilisation_rate"] - target_util_rate
+    )
 
-    monthly = (
-        weekly
-        .groupby("month", as_index=False)
-        .agg(
-            total_leave_hours=("total_leave_hours", "sum"),
-            total_contr_hours=("total_contr_hours", "sum"),
-            total_avail_hours=("total_avail_hours", "sum"),
-            total_prog_hours=("total_prog_hours", "sum"),
-            total_non_deploy_hours=("total_non_deploy_hours", "sum"),
-            total_util_hours=("total_util_hours", "sum"),
-            staff_count=("staff_count", "mean"),
+    return weekly
+
+# ============================================================
+# CLEAN PROGRAMME GROUP
+# ============================================================
+def clean_programme(value):
+    """
+    Cleans programme group names for consistency.
+    """
+
+    if value is None:
+        return None
+
+    value = str(value).strip()
+
+    if value == "" or value.lower() == "nan":
+        return None
+
+    # Standardise formatting
+    value = value.replace(" and ", " & ")
+    value = value.title()
+
+    return value
+
+# ============================================================
+# 52-WEEK HEATMAP
+# ============================================================
+def create_52week_heatmap(
+    df,
+    value_col,
+    title=None,
+    colorscale="Viridis",
+    colorbar_title="Value",
+    zmax=5,
+    highlight_current_week=True
+):
+    import pandas as pd
+    import numpy as np
+    import plotly.graph_objects as go
+    from datetime import date, timedelta
+
+    data = df.copy()
+
+    # --------------------------------------------------------
+    # Ensure date format
+    # --------------------------------------------------------
+    data["week_commencing"] = pd.to_datetime(
+        data["week_commencing"], errors="coerce"
+    )
+
+    # --------------------------------------------------------
+    # Create week index (relative)
+    # --------------------------------------------------------
+    today = date.today()
+    current_week = today - timedelta(days=today.weekday())
+
+    # relative week index
+    data["week_index"] = (
+        (data["week_commencing"] - pd.Timestamp(current_week)) / np.timedelta64(1, 'W')
+    ).astype(int)
+
+    # --------------------------------------------------------
+    # Pivot for heatmap
+    # --------------------------------------------------------
+    pivot = data.pivot_table(
+        index="staff_member",
+        columns="week_index",
+        values=value_col,
+        aggfunc="sum",
+        fill_value=0
+    )
+
+    pivot = pivot.sort_index()
+
+    # --------------------------------------------------------
+    # Build heatmap
+    # --------------------------------------------------------
+    fig = go.Figure(data=go.Heatmap(
+        z=pivot.values,
+        x=pivot.columns,
+        y=pivot.index,
+        colorscale=colorscale,
+        zmin=0,
+        zmax=zmax,
+        colorbar=dict(title=colorbar_title)
+    ))
+
+    # --------------------------------------------------------
+    # Highlight current week
+    # --------------------------------------------------------
+    if highlight_current_week and 0 in pivot.columns:
+        fig.add_shape(
+            type="rect",
+            x0=-0.5,
+            x1=0.5,
+            y0=-0.5,
+            y1=len(pivot.index) - 0.5,
+            line=dict(color="black", width=2),
+            fillcolor="rgba(0,0,0,0)"
         )
-        .sort_values("month")
+
+    # --------------------------------------------------------
+    # Layout
+    # --------------------------------------------------------
+    fig.update_layout(
+        title=title,
+        xaxis_title="Week",
+        yaxis_title="Staff",
+        height=500
     )
 
-    # ---------------------------
-    # Monthly by staff
-    # ---------------------------
-    staff_week_df["month"] = staff_week_df["week_commencing"].dt.to_period("M").dt.to_timestamp()
-
-    monthly_by_staff = (
-        staff_week_df
-        .groupby(["staff_member", "month"], as_index=False)
-        .agg(
-            total_leave_hours=("total_leave_hours", "sum"),
-            total_contr_hours=("total_contr_hours", "sum"),
-            total_avail_hours=("total_avail_hours", "sum"),
-            total_prog_hours=("total_prog_hours", "sum"),
-            total_non_deploy_hours=("total_non_deploy_hours", "sum"),
-            total_util_hours=("total_util_hours", "sum"),
-        )
-        .sort_values("month")
-    )
-
-    # ---------------------------
-    # Util %
-    # ---------------------------
-    monthly["util_rate"] = (
-        (monthly["total_non_deploy_hours"] + monthly["total_prog_hours"])
-        / monthly["total_avail_hours"]
-        * 100
-    ).fillna(0)
-
-    monthly["util_target"] = target_util_rate
-
-    # ---------------------------
-    # Filter to latest 12 months
-    # ---------------------------
-    latest_month = monthly["month"].max()
-    start_month = latest_month - pd.DateOffset(months=11)
-    year_month = '2025-01-01'
-
-    monthly = monthly[
-        monthly["month"].between(year_month, latest_month)
-    ]
-
-    monthly_by_staff = monthly_by_staff[
-        monthly_by_staff["month"].between(start_month, latest_month)
-    ]
-
-    return monthly, monthly_by_staff
-
-def refresh_leave_calendar():
-    with sqlite3.connect(DB_PATH) as conn:
-        st.session_state.leave_calendar_df = pd.read_sql("SELECT * FROM leave_calendar", conn)
-    st.session_state.leave_calendar_df["week_commencing"] = pd.to_datetime(
-        st.session_state.leave_calendar_df["week_commencing"], errors="coerce"
-    )
-def refresh_onsite_calendar():
-    with sqlite3.connect(DB_PATH) as conn:
-        st.session_state.onsite_calendar_df = pd.read_sql("""
-            SELECT staff_member, week_commencing, week_number, SUM(on_site_days) AS on_site_days
-            FROM on_site_calendar
-            GROUP BY staff_member, week_commencing, week_number
-        """, conn)
-    st.session_state.onsite_calendar_df["week_commencing"] = pd.to_datetime(
-        st.session_state.onsite_calendar_df["week_commencing"], errors="coerce"
-    )
-def refresh_programme_activity():
-    with sqlite3.connect(DB_PATH) as conn:
-        st.session_state.programme_calendar_df = pd.read_sql("SELECT * FROM programme_activity", conn)
-    st.session_state.programme_calendar_df["week_commencing"] = pd.to_datetime(
-        st.session_state.programme_calendar_df["week_commencing"], errors="coerce"
-    )
+    return fig

@@ -1,75 +1,58 @@
 ##########################################################################
-# only run this file once when initially setting up the hashed passwords #
+# Run this ONCE to reset all user passwords safely (PostgreSQL version)
 ##########################################################################
 
 from werkzeug.security import generate_password_hash
-import data_store as ds
-import sqlite3
+from db import execute, query_df
 
-DB_PATH = "girft_capacity_planner.db"
+# ============================================
+# 🔐 CONFIG
+# ============================================
+TEMP_PASSWORD = "Temporary123!"  # change if needed
 
-temp_password = "Temporary123!"
-hashed_pw = generate_password_hash(temp_password)
+# ============================================
+# ✅ GET ALL USERS
+# ============================================
+users_df = query_df("""
+    SELECT username
+    FROM staff_list
+    WHERE username IS NOT NULL
+""")
 
-with sqlite3.connect(DB_PATH) as conn:
-    cur = conn.cursor()
+if users_df.empty:
+    print("⚠️ No users found with usernames")
+    exit()
 
-    cur.execute("""
+print(f"🔍 Found {len(users_df)} users")
+
+# ============================================
+# 🔄 RESET PASSWORDS (SECURE WAY)
+# ============================================
+for username in users_df["username"]:
+
+    # ✅ Generate unique salted hash per user
+    hashed_pw = generate_password_hash(TEMP_PASSWORD)
+
+    # ✅ Update user
+    execute("""
         UPDATE staff_list
-        SET password = ?,
+        SET password = %s,
             must_change_password = 1
-    """, (hashed_pw,))
+        WHERE username = %s
+    """, (hashed_pw, username))
 
-    conn.commit()
+print("✅ All passwords reset with unique hashed values")
 
-print("✅ All staff passwords reset and flagged for change")
+# ============================================
+# 🔍 DEBUG CHECK (optional)
+# ============================================
+sample_user = users_df["username"].iloc[0]
 
+result = query_df("""
+    SELECT staff_member, username, must_change_password
+    FROM staff_list
+    WHERE username = %s
+""", (sample_user,))
 
-# Load latest data
-ds.load_or_refresh_all()
-
-temp_password = "Temporary123!"
-hashed_pw = generate_password_hash(temp_password)
-
-# Update dataframe
-ds.staff_list["password"] = hashed_pw
-ds.staff_list["must_change_password"] = 1
-
-# ✅ Write back to database
-with sqlite3.connect(ds.DB_PATH) as conn:
-    ds.staff_list.to_sql("staff_list", conn, if_exists="replace", index=False)
-
-##########################################################################
-# reset all passwords back to default
-##########################################################################
-
-DB_PATH = "girft_capacity_planner.db"
-
-#temp_password = "Temporary123!"
-
-with sqlite3.connect(DB_PATH) as conn:
-    cur = conn.cursor()
-
-    # Fetch usernames
-    cur.execute("SELECT username FROM staff_list")
-    usernames = [r[0] for r in cur.fetchall()]
-
-    for u in usernames:
-        cur.execute("""
-            UPDATE staff_list
-            SET password = ?,
-                must_change_password = 1,
-                updated_at = CURRENT_TIMESTAMP
-            WHERE username = ?
-        """, (generate_password_hash(temp_password), u))
-
-    conn.commit()
-
-print("Done: all passwords reset (unique salted hashes) and must_change_password set to 1.")
-
-##### check password reset
-
-with sqlite3.connect(DB_PATH) as conn:
-    cur = conn.cursor()
-    cur.execute("SELECT * FROM staff_list where staff_member = 'Heath McDonald' ")
-    print(cur.fetchone())  
+print("🔎 Sample user check:")
+print(result)

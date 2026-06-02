@@ -1,6 +1,6 @@
 import streamlit as st
 import data_store as ds
-import planner_functions as pf
+#import planner_functions as pf
 
 def homepage():
 

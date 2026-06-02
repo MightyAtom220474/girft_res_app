@@ -44,51 +44,7 @@ def staff_dashboard():
     if "staff_detail_monthly_df" not in st.session_state:
         ds.load_or_refresh_all()
 
-    # leave_calendar_df = st.session_state.leave_calendar_df
-    # onsite_calendar_df = st.session_state.onsite_calendar_df
-    #programme_activity_df = st.session_state.programme_calendar_df
     staff_detail_monthly_df = st.session_state.staff_detail_monthly_df
-
-    # Ensure dates are proper datetime
-    # programme_activity_df["week_commencing"] = pd.to_datetime(
-    #     programme_activity_df["week_commencing"],
-    #     dayfirst=True,
-    #     errors="coerce"
-    # )
-
-    # # Month from the Monday date
-    # programme_activity_df["month"] = programme_activity_df["week_commencing"].dt.to_period("M").dt.to_timestamp()
-
-    #st.write(programme_activity_df)
-    
-    # Rename for clarity
-    # programme_list_df = st.session_state.programme_list
-    # # Join programme_activity_df with lookup on the correct column name
-    # merged_df = programme_activity_df.merge(
-    #     programme_list_df[["programme_categories", "programme_group"]],
-    #     how="left",
-    #     left_on="programme_category",      # your activity df column
-    #     right_on="programme_categories"    # lookup df column
-    #     )
-    # # get rid of programme_category column
-    # merged_df.drop(columns="programme_category", inplace=True)
-
-    # # clean up programme groups
-    # merged_df['programme_group'] = merged_df['programme_group'].apply(pf.clean_programme)
-
-    # Replace programme_category with programme_group for the pivot
-    # pivot = (
-    #     merged_df
-    #     .pivot_table(
-    #         index="month",
-    #         columns="programme_group",     # <-- now using group instead of category
-    #         values="activity_value",
-    #         aggfunc="sum",
-    #         fill_value=0
-    #     )
-    #     .sort_index()
-    #     .reset_index()
-    # )
 
     # ---------------------------
     # Monthly Capacity / Utilisation Chart
@@ -207,6 +163,5 @@ def staff_dashboard():
         margin=dict(b=80, t=80),
         height=600
     )
-
 
     st.plotly_chart(fig, width='stretch')

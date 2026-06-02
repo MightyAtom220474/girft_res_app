@@ -1,14 +1,12 @@
-import sqlite3
-from contextlib import contextmanager
+import os
+from dotenv import load_dotenv
+from libsql_client import create_client
 
-DB_PATH = "girft_capacity_planner.db"
+load_dotenv()
 
-@contextmanager
-def get_conn():
-    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
-    conn.row_factory = sqlite3.Row
-    try:
-        yield conn
-        conn.commit()
-    finally:
-        conn.close()
+
+def get_client():
+    return create_client(
+        url=os.getenv("TURSO_DATABASE_URL"),
+        auth_token=os.getenv("TURSO_AUTH_TOKEN")
+    )

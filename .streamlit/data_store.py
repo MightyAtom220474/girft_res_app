@@ -2,11 +2,12 @@ import pandas as pd
 import numpy as np
 from datetime import date
 from dateutil.relativedelta import relativedelta
-import sqlite3
+# import sqlite3
 import streamlit as st
 #import os
 import planner_functions as pf
-from config import DB_PATH
+# from config import DB_PATH
+from db import execute, query_df
 
 #BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # DB_PATH = os.path.join(BASE_DIR, "girft_capacity_planner.db")
@@ -47,8 +48,15 @@ def parse_week_commencing(df, col="week_commencing"):
 
 
 def load_or_refresh_all():
+    import pandas as pd
+    import streamlit as st
 
-     # ✅ Initialise ALL expected session state keys first
+    # ✅ Set target utilisation rate
+    target_util_rate = 0.85
+
+    # -----------------------------
+    # Initialise session state
+    # -----------------------------
     defaults = {
         "staff_list": pd.DataFrame(),
         "programme_list": pd.DataFrame(),
@@ -59,6 +67,7 @@ def load_or_refresh_all():
         "staff_prog_pivot_df": pd.DataFrame(),
         "staff_prog_monthly_df": pd.DataFrame(),
         "staff_detail_monthly_df": pd.DataFrame(),
+        "staff_summary_monthly_df": pd.DataFrame(),  # ✅ new (avoid overwrite bug)
         "programme_names": [],
         "staff_names": []
     }
@@ -67,63 +76,81 @@ def load_or_refresh_all():
         if key not in st.session_state:
             st.session_state[key] = default
 
-    with sqlite3.connect(DB_PATH) as conn:
+    # -----------------------------
+    # LOAD DATA FROM DB
+    # -----------------------------
+    st.session_state.staff_list = query_df("""
+        SELECT *
+        FROM staff_list
+        WHERE archive_flag = 0
+    """)
 
-        staff_list = pd.read_sql(
-            "SELECT * FROM staff_list WHERE archive_flag = 0", conn
-        )
+    st.session_state.programme_list = query_df("""
+        SELECT *
+        FROM programme_categories
+        WHERE archive_flag = 0
+    """)
 
-        programme_list = pd.read_sql(
-            "SELECT * FROM programme_categories WHERE archive_flag = 0", conn
-        )
+    st.session_state.programme_calendar_df = query_df("""
+        SELECT *
+        FROM programme_activity
+    """)
 
-        programme_calendar_df = pd.read_sql(
-            "SELECT * FROM programme_activity", conn
-        )
+    st.session_state.leave_calendar_df = query_df("""
+        SELECT
+            staff_member,
+            week_commencing,
+            week_number,
+            SUM(days_leave) AS days_leave
+        FROM leave_calendar
+        GROUP BY staff_member, week_commencing, week_number
+    """)
 
-        leave_calendar_df = pd.read_sql("""
-            SELECT staff_member, week_commencing, week_number,
-                   SUM(days_leave) AS days_leave
-            FROM leave_calendar
-            GROUP BY staff_member, week_commencing, week_number
-        """, conn)
+    st.session_state.onsite_calendar_df = query_df("""
+        SELECT
+            staff_member,
+            week_commencing,
+            week_number,
+            SUM(on_site_days) AS on_site_days
+        FROM on_site_calendar
+        GROUP BY staff_member, week_commencing, week_number
+    """)
 
-        onsite_calendar_df = pd.read_sql("""
-            SELECT staff_member, week_commencing, week_number,
-                   SUM(on_site_days) AS on_site_days
-            FROM on_site_calendar
-            GROUP BY staff_member, week_commencing, week_number
-        """, conn)
+    # -----------------------------
+    # ✅ Pull into local variables (FIX)
+    # -----------------------------
+    staff_list = st.session_state.staff_list
+    programme_list = st.session_state.programme_list
+    programme_calendar_df = st.session_state.programme_calendar_df
+    leave_calendar_df = st.session_state.leave_calendar_df
+    onsite_calendar_df = st.session_state.onsite_calendar_df
 
-    
-    
-    # ---------------------------
+    # -----------------------------
     # ✅ DEFAULT PROGRAMME CLEANING
-    # ---------------------------
-    staff_list = pf.clean_default_programme_column(staff_list, programme_list)
+    # -----------------------------
+    programme_list = pf.clean_default_programme_column(programme_list)
 
-    # ---------------------------
+    # -----------------------------
     # Parse dates
-    # ---------------------------
+    # -----------------------------
     programme_calendar_df = parse_week_commencing(programme_calendar_df)
     leave_calendar_df = parse_week_commencing(leave_calendar_df)
     onsite_calendar_df = parse_week_commencing(onsite_calendar_df)
 
-    # ---------------------------
-    # Store base tables
-    # ---------------------------
+    # -----------------------------
+    # Store cleaned tables back
+    # -----------------------------
     st.session_state.staff_list = staff_list
     st.session_state.programme_list = programme_list
     st.session_state.programme_calendar_df = programme_calendar_df
     st.session_state.leave_calendar_df = leave_calendar_df
     st.session_state.onsite_calendar_df = onsite_calendar_df
 
-    # ---------------------------
+    # -----------------------------
     # Lookup lists
-    # ---------------------------
-
+    # -----------------------------
     st.session_state.staff_names = sorted(
-        st.session_state.staff_list["staff_member"]
+        staff_list["staff_member"]
         .dropna()
         .astype(str)
         .str.strip()
@@ -132,7 +159,7 @@ def load_or_refresh_all():
     )
 
     st.session_state.programme_names = sorted(
-        st.session_state.programme_list["programme_categories"]
+        programme_list["programme_categories"]
         .dropna()
         .astype(str)
         .str.strip()
@@ -140,13 +167,14 @@ def load_or_refresh_all():
         .tolist()
     )
 
-    # ---------------------------
-    # Capacity calculations (NOW CLEAN)
-    # ---------------------------
+    # -----------------------------
+    # Capacity calculations
+    # -----------------------------
+    
     staff_week = pf.build_staff_week_capacity(
+        staff_list,
         programme_calendar_df,
-        leave_calendar_df,
-        staff_list
+        leave_calendar_df
     )
 
     weekly = pf.build_weekly_summary(
@@ -159,16 +187,19 @@ def load_or_refresh_all():
         weekly
     )
 
-    # ---------------------------
+    # -----------------------------
     # Store outputs
-    # ---------------------------
+    # -----------------------------
     st.session_state.staff_week_capacity_df = staff_week
     st.session_state.staff_prog_pivot_df = weekly
-    st.session_state.staff_detail_monthly_df = monthly_by_staff
+    st.session_state.staff_summary_monthly_df = monthly_by_staff  # ✅ fixed name
 
+    # -----------------------------
+    # Monthly capacity breakdown
+    # -----------------------------
     monthly_df, monthly_staff_df = pf.build_monthly_capacity_df(
-    st.session_state.staff_week_capacity_df,
-    target_util_rate
+        staff_week,
+        target_util_rate
     )
 
     st.session_state.staff_prog_monthly_df = monthly_df
