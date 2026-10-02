@@ -10,6 +10,8 @@ from werkzeug.security import generate_password_hash
 #import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 #import numpy as np
+from foundry.transforms import Dataset
+
 from config import DB_PATH
 import data_store as ds
 
@@ -1145,3 +1147,26 @@ def refresh_programme_activity():
     st.session_state.programme_calendar_df["week_commencing"] = pd.to_datetime(
         st.session_state.programme_calendar_df["week_commencing"], errors="coerce"
     )
+    
+def load_foundry_dataset(alias):
+    ds = Dataset.get(alias)
+    file = list(ds.files())[0]
+    local_path = file.download()
+    return pd.read_csv(local_path)
+
+
+def save_foundry_dataset(alias, df):
+    ds = Dataset.get(alias)
+
+    # clear cached version before write
+    load_foundry_dataset.clear()
+
+    ds.write_table(df)
+
+    # clear again so next read gets latest data
+    load_foundry_dataset.clear()
+
+def stream_data():
+    for ch in login_prompt:
+        yield ch
+        time.sleep(0.02)

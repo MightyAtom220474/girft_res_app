@@ -1,12 +1,16 @@
 import pandas as pd
 import numpy as np
-from datetime import date
-from dateutil.relativedelta import relativedelta
-import sqlite3
+#from datetime import date
+#from dateutil.relativedelta import relativedelta
+#import sqlite3
 import streamlit as st
 #import os
 import planner_functions as pf
-from config import DB_PATH
+
+#from foundry.transforms import Dataset
+import pandas as pd
+# import streamlit as st
+#from config import DB_PATH
 
 #BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # DB_PATH = os.path.join(BASE_DIR, "girft_capacity_planner.db")
@@ -45,10 +49,29 @@ def parse_week_commencing(df, col="week_commencing"):
     df[col] = parsed.dt.normalize()
     return df
 
+# def load_foundry_dataset(alias):
+#     ds = Dataset.get(alias)
+#     file = list(ds.files())[0]
+#     local_path = file.download()
+#     return pd.read_csv(local_path)
+
+
+# @st.cache_data(ttl=300, show_spinner=False)
+# def load_foundry_dataset(alias):
+#     """
+#     Downloads and loads a Foundry dataset resource.
+
+#     ttl=300 means Streamlit will re-read the dataset every 5 minutes.
+#     """
+#     ds = Dataset.get(alias)
+#     file = list(ds.files())[0]
+#     local_path = file.download()
+#     return pd.read_csv(local_path)
+
 
 def load_or_refresh_all():
 
-     # ✅ Initialise ALL expected session state keys first
+    # ✅ Initialise ALL expected session state keys first
     defaults = {
         "staff_list": pd.DataFrame(),
         "programme_list": pd.DataFrame(),
@@ -67,111 +90,84 @@ def load_or_refresh_all():
         if key not in st.session_state:
             st.session_state[key] = default
 
-    with sqlite3.connect(DB_PATH) as conn:
+    # ------------------------------------------------------------------
+    # Load Foundry datasets
+    # ------------------------------------------------------------------
 
-        staff_list = pd.read_sql(
-            "SELECT * FROM staff_list WHERE archive_flag = 0", conn
-        )
+    staff_list = pf.load_foundry_dataset("staff_list_0")
 
-        programme_list = pd.read_sql(
-            "SELECT * FROM programme_categories WHERE archive_flag = 0", conn
-        )
+    if "archive_flag" in staff_list.columns:
+        staff_list = staff_list[
+            pd.to_numeric(
+                staff_list["archive_flag"],
+                errors="coerce"
+            ).fillna(0).astype(int) == 0
+        ]
 
-        programme_calendar_df = pd.read_sql(
-            "SELECT * FROM programme_activity", conn
-        )
+    programme_list = pf.load_foundry_dataset("programme_categories_0")
 
-        leave_calendar_df = pd.read_sql("""
-            SELECT staff_member, week_commencing, week_number,
-                   SUM(days_leave) AS days_leave
-            FROM leave_calendar
-            GROUP BY staff_member, week_commencing, week_number
-        """, conn)
+    if "archive_flag" in programme_list.columns:
+        programme_list = programme_list[
+            pd.to_numeric(
+                programme_list["archive_flag"],
+                errors="coerce"
+            ).fillna(0).astype(int) == 0
+        ]
 
-        onsite_calendar_df = pd.read_sql("""
-            SELECT staff_member, week_commencing, week_number,
-                   SUM(on_site_days) AS on_site_days
-            FROM on_site_calendar
-            GROUP BY staff_member, week_commencing, week_number
-        """, conn)
+    programme_calendar_df = pf.load_foundry_dataset("programme_activity_0")
 
-    
-    
-    # ---------------------------
-    # ✅ DEFAULT PROGRAMME CLEANING
-    # ---------------------------
-    staff_list = pf.clean_default_programme_column(staff_list, programme_list)
+    leave_calendar_raw = pf.load_foundry_dataset("leave_calendar_0")
 
-    # ---------------------------
-    # Parse dates
-    # ---------------------------
-    programme_calendar_df = parse_week_commencing(programme_calendar_df)
-    leave_calendar_df = parse_week_commencing(leave_calendar_df)
-    onsite_calendar_df = parse_week_commencing(onsite_calendar_df)
+    leave_calendar_df = (
+        leave_calendar_raw
+        .groupby(
+            ["staff_member", "week_commencing", "week_number"],
+            as_index=False
+        )["days_leave"]
+        .sum()
+    )
 
-    # ---------------------------
-    # Store base tables
-    # ---------------------------
+    onsite_calendar_raw = pf.load_foundry_dataset("on_site_calendar_0")
+
+    onsite_calendar_df = (
+        onsite_calendar_raw
+        .groupby(
+            ["staff_member", "week_commencing", "week_number"],
+            as_index=False
+        )["on_site_days"]
+        .sum()
+    )
+
+    # ------------------------------------------------------------------
+    # Store in session state
+    # ------------------------------------------------------------------
+
     st.session_state.staff_list = staff_list
     st.session_state.programme_list = programme_list
     st.session_state.programme_calendar_df = programme_calendar_df
     st.session_state.leave_calendar_df = leave_calendar_df
     st.session_state.onsite_calendar_df = onsite_calendar_df
 
-    # ---------------------------
-    # Lookup lists
-    # ---------------------------
+    if (
+        not programme_list.empty
+        and "programme" in programme_list.columns
+    ):
+        st.session_state.programme_names = sorted(
+            programme_list["programme"]
+            .dropna()
+            .unique()
+            .tolist()
+        )
 
-    st.session_state.staff_names = sorted(
-        st.session_state.staff_list["staff_member"]
-        .dropna()
-        .astype(str)
-        .str.strip()
-        .unique()
-        .tolist()
-    )
-
-    st.session_state.programme_names = sorted(
-        st.session_state.programme_list["programme_categories"]
-        .dropna()
-        .astype(str)
-        .str.strip()
-        .unique()
-        .tolist()
-    )
-
-    # ---------------------------
-    # Capacity calculations (NOW CLEAN)
-    # ---------------------------
-    staff_week = pf.build_staff_week_capacity(
-        programme_calendar_df,
-        leave_calendar_df,
-        staff_list
-    )
-
-    weekly = pf.build_weekly_summary(
-        staff_week,
-        target_util_rate
-    )
-
-    monthly_by_staff = pf.build_monthly_summary(
-        staff_week,
-        weekly
-    )
-
-    # ---------------------------
-    # Store outputs
-    # ---------------------------
-    st.session_state.staff_week_capacity_df = staff_week
-    st.session_state.staff_prog_pivot_df = weekly
-    st.session_state.staff_detail_monthly_df = monthly_by_staff
-
-    monthly_df, monthly_staff_df = pf.build_monthly_capacity_df(
-    st.session_state.staff_week_capacity_df,
-    target_util_rate
-    )
-
-    st.session_state.staff_prog_monthly_df = monthly_df
-    st.session_state.staff_detail_monthly_df = monthly_staff_df
+    if (
+        not staff_list.empty
+        and "staff_member" in staff_list.columns
+    ):
+        st.session_state.staff_names = sorted(
+            staff_list["staff_member"]
+            .dropna()
+            .unique()
+            .tolist()
+        )
 
 

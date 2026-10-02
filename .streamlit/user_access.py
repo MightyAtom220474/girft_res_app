@@ -1,20 +1,17 @@
 import streamlit as st
-import sqlite3
-import time
+# import sqlite3
+# import time
 import pandas as pd
-import numpy as np
+# import numpy as np
 from werkzeug.security import generate_password_hash, check_password_hash
+from planner_functions import load_foundry_dataset, save_foundry_dataset
 
-DB_PATH = "girft_capacity_planner.db"  # make sure this is the ONE DB used everywhere
 
 login_prompt = ("Username is your .net email account, all lowercase!\n"
                 " On first login you will be prompted to set your own password")
 
-def stream_data():
-    for ch in login_prompt:
-        yield ch
-        time.sleep(0.02)
-        
+@st.cache_data(ttl=300, show_spinner=False)
+
 def login_page():
 
     st.set_page_config(layout="wide")
@@ -36,21 +33,24 @@ def login_page():
         password = st.text_input("Password", type="password", key="login_password")
 
         if st.button("Login", key="login_button"):
-            with sqlite3.connect(DB_PATH) as conn:
-                cur = conn.cursor()
-                cur.execute("""
-                    SELECT password, access_level, must_change_password, staff_member
-                    FROM staff_list
-                    WHERE username = ?
-                """, (username,))
-                row = cur.fetchone()
 
-            if not row:
+            staff_df = load_foundry_dataset("staff_list_0")
+
+            user_row = staff_df[
+                staff_df["username"].astype(str).str.strip()
+                == username.strip()
+            ]
+
+            if user_row.empty:
                 st.error("Invalid username or password")
                 return
 
-            # 👇 UPDATED: now includes staff_member
-            stored_hash, access_level, must_change, staff_member = row
+            user = user_row.iloc[0]
+
+            stored_hash = user["password"]
+            access_level = user["access_level"]
+            must_change = user["must_change_password"]
+            staff_member = user["staff_member"]
 
             if not check_password_hash(stored_hash, password):
                 st.error("Invalid username or password")
@@ -88,20 +88,25 @@ def login_page():
 
             hashed = generate_password_hash(new_password)
 
-            with sqlite3.connect(DB_PATH) as conn:
-                cur = conn.cursor()
-                cur.execute("""
-                    UPDATE staff_list
-                    SET password = ?,
-                        must_change_password = 0,
-                        updated_at = CURRENT_TIMESTAMP
-                    WHERE username = ?
-                """, (hashed, st.session_state.username))
-                conn.commit()
+            staff_df = load_foundry_dataset("staff_list_0")
 
-                if cur.rowcount != 1:
-                    st.error("Password update failed (user not found).")
-                    return
+            mask = (
+                staff_df["username"].astype(str).str.strip()
+                == st.session_state.username
+            )
+
+            if not mask.any():
+                st.error("Password update failed (user not found).")
+                return
+
+            staff_df.loc[mask, "password"] = hashed
+            staff_df.loc[mask, "must_change_password"] = 0
+            staff_df.loc[mask, "updated_at"] = pd.Timestamp.now()
+
+            save_foundry_dataset(
+                "staff_list_0",
+                staff_df
+            )
 
             st.session_state.must_change_password = False
             st.success("Password updated successfully")

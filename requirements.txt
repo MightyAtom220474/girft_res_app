@@ -1,7 +1,7 @@
-numpy==2.5.3
-pandas==3.0.6
-plotly==6.5.0
-python_dateutil==2.9.0.post0
-SQLAlchemy==2.0.54
-streamlit==1.51.0
-Werkzeug==3.1.8
+streamlit==1.49.0
+pandas==2.3.2
+numpy==2.3.2
+plotly==6.3.0
+python-dateutil==2.9.0.post0
+sqlalchemy==2.0.43
+werkzeug==3.1.3
