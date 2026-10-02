@@ -1,75 +1,80 @@
-##########################################################################
-# only run this file once when initially setting up the hashed passwords #
-##########################################################################
-
 from werkzeug.security import generate_password_hash
-import data_store as ds
-import sqlite3
+import planner_functions as pf
+import pandas as pd
 
-DB_PATH = "girft_capacity_planner.db"
+##############################################################################
+# Reset all passwords
+##############################################################################
 
-temp_password = "Temporary123!"
-hashed_pw = generate_password_hash(temp_password)
+TEMP_PASSWORD = "Temporary123!"
 
-with sqlite3.connect(DB_PATH) as conn:
-    cur = conn.cursor()
+staff_df = pf.load_foundry_dataset("staff_list_0")
 
-    cur.execute("""
-        UPDATE staff_list
-        SET password = ?,
-            must_change_password = 1
-    """, (hashed_pw,))
+# Generate a unique salted hash for each user
+staff_df["password"] = [
+    generate_password_hash(TEMP_PASSWORD)
+    for _ in range(len(staff_df))
+]
 
-    conn.commit()
+staff_df["must_change_password"] = 1
+staff_df["updated_at"] = pd.Timestamp.now()
 
-print("✅ All staff passwords reset and flagged for change")
+pf.save_foundry_dataset(
+    "staff_list_0",
+    staff_df
+)
 
+print("✅ All passwords reset")
+print("✅ must_change_password set to 1")
 
 # Load latest data
 ds.load_or_refresh_all()
 
-temp_password = "Temporary123!"
-hashed_pw = generate_password_hash(temp_password)
+# temp_password = "Temporary123!"
+# hashed_pw = generate_password_hash(temp_password)
 
-# Update dataframe
-ds.staff_list["password"] = hashed_pw
-ds.staff_list["must_change_password"] = 1
+# # Update dataframe
+# ds.staff_list["password"] = hashed_pw
+# ds.staff_list["must_change_password"] = 1
 
-# ✅ Write back to database
-with sqlite3.connect(ds.DB_PATH) as conn:
-    ds.staff_list.to_sql("staff_list", conn, if_exists="replace", index=False)
+# # ✅ Write back to database
+# with sqlite3.connect(ds.DB_PATH) as conn:
+#     ds.staff_list.to_sql("staff_list", conn, if_exists="replace", index=False)
 
-##########################################################################
-# reset all passwords back to default
-##########################################################################
+# ##########################################################################
+# # reset all passwords back to default
+# ##########################################################################
 
-DB_PATH = "girft_capacity_planner.db"
+# DB_PATH = "girft_capacity_planner.db"
 
-#temp_password = "Temporary123!"
+# #temp_password = "Temporary123!"
 
-with sqlite3.connect(DB_PATH) as conn:
-    cur = conn.cursor()
+# with sqlite3.connect(DB_PATH) as conn:
+#     cur = conn.cursor()
 
-    # Fetch usernames
-    cur.execute("SELECT username FROM staff_list")
-    usernames = [r[0] for r in cur.fetchall()]
+#     # Fetch usernames
+#     cur.execute("SELECT username FROM staff_list")
+#     usernames = [r[0] for r in cur.fetchall()]
 
-    for u in usernames:
-        cur.execute("""
-            UPDATE staff_list
-            SET password = ?,
-                must_change_password = 1,
-                updated_at = CURRENT_TIMESTAMP
-            WHERE username = ?
-        """, (generate_password_hash(temp_password), u))
+#     for u in usernames:
+#         cur.execute("""
+#             UPDATE staff_list
+#             SET password = ?,
+#                 must_change_password = 1,
+#                 updated_at = CURRENT_TIMESTAMP
+#             WHERE username = ?
+#         """, (generate_password_hash(temp_password), u))
 
-    conn.commit()
+#     conn.commit()
 
-print("Done: all passwords reset (unique salted hashes) and must_change_password set to 1.")
+# print("Done: all passwords reset (unique salted hashes) and must_change_password set to 1.")
 
 ##### check password reset
 
-with sqlite3.connect(DB_PATH) as conn:
-    cur = conn.cursor()
-    cur.execute("SELECT * FROM staff_list where staff_member = 'Heath McDonald' ")
-    print(cur.fetchone())  
+staff_df = pf.load_foundry_dataset("staff_list_0")
+
+print(
+    staff_df[
+        staff_df["staff_member"] == "Heath McDonald"
+    ]
+)

@@ -75,6 +75,10 @@ def filter_by_access(df, staff_col="staff_member"):
 
 ##### Functions to interact with SQLite database #####
 
+from werkzeug.security import generate_password_hash
+import pandas as pd
+
+
 def update_staff_list(
     new_staff=None,
     job_role=None,
@@ -88,127 +92,275 @@ def update_staff_list(
     user_access=None
     ):
     """
-    Update staff_list table in SQLite.
+    Add or update a staff member in the Foundry staff_list dataset.
     """
 
-    with sqlite3.connect(DB_PATH) as conn:
-        cursor = conn.cursor()
+    # Load current data
+    staff_df = load_foundry_dataset("staff_list_0")
 
-        # --- ADD NEW STAFF MEMBER ---
-        if new_staff:
-            cursor.execute("""
-                    INSERT INTO staff_list (
-                        staff_member,
-                        job_role,
-                        hours_pw,
-                        leave_allowance_days,
-                        is_deployable,
-                        deploy_ratio,
-                        default_programme,
-                        username,
-                        password,
-                        access_level,
-                        archive_flag
-                    )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
-                    ON CONFLICT(staff_member)
-                    DO UPDATE SET
-                        job_role = excluded.job_role,
-                        hours_pw = excluded.hours_pw,
-                        leave_allowance_days = excluded.leave_allowance_days,
-                        is_deployable = excluded.is_deployable,
-                        deploy_ratio = excluded.deploy_ratio,
-                        default_programme = excluded.default_programme,
-                        username = excluded.username,
-                        password = excluded.password,
-                        access_level = excluded.access_level
-                    """, (
-                        new_staff,
-                        job_role,
-                        hours_pw,
-                        leave_allowance_days,
-                        int(is_deployable) if is_deployable is not None else None,
-                        deploy_ratio,
-                        default_programme,
-                        username,
-                        generate_password_hash(password) if password else None,
-                        user_access
-                    ))
-            
-            conn.commit()
+    # Hash password if supplied
+    hashed_password = (
+        generate_password_hash(password)
+        if password
+        else None
+    )
+
+    # Check whether staff member already exists
+    existing_mask = (
+        staff_df["staff_member"].astype(str).str.strip()
+        == str(new_staff).strip()
+    )
+
+    if existing_mask.any():
+
+        # --------------------------
+        # UPDATE EXISTING RECORD
+        # --------------------------
+
+        staff_df.loc[existing_mask, "job_role"] = job_role
+        staff_df.loc[existing_mask, "hours_pw"] = hours_pw
+        staff_df.loc[existing_mask, "leave_allowance_days"] = leave_allowance_days
+        staff_df.loc[existing_mask, "is_deployable"] = (
+            int(is_deployable)
+            if is_deployable is not None
+            else None
+        )
+        staff_df.loc[existing_mask, "deploy_ratio"] = deploy_ratio
+        staff_df.loc[existing_mask, "default_programme"] = default_programme
+        staff_df.loc[existing_mask, "username"] = username
+        staff_df.loc[existing_mask, "access_level"] = user_access
+
+        # Only update password if supplied
+        if hashed_password:
+            staff_df.loc[
+                existing_mask,
+                "password"
+            ] = hashed_password
+
+        if "updated_at" in staff_df.columns:
+            staff_df.loc[
+                existing_mask,
+                "updated_at"
+            ] = pd.Timestamp.now()
+
+    else:
+
+        # --------------------------
+        # CREATE NEW RECORD
+        # --------------------------
+
+        new_row = {
+            "staff_member": new_staff,
+            "job_role": job_role,
+            "hours_pw": hours_pw,
+            "leave_allowance_days": leave_allowance_days,
+            "is_deployable": (
+                int(is_deployable)
+                if is_deployable is not None
+                else 0
+            ),
+            "deploy_ratio": deploy_ratio,
+            "archive_flag": 0,
+            "username": username,
+            "password": hashed_password,
+            "access_level": user_access,
+            "must_change_password": 1,
+            "default_programme": default_programme,
+            "created_at": pd.Timestamp.now(),
+            "updated_at": pd.Timestamp.now()
+        }
+
+        staff_df = pd.concat(
+            [
+                staff_df,
+                pd.DataFrame([new_row])
+            ],
+            ignore_index=True
+        )
+
+    # Save back to Foundry
+    save_foundry_dataset(
+        "staff_list_0",
+        staff_df
+    )
+
+    # Refresh cache if using Streamlit cache
+    try:
+        load_foundry_dataset.clear()
+    except:
+        pass
+
+    return True
         
+import pandas as pd
+
+
 def update_programme_list(
     new_programme=None,
     programme_type=None,
     programme_group=None
-    #archive_programme=None
-    ):
-    with sqlite3.connect(DB_PATH) as conn:
-        cursor = conn.cursor()
-
-        if new_programme:
-            cursor.execute(
-                """
-                INSERT OR IGNORE INTO programme_categories (
-                    programme_categories,
-                    programme_type,
-                    programme_group,
-                    archive_flag
-                )
-                VALUES (?, ?, ?, 0)
-                """,
-                (new_programme, programme_type, programme_group)
-            )
-
-            conn.commit()
-
-        # if archive_programme:
-        #     cursor.execute(
-        #         """
-        #         UPDATE programme_categories
-        #         SET archive_flag = 1
-        #         WHERE programme_categories = ?
-        #         """,
-        #         (archive_programme,)
-        #     )
-
-        # conn.commit()
-
-
-def update_password(conn, username, new_password):
+):
     """
-    Update a user's password and clear must_change_password flag
+    Add a programme to the programme_categories Foundry dataset.
+
+    Existing programmes are ignored (same behaviour as
+    INSERT OR IGNORE in SQLite).
     """
 
-    hashed_password = generate_password_hash(new_password)
+    if not new_programme:
+        return
 
-    with sqlite3.connect(DB_PATH) as conn:
-        cursor = conn.cursor()
-        
-        cursor.execute(
-            """
-            UPDATE staff_list
-            SET password = ?,
-                must_change_password = 0
-            WHERE username = ?
-            """,
-            (hashed_password, username)
+    # Load current dataset
+    programme_df = load_foundry_dataset(
+        "programme_categories_0"
+    )
+
+    # Check if programme already exists
+    exists = (
+        programme_df["programme_categories"]
+        .astype(str)
+        .str.strip()
+        .eq(str(new_programme).strip())
+        .any()
+    )
+
+    # Mimic INSERT OR IGNORE
+    if exists:
+        return
+
+    # Create new row
+    new_row = {
+        "programme_categories": new_programme,
+        "programme_type": programme_type,
+        "programme_group": programme_group,
+        "archive_flag": 0
+    }
+
+    # Add row
+    programme_df = pd.concat(
+        [
+            programme_df,
+            pd.DataFrame([new_row])
+        ],
+        ignore_index=True
+    )
+
+    # Save back to Foundry
+    save_foundry_dataset(
+        "programme_categories_0",
+        programme_df
+    )
+
+    # Clear cached copies if applicable
+    try:
+        load_foundry_dataset.clear()
+    except:
+        pass
+
+from werkzeug.security import generate_password_hash
+import pandas as pd
+
+
+def update_password(username, new_password):
+    """
+    Update a user's password and clear
+    the must_change_password flag.
+    """
+
+    # Load current staff dataset
+    staff_df = load_foundry_dataset("staff_list_0")
+
+    # Find user
+    mask = (
+        staff_df["username"]
+        .astype(str)
+        .str.strip()
+        .eq(str(username).strip())
+    )
+
+    if not mask.any():
+        raise ValueError(
+            f"Username '{username}' not found."
         )
 
-        conn.commit()
-        #conn.close()
+    # Update password
+    staff_df.loc[
+        mask,
+        "password"
+    ] = generate_password_hash(new_password)
 
-def restore_staff(conn, staff_member):
-    
-    with sqlite3.connect(DB_PATH) as conn:
-        cursor = conn.cursor()
+    # Clear forced password change flag
+    staff_df.loc[
+        mask,
+        "must_change_password"
+    ] = 0
 
-        cursor.execute(
-            "UPDATE staff_list SET archive_flag = 0 WHERE staff_member = ?",
-            (staff_member,)
+    # Update timestamp if column exists
+    if "updated_at" in staff_df.columns:
+        staff_df.loc[
+            mask,
+            "updated_at"
+        ] = pd.Timestamp.now()
+
+    # Save back to Foundry
+    save_foundry_dataset(
+        "staff_list_0",
+        staff_df
+    )
+
+    # Clear cached dataset
+    try:
+        load_foundry_dataset.clear()
+    except:
+        pass
+
+    return True
+
+import pandas as pd
+
+
+def restore_staff(staff_member):
+    """
+    Restore an archived staff member by setting
+    archive_flag back to 0.
+    """
+
+    staff_df = load_foundry_dataset("staff_list_0")
+
+    mask = (
+        staff_df["staff_member"]
+        .astype(str)
+        .str.strip()
+        .eq(str(staff_member).strip())
+    )
+
+    if not mask.any():
+        raise ValueError(
+            f"Staff member '{staff_member}' not found."
         )
-        conn.commit()
-        #conn.close()
+
+    staff_df.loc[
+        mask,
+        "archive_flag"
+    ] = 0
+
+    if "updated_at" in staff_df.columns:
+        staff_df.loc[
+            mask,
+            "updated_at"
+        ] = pd.Timestamp.now()
+
+    save_foundry_dataset(
+        "staff_list_0",
+        staff_df
+    )
+
+    try:
+        load_foundry_dataset.clear()
+    except:
+        pass
+
+    return True
 
 def save_programme_activity(
     selected_staff,
@@ -217,124 +369,315 @@ def save_programme_activity(
     repeat_weeks=1
 ):
     """
-    Save programme activity for one or multiple weeks.
+    Save programme activity for one or multiple weeks
+    to the Foundry programme_activity dataset.
     """
 
-    import sqlite3
     import pandas as pd
     from datetime import timedelta
-    from data_store import DB_PATH
+
+    # Load existing activity dataset
+    programme_df = load_foundry_dataset(
+        "programme_activity_0"
+    )
 
     base_week = pd.to_datetime(week_commencing)
 
-    with sqlite3.connect(DB_PATH) as conn:
+    for week_offset in range(repeat_weeks):
 
-        cursor = conn.cursor()
+        current_week = base_week + timedelta(
+            weeks=week_offset
+        )
 
-        for week_offset in range(repeat_weeks):
+        week_number = int(
+            current_week.isocalendar().week
+        )
 
-            current_week = base_week + timedelta(weeks=week_offset)
+        week_string = current_week.strftime(
+            "%Y-%m-%d"
+        )
 
-            week_number = int(current_week.isocalendar().week)
+        # ---------------------------------
+        # DELETE EXISTING ENTRIES
+        # ---------------------------------
 
-            # ---------------------------------
-            # DELETE EXISTING ENTRIES
-            # ---------------------------------
-            cursor.execute("""
-                DELETE FROM programme_activity
-                WHERE staff_member = ?
-                AND week_commencing = ?
-            """, (
-                selected_staff,
-                current_week.strftime("%Y-%m-%d")
-            ))
-
-            # ---------------------------------
-            # INSERT NEW VALUES
-            # ---------------------------------
-            for programme, hours in activity_inputs.items():
-
-                if float(hours) <= 0:
-                    continue
-
-                cursor.execute("""
-                    INSERT INTO programme_activity (
-                        staff_member,
-                        programme_category,
-                        activity_value,
-                        week_commencing,
-                        week_number
-                    )
-                    VALUES (?, ?, ?, ?, ?)
-                """, (
-                    selected_staff,
-                    programme,
-                    float(hours),
-                    current_week.strftime("%Y-%m-%d"),
-                    week_number
-                ))
-
-        conn.commit()
-
-def save_annual_leave(staff_member, week_commencing, days_leave):
-    week_commencing = pd.to_datetime(week_commencing)
-    week_number = int(week_commencing.isocalendar().week)
-
-    with sqlite3.connect(DB_PATH) as conn:
-        cursor = conn.cursor()
-
-        cursor.execute("""
-            INSERT INTO leave_calendar (
-                staff_member,
-                week_commencing,
-                week_number,
-                days_leave,
-                updated_at
+        programme_df = programme_df[
+            ~(
+                (programme_df["staff_member"] == selected_staff)
+                &
+                (
+                    programme_df["week_commencing"]
+                    .astype(str)
+                    .str[:10]
+                    == week_string
+                )
             )
-            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
-            ON CONFLICT(staff_member, week_commencing)
-            DO UPDATE SET
-                days_leave = excluded.days_leave,
-                week_number = excluded.week_number,
-                updated_at = CURRENT_TIMESTAMP
-        """, (
-            staff_member,
-            week_commencing.date(),
-            week_number,
-            days_leave
-        ))
+        ]
 
-        conn.commit()
-        #conn.close()
+        # ---------------------------------
+        # INSERT NEW VALUES
+        # ---------------------------------
 
-def save_on_site(staff_member, programme_category, week_commencing, on_site_days):
-    week_commencing = pd.to_datetime(week_commencing)
-    week_number = int(week_commencing.isocalendar().week)
-    with sqlite3.connect(DB_PATH) as conn:
-        cursor = conn.cursor()
-        cursor.execute("""
-            INSERT INTO on_site_calendar (
-                staff_member,
-                programme_category,
-                week_commencing,
-                week_number,
-                on_site_days,
-                updated_at
+        new_rows = []
+
+        for programme, hours in activity_inputs.items():
+
+            try:
+                hours = float(hours)
+            except:
+                continue
+
+            if hours <= 0:
+                continue
+
+            new_rows.append(
+                {
+                    "staff_member": selected_staff,
+                    "programme_category": programme,
+                    "activity_value": hours,
+                    "week_commencing": week_string,
+                    "week_number": week_number,
+                }
             )
-            VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-            ON CONFLICT(staff_member, programme_category, week_commencing)
-            DO UPDATE SET
-                on_site_days = excluded.on_site_days,
-                week_number = excluded.week_number,
-                updated_at = CURRENT_TIMESTAMP
-        """, (
-            staff_member,
-            programme_category,
-            week_commencing.date(),
-            week_number,
-            on_site_days
-        ))
-        conn.commit()
+
+        if new_rows:
+
+            programme_df = pd.concat(
+                [
+                    programme_df,
+                    pd.DataFrame(new_rows)
+                ],
+                ignore_index=True
+            )
+
+    # Save updated dataset
+    save_foundry_dataset(
+        "programme_activity_0",
+        programme_df
+    )
+
+    # Clear cache
+    try:
+        load_foundry_dataset.clear()
+    except:
+        pass
+
+    return True
+
+def save_annual_leave(
+    staff_member,
+    week_commencing,
+    days_leave
+):
+    """
+    Save annual leave to the leave_calendar Foundry dataset.
+
+    Mimics:
+    INSERT ... ON CONFLICT(staff_member, week_commencing)
+    DO UPDATE
+    """
+
+    import pandas as pd
+
+    week_commencing = pd.to_datetime(
+        week_commencing
+    )
+
+    week_number = int(
+        week_commencing.isocalendar().week
+    )
+
+    week_string = week_commencing.strftime(
+        "%Y-%m-%d"
+    )
+
+    # Load existing dataset
+    leave_df = load_foundry_dataset(
+        "leave_calendar_0"
+    )
+
+    # Find existing record
+    mask = (
+        leave_df["staff_member"]
+        .astype(str)
+        .str.strip()
+        .eq(str(staff_member).strip())
+    ) & (
+        leave_df["week_commencing"]
+        .astype(str)
+        .str[:10]
+        .eq(week_string)
+    )
+
+    if mask.any():
+
+        # --------------------------
+        # UPDATE EXISTING RECORD
+        # --------------------------
+
+        leave_df.loc[
+            mask,
+            "days_leave"
+        ] = days_leave
+
+        leave_df.loc[
+            mask,
+            "week_number"
+        ] = week_number
+
+        if "updated_at" in leave_df.columns:
+            leave_df.loc[
+                mask,
+                "updated_at"
+            ] = pd.Timestamp.now()
+
+    else:
+
+        # --------------------------
+        # INSERT NEW RECORD
+        # --------------------------
+
+        new_row = {
+            "staff_member": staff_member,
+            "week_commencing": week_string,
+            "week_number": week_number,
+            "days_leave": days_leave,
+            "updated_at": pd.Timestamp.now()
+        }
+
+        leave_df = pd.concat(
+            [
+                leave_df,
+                pd.DataFrame([new_row])
+            ],
+            ignore_index=True
+        )
+
+    # Save back to Foundry
+    save_foundry_dataset(
+        "leave_calendar_0",
+        leave_df
+    )
+
+    # Clear cache
+    try:
+        load_foundry_dataset.clear()
+    except:
+        pass
+
+    return True
+
+def save_on_site(
+    staff_member,
+    programme_category,
+    week_commencing,
+    on_site_days
+):
+    """
+    Save on-site days to the Foundry on_site_calendar dataset.
+
+    Mimics:
+    INSERT ... ON CONFLICT(staff_member,
+                           programme_category,
+                           week_commencing)
+    DO UPDATE
+    """
+
+    import pandas as pd
+
+    week_commencing = pd.to_datetime(
+        week_commencing
+    )
+
+    week_number = int(
+        week_commencing.isocalendar().week
+    )
+
+    week_string = week_commencing.strftime(
+        "%Y-%m-%d"
+    )
+
+    # Load existing dataset
+    onsite_df = load_foundry_dataset(
+        "on_site_calendar_0"
+    )
+
+    # Find existing record
+    mask = (
+        onsite_df["staff_member"]
+        .astype(str)
+        .str.strip()
+        .eq(str(staff_member).strip())
+    ) & (
+        onsite_df["programme_category"]
+        .astype(str)
+        .str.strip()
+        .eq(str(programme_category).strip())
+    ) & (
+        onsite_df["week_commencing"]
+        .astype(str)
+        .str[:10]
+        .eq(week_string)
+    )
+
+    if mask.any():
+
+        # --------------------------
+        # UPDATE EXISTING RECORD
+        # --------------------------
+
+        onsite_df.loc[
+            mask,
+            "on_site_days"
+        ] = on_site_days
+
+        onsite_df.loc[
+            mask,
+            "week_number"
+        ] = week_number
+
+        if "updated_at" in onsite_df.columns:
+            onsite_df.loc[
+                mask,
+                "updated_at"
+            ] = pd.Timestamp.now()
+
+    else:
+
+        # --------------------------
+        # INSERT NEW RECORD
+        # --------------------------
+
+        new_row = {
+            "staff_member": staff_member,
+            "programme_category": programme_category,
+            "week_commencing": week_string,
+            "week_number": week_number,
+            "on_site_days": on_site_days,
+            "updated_at": pd.Timestamp.now()
+        }
+
+        onsite_df = pd.concat(
+            [
+                onsite_df,
+                pd.DataFrame([new_row])
+            ],
+            ignore_index=True
+        )
+
+    # Save back to Foundry
+    save_foundry_dataset(
+        "on_site_calendar_0",
+        onsite_df
+    )
+
+    # Clear cache
+    try:
+        load_foundry_dataset.clear()
+    except Exception:
+        pass
+
+    return True
 
 # ------------------------------------------------
 # Helper function to create heatmaps
@@ -979,51 +1322,147 @@ def handle_trigger_reload():
     # Clear trigger after handling
     del st.session_state["trigger_reload"]
 
-def reset_all_passwords(temp_password="Temporary123!", only_if_null=False):
+def reset_all_passwords(
+    temp_password="Temporary123!",
+    only_if_null=False
+    ):
     """
-    Resets passwords for staff in the database.
+    Resets passwords for staff in the Foundry dataset.
 
     Args:
-        temp_password (str): password to apply
-        only_if_null (bool): if True, only reset users with no password set
+        temp_password (str):
+            Password to apply.
+
+        only_if_null (bool):
+            If True, only reset users with
+            a blank or null password.
     """
 
-    hashed_pw = generate_password_hash(temp_password)
+    staff_df = load_foundry_dataset(
+        "staff_list_0"
+    )
 
-    with sqlite3.connect(DB_PATH) as conn:
-        cursor = conn.cursor()
+    if only_if_null:
 
-        if only_if_null:
-            cursor.execute("""
-                UPDATE staff_list
-                SET password = ?, must_change_password = 1
-                WHERE password IS NULL OR password = ''
-            """, (hashed_pw,))
-        else:
-            cursor.execute("""
-                UPDATE staff_list
-                SET password = ?, must_change_password = 1
-            """, (hashed_pw,))
+        mask = (
+            staff_df["password"].isna()
+            |
+            (
+                staff_df["password"]
+                .astype(str)
+                .str.strip()
+                == ""
+            )
+        )
 
-        conn.commit()
+    else:
+
+        mask = pd.Series(
+            True,
+            index=staff_df.index
+        )
+
+    # Generate a unique salted hash
+    # for each affected user
+    for idx in staff_df.loc[mask].index:
+
+        staff_df.loc[
+            idx,
+            "password"
+        ] = generate_password_hash(
+            temp_password
+        )
+
+    # Force password change
+    staff_df.loc[
+        mask,
+        "must_change_password"
+    ] = 1
+
+    # Update timestamp if available
+    if "updated_at" in staff_df.columns:
+
+        staff_df.loc[
+            mask,
+            "updated_at"
+        ] = pd.Timestamp.now()
+
+    # Save back to Foundry
+    save_foundry_dataset(
+        "staff_list_0",
+        staff_df
+    )
+
+    # Clear cached copy
+    try:
+        load_foundry_dataset.clear()
+    except Exception:
+        pass
 
     return True
 
-def reset_passwords_from_dataframe(staff_df, temp_password="Temporary123!"):
-    hashed_pw = generate_password_hash(temp_password)
+def reset_passwords_from_dataframe(
+    staff_df,
+    temp_password="Temporary123!"
+):
+    """
+    Reset passwords for staff members contained
+    in the supplied dataframe.
+    """
 
-    with sqlite3.connect(DB_PATH) as conn:
-        cursor = conn.cursor()
+    # Load current staff dataset
+    current_staff_df = load_foundry_dataset(
+        "staff_list_0"
+    )
 
-        for _, row in staff_df.iterrows():
-            cursor.execute("""
-                UPDATE staff_list
-                SET password = ?, must_change_password = 1
-                WHERE staff_member = ?
-            """, (hashed_pw, row["staff_member"]))
+    staff_members_to_update = (
+        staff_df["staff_member"]
+        .astype(str)
+        .str.strip()
+        .tolist()
+    )
 
-        conn.commit()
+    mask = current_staff_df["staff_member"].astype(
+        str
+    ).str.strip().isin(
+        staff_members_to_update
+    )
 
+    # Generate unique salted hash for each user
+    for idx in current_staff_df.loc[mask].index:
+
+        current_staff_df.loc[
+            idx,
+            "password"
+        ] = generate_password_hash(
+            temp_password
+        )
+
+    current_staff_df.loc[
+        mask,
+        "must_change_password"
+    ] = 1
+
+    if "updated_at" in current_staff_df.columns:
+
+        current_staff_df.loc[
+            mask,
+            "updated_at"
+        ] = pd.Timestamp.now()
+
+    # Save back to Foundry
+    save_foundry_dataset(
+        "staff_list_0",
+        current_staff_df
+    )
+
+    # Clear cache
+    try:
+        load_foundry_dataset.clear()
+    except Exception:
+        pass
+
+    return True
 def build_monthly_capacity_df(staff_week_df, target_util_rate=85):
     """
     Builds monthly capacity summary from staff_week_capacity_df
@@ -1126,27 +1565,62 @@ def build_monthly_capacity_df(staff_week_df, target_util_rate=85):
     return monthly, monthly_by_staff
 
 def refresh_leave_calendar():
-    with sqlite3.connect(DB_PATH) as conn:
-        st.session_state.leave_calendar_df = pd.read_sql("SELECT * FROM leave_calendar", conn)
-    st.session_state.leave_calendar_df["week_commencing"] = pd.to_datetime(
-        st.session_state.leave_calendar_df["week_commencing"], errors="coerce"
+    
+    load_foundry_dataset.clear()
+
+    leave_df = load_foundry_dataset(
+        "leave_calendar_0"
     )
+
+    leave_df["week_commencing"] = pd.to_datetime(
+        leave_df["week_commencing"],
+        errors="coerce"
+    )
+
+    st.session_state.leave_calendar_df = leave_df
+    
 def refresh_onsite_calendar():
-    with sqlite3.connect(DB_PATH) as conn:
-        st.session_state.onsite_calendar_df = pd.read_sql("""
-            SELECT staff_member, week_commencing, week_number, SUM(on_site_days) AS on_site_days
-            FROM on_site_calendar
-            GROUP BY staff_member, week_commencing, week_number
-        """, conn)
-    st.session_state.onsite_calendar_df["week_commencing"] = pd.to_datetime(
-        st.session_state.onsite_calendar_df["week_commencing"], errors="coerce"
+    
+    load_foundry_dataset.clear()
+
+    onsite_df = load_foundry_dataset(
+        "on_site_calendar_0"
     )
+
+    onsite_df = (
+        onsite_df
+        .groupby(
+            [
+                "staff_member",
+                "week_commencing",
+                "week_number"
+            ],
+            as_index=False
+        )["on_site_days"]
+        .sum()
+    )
+
+    onsite_df["week_commencing"] = pd.to_datetime(
+        onsite_df["week_commencing"],
+        errors="coerce"
+    )
+
+    st.session_state.onsite_calendar_df = onsite_df
+    
 def refresh_programme_activity():
-    with sqlite3.connect(DB_PATH) as conn:
-        st.session_state.programme_calendar_df = pd.read_sql("SELECT * FROM programme_activity", conn)
-    st.session_state.programme_calendar_df["week_commencing"] = pd.to_datetime(
-        st.session_state.programme_calendar_df["week_commencing"], errors="coerce"
+    
+    load_foundry_dataset.clear()
+
+    programme_df = load_foundry_dataset(
+        "programme_activity_0"
     )
+
+    programme_df["week_commencing"] = pd.to_datetime(
+        programme_df["week_commencing"],
+        errors="coerce"
+    )
+
+    st.session_state.programme_calendar_df = programme_df
     
 def load_foundry_dataset(alias):
     ds = Dataset.get(alias)
@@ -1170,3 +1644,281 @@ def stream_data():
     for ch in login_prompt:
         yield ch
         time.sleep(0.02)
+        
+def archive_staff(staff_member):
+
+    staff_df = load_foundry_dataset("staff_list_0")
+
+    mask = (
+        staff_df["staff_member"]
+        == staff_member
+    )
+
+    staff_df.loc[
+        mask,
+        "archive_flag"
+    ] = 1
+
+    save_foundry_dataset(
+        "staff_list_0",
+        staff_df
+    )
+
+    load_foundry_dataset.clear()
+    
+def update_access_level(
+    staff_member,
+    access_level
+    ):
+    """
+    Update a staff member's access level.
+    """
+
+    staff_df = load_foundry_dataset(
+        "staff_list_0"
+    )
+
+    mask = (
+        staff_df["staff_member"]
+        .astype(str)
+        .str.strip()
+        .eq(str(staff_member).strip())
+    )
+
+    if not mask.any():
+        raise ValueError(
+            f"Staff member '{staff_member}' not found."
+        )
+
+    staff_df.loc[
+        mask,
+        "access_level"
+    ] = access_level
+
+    if "updated_at" in staff_df.columns:
+        staff_df.loc[
+            mask,
+            "updated_at"
+        ] = pd.Timestamp.now()
+
+    save_foundry_dataset(
+        "staff_list_0",
+        staff_df
+    )
+
+    try:
+        load_foundry_dataset.clear()
+    except Exception:
+        pass
+
+    return True
+    
+def archive_programme(programme_name):
+    """
+    Archive a programme category by setting
+    archive_flag = 1.
+    """
+
+    programme_df = load_foundry_dataset(
+        "programme_categories_0"
+    )
+
+    mask = (
+        programme_df["programme_categories"]
+        .astype(str)
+        .str.strip()
+        .eq(str(programme_name).strip())
+    )
+
+    if not mask.any():
+        raise ValueError(
+            f"Programme '{programme_name}' not found."
+        )
+
+    programme_df.loc[
+        mask,
+        "archive_flag"
+    ] = 1
+
+    if "updated_at" in programme_df.columns:
+        programme_df.loc[
+            mask,
+            "updated_at"
+        ] = pd.Timestamp.now()
+
+    save_foundry_dataset(
+        "programme_categories_0",
+        programme_df
+    )
+
+    try:
+        load_foundry_dataset.clear()
+    except Exception:
+        pass
+
+    return True
+    
+def restore_programme(programme_name):
+    """
+    Restore an archived programme category by setting
+    archive_flag = 0.
+    """
+
+    programme_df = load_foundry_dataset(
+        "programme_categories_0"
+    )
+
+    mask = (
+        programme_df["programme_categories"]
+        .astype(str)
+        .str.strip()
+        .eq(str(programme_name).strip())
+    )
+
+    if not mask.any():
+        raise ValueError(
+            f"Programme '{programme_name}' not found."
+        )
+
+    programme_df.loc[
+        mask,
+        "archive_flag"
+    ] = 0
+
+    if "updated_at" in programme_df.columns:
+        programme_df.loc[
+            mask,
+            "updated_at"
+        ] = pd.Timestamp.now()
+
+    save_foundry_dataset(
+        "programme_categories_0",
+        programme_df
+    )
+
+    try:
+        load_foundry_dataset.clear()
+    except Exception:
+        pass
+
+    return True
+    
+def update_programme_group(
+    programme_name,
+    programme_group
+):
+    """
+    Update the programme group
+    for a programme category.
+    """
+
+    programme_df = load_foundry_dataset(
+        "programme_categories_0"
+    )
+
+    mask = (
+        programme_df["programme_categories"]
+        .astype(str)
+        .str.strip()
+        .eq(str(programme_name).strip())
+    )
+
+    if not mask.any():
+        raise ValueError(
+            f"Programme '{programme_name}' not found."
+        )
+
+    programme_df.loc[
+        mask,
+        "programme_group"
+    ] = programme_group
+
+    if "updated_at" in programme_df.columns:
+        programme_df.loc[
+            mask,
+            "updated_at"
+        ] = pd.Timestamp.now()
+
+    save_foundry_dataset(
+        "programme_categories_0",
+        programme_df
+    )
+
+    try:
+        load_foundry_dataset.clear()
+    except Exception:
+        pass
+
+    return True
+    
+def delete_programme(programme_name):
+    """
+    Permanently delete a programme category.
+    """
+
+    programme_df = load_foundry_dataset(
+        "programme_categories_0"
+    )
+
+    programme_df = programme_df[
+        programme_df["programme_categories"]
+        != programme_name
+    ]
+
+    save_foundry_dataset(
+        "programme_categories_0",
+        programme_df
+    )
+
+    try:
+        load_foundry_dataset.clear()
+    except Exception:
+        pass
+
+    return True
+    
+def reset_individual_password(
+    username,
+    temp_password
+):
+
+    staff_df = load_foundry_dataset(
+        "staff_list_0"
+    )
+
+    mask = (
+        staff_df["username"]
+        .astype(str)
+        .str.strip()
+        .eq(str(username).strip())
+    )
+
+    if not mask.any():
+        raise ValueError(
+            f"Username '{username}' not found"
+        )
+
+    staff_df.loc[
+        mask,
+        "password"
+    ] = generate_password_hash(
+        temp_password
+    )
+
+    staff_df.loc[
+        mask,
+        "must_change_password"
+    ] = 1
+
+    if "updated_at" in staff_df.columns:
+        staff_df.loc[
+            mask,
+            "updated_at"
+        ] = pd.Timestamp.now()
+
+    save_foundry_dataset(
+        "staff_list_0",
+        staff_df
+    )
+
+    load_foundry_dataset.clear()

@@ -2,27 +2,17 @@ import streamlit as st
 import pandas as pd
 import planner_functions as pf
 import data_store as ds
-from data_store import DB_PATH
+#from data_store import DB_PATH
 pf.handle_trigger_reload() # force reloading of any saved data
 from datetime import date, timedelta
 import time
-import sqlite3
+#import sqlite3
 
 max_days = 5
 steps = 50
 # Calculate this week's Monday
 today = date.today()
 current_monday = today - timedelta(days=today.weekday())
-
-def refresh_leave_calendar():
-    """Reload only the leave calendar from the database into session state."""
-
-    with sqlite3.connect(DB_PATH) as conn:
-        st.session_state.leave_calendar_df = pd.read_sql("SELECT * FROM leave_calendar", conn)
-    # Re‑parse week_commencing dates (reuse your helper if available)
-    st.session_state.leave_calendar_df["week_commencing"] = pd.to_datetime(
-        st.session_state.leave_calendar_df["week_commencing"], errors="coerce"
-    )
 
 # page for blocking out leave days - annual leave and sickness
 def leave():
